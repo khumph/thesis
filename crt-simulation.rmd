@@ -8,6 +8,7 @@ library(pacman)
 p_load(dplyr)
 ```
 
+# 5.1. Simple chemotherapy mathematical model
 p 11
 
 We generate a simulated clinical reinforcement trial with N = 1000 patients (replicates)
@@ -15,13 +16,10 @@ We generate a simulated clinical reinforcement trial with N = 1000 patients (rep
 N <- 1000
 ```
 
-
-
 with each simulated patient experiencing 6 months (T = 6) of treatment based on this ODE model. 
 ```{r}
 t <- 6
 ```
-
 
 The initial values $W_0$ and $M_0$ for each patient are generated from independent uniform (0, 2) deviates.
 
@@ -30,22 +28,16 @@ $W_0$ indicates the initial value of patient's wellness
 W0 <- runif(N, min = 0, max = 2)
 ```
 
-
-
 $M_0$ indicates the value of tumor size when the patient is at the beginning of the study
 ```{r}
 M0 <- runif(N, min = 0, max = 2)
 ```
-
-
 
 The treatment set consists of doses of a chemotherapy agent with an acceptable dose range of [0, 1], where the value 1 corresponds to the maximum acceptable dose. The values chosen for chemotherapy drug level $D_0$ are simulated from the uniform (0.5, 1) distribution,
 
 ```{r}
 D0 <- runif(N, min = 0.5, max = 1)
 ```
-
-
 
 moreover, $D_1, \ldots, D_5$ are drawn according to a uniform distribution in the interval (0, 1). 
 ```{r}
@@ -56,11 +48,13 @@ D <- cbind(D0, D)
 
 Thus our treatment set is restricted differently at decision time t = 0 than at other decision times to reflect a requirement that patients receive at least some drug at onset of treatment. 
 
-Thus, the model we present must exhibit: 
-(1) tumor growth in the absence of chemotherapy; 
-(2) patients' negative wellness outcomes in response to chemotherapy; 
-(3) the drug's capability for killing tumor cells while also increasing toxicity; and 
-(4) an interaction between tumor cells and patient wellness. To obtain data which satisfy these requirements, we propose using a system of ordinary difference equations (ODE) modeled as follows:
+Thus, the model we present must exhibit:  
+(1) tumor growth in the absence of chemotherapy;  
+(2) patients' negative wellness outcomes in response to chemotherapy;  
+(3) the drug's capability for killing tumor cells while also increasing toxicity; and  
+(4) an interaction between tumor cells and patient wellness. 
+
+To obtain data which satisfy these requirements, we propose using a system of ordinary difference equations (ODE) modeled as follows:
 
 $$
 \dot{W}_t = a_1 (M_t \lor M_0) + b_1(D_t - d_1),
@@ -82,15 +76,12 @@ Mdot <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5) {
 }
 ```
 
-
-
-where time (with month as unit) $t = 0, 1, \ldots, T − 1$, and $\dot{W}_t$ and $\dot{M}_t$ indicate transition functions. Note that these changing rates yield a piecewise linear model over time. Without loss of trade-off between toxicity and efficacy, the piecewise linear model can be implemented very easily. For simplicity, we here consider tumor size instead of number of tumor cells. 
-$M_t$ denotes the tumor size at time t. 
-$W_t$ measures the negative part of wellness (toxicity). 
+where time (with month as unit) $t = 0, 1, \ldots, T − 1$, and $\dot{W}_t$ and $\dot{M}_t$ indicate transition functions. Note that these changing rates yield a piecewise linear model over time. Without loss of trade-off between toxicity and efficacy, the piecewise linear model can be implemented very easily. For simplicity, we here consider tumor size instead of number of tumor cells.  
+$M_t$ denotes the tumor size at time t.  
+$W_t$ measures the negative part of wellness (toxicity).  
 $D_t$ denotes the chemotherapy agent dose level. 
 
 The indicator function term 1{Mt > 0} in (3) represents the feature that when the tumor size is absorbed at 0, the patient has been cured, and there is no future recurrence of the tumor.
-
 
 The value of other different parameters for the model are fixed as: $a_1 = 0.1$, $a_2 = 0.15$, $b_1 = 1.2$, $b_2 = 1.2$, $d_1 = 0.5$ and $d_2 = 0.5$. 
 
@@ -102,7 +93,6 @@ b2 <- 1.2
 d1 <- 0.5
 d2 <- 0.5
 ```
-
 
 ```{r}
 W <- matrix(c(W0, numeric(5000)), ncol = 6)
@@ -120,30 +110,52 @@ dat <- data.frame(D = D, M = M, W = W) %>% tbl_df()
 ```
 
 
+# 5.2. Q-function estimation and optimal regimen discovery
 
 We decompose this reward function $R_t$ into three parts: $R_{t, 1}(D_t, W_{t + 1}, M_{t + 1})$ due to survival status, $R_{t, 2}(W_t, D_t, W_{t + 1})$ due to wellness effects, and $R_{t, 3}(M_t, D_t, M_{t + 1})$ due to tumor size effects. It can be described by:
 
 ```{r}
-R2 <- matrix(c(numeric(6000)), ncol = 6)
-R3 <- matrix(c(numeric(6000)), ncol = 6)
+R2 <- function(W1, W0) {
+  ifelse(W1 - W0 <= -0.5, 5,
+         ifelse(W1 - W0 >= 0.5, -5, 0))
+}
+
+R3 <- function(M1, M0) {
+  ifelse(M1 == 0, 15,
+         ifelse(M1 - M0 <= -0.5, 5,
+                ifelse(M1 - M0 >= 0.5, -5, 0)))
+}
+
+r2 <- matrix(c(numeric(6000)), ncol = 6)
+r3 <- matrix(c(numeric(6000)), ncol = 6)
 for (i in 1:(t - 1)) {
-  R2[, i] <- ifelse(W[, i + 1] - W[, i] <= -0.5, 5,
-                           ifelse(W[, i + 1] - W[, i] >= 0.5, -5, 0))
-  R3[, i] <- ifelse(M[, i + 1] == 0, 15,
-                    ifelse(M[, i + 1] - M[, i] <= -0.5, 5,
-                           ifelse(M[, i + 1] - M[, i] >= 0.5, -5, 0)))
+  r2[, i] <- R2(W[, i + 1], W[, i])
+  r3[, i] <- R3(M[, i + 1], M[, i])
 }
 ```
 
-
-In most phase III clinical trials, the primary endpoint of clinical interest is the overall survival (OS): this is why we put −60 as a high penalty for patient death. Additionally, we assign a relative high value 15 as a bonus when a patient is cured.
+In most phase III clinical trials, the primary endpoint of clinical interest is the overall survival (OS): this is why we put −60 as a high penalty for patient death. Additionally, we assign a relatively high value 15 as a bonus when a patient is cured.
 We assume that survival status depends on both toxicity and tumor size. For each time interval $(t − 1, t], t = 1,\ldots, 6$, we define the hazard function as $\lambda(t)$, which satisfies
 
 $$
 \log(\lambda(t)) = \mu_0 + \mu_1 W_t + \mu_2 M_t
 $$
 
-where $\mu_0$, $\mu_1$, and $\mu_2$ are constant pre-specified parameters. In particular, assigning $\mu_1 = \mu_2 = 1$ indicates that we consider wellness and tumor size to have an equally weighted influence on the survival rate. The survival function is then
+```{r}
+lambda <- function(W, M, mu0, mu1, mu2) {
+  exp(mu0 + mu1 * W + mu2 * M)
+}
+```
+
+where $\mu_0$, $\mu_1$, and $\mu_2$ are constant pre-specified parameters. In particular, assigning $\mu_1 = \mu_2 = 1$ indicates that we consider wellness and tumor size to have an equally weighted influence on the survival rate. 
+
+```{r}
+mu0 <- -5 ### NO VALUE GIVEN IN TEXT
+mu1 <- 1
+mu2 <- 1
+```
+
+The survival function is then
 
 $$
 \Delta F(t) = \exp[-\Delta\Lambda(t)]
@@ -151,40 +163,56 @@ $$
 
 #### ??? What did they use for $\mu_0$?
 
-where $\Delta\Lambda(t) = \int_{t-1}^{t}\lambda(s)ds$ is the cumulative hazard function. 
-
+where $\Delta\Lambda(t) = \int_{t-1}^{t}\lambda(s)ds$ is the cumulative hazard function.
 
 $$
 \begin{align*}
 \Delta\Lambda(t) &= \int_{t-1}^{t}\lambda(s)ds \\
 \Delta\Lambda(t) &= \int_{t-1}^{t}\exp(\mu_0 + \mu_1 W_s + \mu_2 M_s)ds \\
-\Delta F(t) = \exp[- \Delta\Lambda(t)] &= \exp\left[ - \int_{t-1}^{t}\exp(\mu_0 + \mu_1 W_s + \mu_2 M_s)ds \right] \\
-p &= 1 - \Delta F(t) \\
-P(\text{death}) &= Bern(p)
-\end{align*}
+\Delta F(t) = \exp[- \Delta\Lambda(t)] &= \exp\left[ - \int_{t-1}^{t}\exp(\mu_0 + \mu_1 W_s + \mu_2 M_s)ds \right]
 $$
 
+#### ??? In ths instance $\Delta\Lambda(t) = \int_{t-1}^{t}\lambda(s)ds = \lambda(t)$?
 #### ??? Should $W_s$ and $M_s$ be treated as constants over the interval?
+
+```{r}
+lams <- matrix(numeric(6000), ncol = 6)
+for (i in 1:(t - 1)) {
+  lams[, i] <- lambda(W[, i + 1], M[, i + 1], mu0, mu1, mu2)
+}
+deltaF <- exp(-lams)
+```
 
 The reason the term $R_{t,1}(D_t, W_{t+1}, M_{t+1})$ is expressed as a function of $W_{t+1}$ and $M_{t+1}$ is that the hazard function is only determined by the states at the end of each time interval. 
 
 #### ??? How does this follow?
 
-The conditional probability of death for each time interval is $p = 1 − \Lambda F(t)$. 
+The conditional probability of death for each time interval is $p = 1 − \Delta F(t)$. 
 ```{r}
-### NOT YET IMPLEMENTED CORRECTLY ###
-lambdaF <- 0.5 # pulled out of nowhere
-p <- 1 - lambdaF
+p <- 1 - deltaF
 ```
-
 
 The survival status (with death coded as 1) is drawn according to a Bernoulli distribution $B(p)$. 
 
 ```{r}
-### NOT YET IMPLEMENTED CORRECTLY ###
+set.seed(1)
 R1 <- matrix(c(numeric(6000)), ncol = 6)
-for (i in 1:(t - 1)) {
-  died <- rbinom(N, 1, runif(1, 0, 1))
-  R1[, i] <- ifelse(died == 1, -60, 0)
-}
+set.seed(1)
+died <- apply(p, c(1, 2), function(p) rbinom(1, 1, p))
+
+
+# R1 <- apply(died, 1, function())
+# 
+# r <- matrix(numeric(6000), ncol = 6)
+# for (i in 1:(t - 1)) {
+#   r[, i] <- r2[, i] + r3[, i]
+# }
+# 
+# x <- died[4, ]
+# first <- which(x == 1)[1]
+# x[first:length(x)] <- 0
+# x[first] <- 1
+# x
 ```
+
+### Need to figure out how to deal with patient death re: rewards
