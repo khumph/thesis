@@ -150,7 +150,7 @@ lambda <- function(W, M, mu0, mu1, mu2) {
 where $\mu_0$, $\mu_1$, and $\mu_2$ are constant pre-specified parameters. In particular, assigning $\mu_1 = \mu_2 = 1$ indicates that we consider wellness and tumor size to have an equally weighted influence on the survival rate. 
 
 ```{r}
-mu0 <- -5 ### NO VALUE GIVEN IN TEXT
+mu0 <- -5 ### MADE UP. NO VALUE GIVEN IN TEXT
 mu1 <- 1
 mu2 <- 1
 ```
@@ -196,23 +196,34 @@ The survival status (with death coded as 1) is drawn according to a Bernoulli di
 
 ```{r}
 set.seed(1)
-R1 <- matrix(c(numeric(6000)), ncol = 6)
-set.seed(1)
 died <- apply(p, c(1, 2), function(p) rbinom(1, 1, p))
+r1 <- ifelse(died == 1, -60, 0) # this version adds a -60 whenever someone would have died
+```
 
-
-# R1 <- apply(died, 1, function())
-# 
-# r <- matrix(numeric(6000), ncol = 6)
-# for (i in 1:(t - 1)) {
-#   r[, i] <- r2[, i] + r3[, i]
-# }
-# 
-# x <- died[4, ]
-# first <- which(x == 1)[1]
-# x[first:length(x)] <- 0
-# x[first] <- 1
-# x
+```{r}
+r <- r1 + r2 + r3
 ```
 
 ### Need to figure out how to deal with patient death re: rewards
+
+```{r}
+# function to zero the rewards in row x after a patiend dies
+zeroR <- function(x) {
+  first <- which(x == 1)[1]
+  x[first:length(x)] <- 0
+  x[first] <- 1
+  return(x)
+}
+
+meow <- function(x, died, i) {
+  if (sum(died[i, ]) >= 1) {
+    first <- which(died[i, ] == 1)[1]
+    x[i, (first + 1):ncol(died)] <- 0
+    return(x[i, ])
+  } 
+  return(x[i, ])
+}
+meow(r, died, 1)
+```
+
+### should reward be 0 for last col?
