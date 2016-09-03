@@ -197,7 +197,7 @@ The survival status (with death coded as 1) is drawn according to a Bernoulli di
 ```{r}
 set.seed(1)
 died <- apply(p, c(1, 2), function(p) rbinom(1, 1, p))
-r1 <- ifelse(died == 1, -60, 0)
+r1 <- ifelse(died == 1, -60, 0) # this version adds a -60 whenever someone would have died
 ```
 
 ```{r}
@@ -214,7 +214,16 @@ zeroR <- function(x) {
   x[first] <- 1
   return(x)
 }
-```
 
+meow <- function(x, died, i) {
+  if (sum(died[i, ]) >= 1) {
+    first <- which(died[i, ] == 1)[1]
+    x[i, (first + 1):ncol(died)] <- 0
+    return(x[i, ])
+  } 
+  return(x[i, ])
+}
+meow(r, died, 1)
+```
 
 ### should reward be 0 for last col?
