@@ -170,6 +170,7 @@ $$
 \Delta\Lambda(t) &= \int_{t-1}^{t}\lambda(s)ds \\
 \Delta\Lambda(t) &= \int_{t-1}^{t}\exp(\mu_0 + \mu_1 W_s + \mu_2 M_s)ds \\
 \Delta F(t) = \exp[- \Delta\Lambda(t)] &= \exp\left[ - \int_{t-1}^{t}\exp(\mu_0 + \mu_1 W_s + \mu_2 M_s)ds \right]
+\end{align*}
 $$
 
 #### ??? In ths instance $\Delta\Lambda(t) = \int_{t-1}^{t}\lambda(s)ds = \lambda(t)$?
@@ -196,34 +197,37 @@ The survival status (with death coded as 1) is drawn according to a Bernoulli di
 
 ```{r}
 set.seed(1)
-died <- apply(p, c(1, 2), function(p) rbinom(1, 1, p))
-r1 <- ifelse(died == 1, -60, 0) # this version adds a -60 whenever someone would have died
+died <- apply(p, c(1, 2), function(p) rbinom(1, 1, p)) 
+r1 <- ifelse(died == 1, -60, 0) # everytime someone dies, reward is -60
 ```
 
 ```{r}
+# find total reward
 r <- r1 + r2 + r3
 ```
 
-### Need to figure out how to deal with patient death re: rewards
-
 ```{r}
-# function to zero the rewards in row x after a patiend dies
-zeroR <- function(x) {
-  first <- which(x == 1)[1]
-  x[first:length(x)] <- 0
-  x[first] <- 1
-  return(x)
-}
-
-meow <- function(x, died, i) {
+zeroR <- function(x, died = died, i) { 
+  # zeroR function zeros rewards after death of a patient
+  # inputs:
+  #   matrix of total rewards (r) 
+  #   matrix of deaths (died)
+  #   an index of a particular patient of interest (i)
+  # returns:
+  #   row vector of rewards for the patient with rewards following death = 0
   if (sum(died[i, ]) >= 1) {
+    # if patient died, identify first death
     first <- which(died[i, ] == 1)[1]
+    # set all rewards after death to zero
     x[i, (first + 1):ncol(died)] <- 0
+    # return new rewards with rewards after death = 0
     return(x[i, ])
   } 
+  # return orginal rewards if patient did not die
   return(x[i, ])
 }
-meow(r, died, 1)
-```
 
-### should reward be 0 for last col?
+for (i in 1:nrow(r)) {
+  r[i, ] <- zeroR(r, died, i)
+}
+```
