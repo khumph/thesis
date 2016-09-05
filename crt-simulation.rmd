@@ -18,7 +18,7 @@ N <- 1000
 
 with each simulated patient experiencing 6 months (T = 6) of treatment based on this ODE model. 
 ```{r}
-t <- 6
+Ttot <- 6
 ```
 
 The initial values $W_0$ and $M_0$ for each patient are generated from independent uniform (0, 2) deviates.
@@ -77,11 +77,11 @@ Mdot <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5) {
 ```
 
 where time (with month as unit) $t = 0, 1, \ldots, T − 1$, and $\dot{W}_t$ and $\dot{M}_t$ indicate transition functions. Note that these changing rates yield a piecewise linear model over time. Without loss of trade-off between toxicity and efficacy, the piecewise linear model can be implemented very easily. For simplicity, we here consider tumor size instead of number of tumor cells.  
-$M_t$ denotes the tumor size at time t.  
+$M_t$ denotes the tumor size at time $t$.  
 $W_t$ measures the negative part of wellness (toxicity).  
 $D_t$ denotes the chemotherapy agent dose level. 
 
-The indicator function term 1{Mt > 0} in (3) represents the feature that when the tumor size is absorbed at 0, the patient has been cured, and there is no future recurrence of the tumor.
+The indicator function term $1\{M_t > 0\}$ in (3) represents the feature that when the tumor size is absorbed at 0, the patient has been cured, and there is no future recurrence of the tumor.
 
 The value of other different parameters for the model are fixed as: $a_1 = 0.1$, $a_2 = 0.15$, $b_1 = 1.2$, $b_2 = 1.2$, $d_1 = 0.5$ and $d_2 = 0.5$. 
 
@@ -95,22 +95,19 @@ d2 <- 0.5
 ```
 
 ```{r}
-W <- matrix(c(W0, numeric(5000)), ncol = 6)
-M <- matrix(c(M0, numeric(5000)), ncol = 6)
+W <- matrix(c(W0, numeric(6000)), ncol = 7)
+M <- matrix(c(M0, numeric(6000)), ncol = 7)
 
-for (i in 1:(t - 1)) {
+for (i in 1:(Ttot)) {
   W[, i + 1] <- Wdot(M[, i], D[, i]) + W[, i]
   M[, i + 1] <- Mdot(M[, i], W[, i], D[, i]) + M[, i]
 }
-
-colnames(D) <- c(0:5)
-colnames(M) <- c(0:5)
-colnames(W) <- c(0:5)
-dat <- data.frame(D = D, M = M, W = W) %>% tbl_df()
 ```
 
 
 # 5.2. Q-function estimation and optimal regimen discovery
+
+### here the hazard and rewards occur at then end of each interval/beginning of subsequent interval, so the first column is the reward/hazard/death at the end of the first interval, not the initial reward/hazard (which is zero since rewards depend on a comparison between intervals and everyone was alive initially)
 
 We decompose this reward function $R_t$ into three parts: $R_{t, 1}(D_t, W_{t + 1}, M_{t + 1})$ due to survival status, $R_{t, 2}(W_t, D_t, W_{t + 1})$ due to wellness effects, and $R_{t, 3}(M_t, D_t, M_{t + 1})$ due to tumor size effects. It can be described by:
 
@@ -128,7 +125,7 @@ R3 <- function(M1, M0) {
 
 r2 <- matrix(c(numeric(6000)), ncol = 6)
 r3 <- matrix(c(numeric(6000)), ncol = 6)
-for (i in 1:(t - 1)) {
+for (i in 1:(Ttot)) {
   r2[, i] <- R2(W[, i + 1], W[, i])
   r3[, i] <- R3(M[, i + 1], M[, i])
 }
@@ -178,7 +175,7 @@ $$
 
 ```{r}
 lams <- matrix(numeric(6000), ncol = 6)
-for (i in 1:(t - 1)) {
+for (i in 1:(Ttot)) {
   lams[, i] <- lambda(W[, i + 1], M[, i + 1], mu0, mu1, mu2)
 }
 deltaF <- exp(-lams)
@@ -219,11 +216,11 @@ zeroR <- function(x, died = died, i) {
     # if patient died, identify first death
     first <- which(died[i, ] == 1)[1]
     # set all rewards after death to zero
-    x[i, (first + 1):ncol(died)] <- 0
+    if (first < ncol(died)) {x[i, (first + 1):ncol(died)] <- 0} 
     # return new rewards with rewards after death = 0
     return(x[i, ])
   } 
-  # return orginal rewards if patient did not die
+  # return orginal rewards if patient did not die before end
   return(x[i, ])
 }
 
@@ -231,3 +228,4 @@ for (i in 1:nrow(r)) {
   r[i, ] <- zeroR(r, died, i)
 }
 ```
+
