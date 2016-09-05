@@ -12,7 +12,7 @@ output: html_document
 	- $W_t$ - negative part of wellness (toxicity)
 - $R_t$ is reward function consisting of three parts:
   - $R_{t,1}(D_t, W_{t+1}, M_{t+1})$ due to survival status
-  - $R_{t,2}(W_t, D_t, W{t+1})$ due to wellness effects
+  - $R_{t,2}(W_t, D_t, W_{t+1})$ due to wellness effects
   - $R_{t,3}(M_t, D_t, M_{t+1})$ due to tumor size effects
 
 
@@ -89,10 +89,10 @@ new kind of clinical trial for life threatening diseases
 3. iterations: repeat until t = 0
       1. t <- t - 1
       2. estimate Q_t using SVR or ERT via:
-          $$ Q_t(s_t, a_t) = r_t + \max_{a_t + 1}\hat{Q}_{t+1}(s_{t+1}, a_{t+1}) + \epsilon $$
+          $$ Q_t(s_t, a_t) = r_t + \max_{a_{t+1}}\hat{Q}_{t+1}(s_{t+1}, a_{t+1}) + \epsilon $$
       3. choose plausible tuning parameters (e.g. via cross validation)
 4. compute optimal polices (\hat{\pi}_0, \ldots, \hat{\pi}_5) using sequencial estimates of Q_t, apply to phase III trial
-          $$ \hat{\pi}_{t}(s_t) = \argmax_{a_t}\hat{Q}_t(s_t, a_t; \hat{\theta}_t) $$
+          $$ \hat{\pi}_{t}(s_t) = \arg \max_{a_t}\hat{Q}_t(s_t, a_t; \hat{\theta}_t) $$
 
 ### Q learning
 
@@ -102,7 +102,7 @@ new kind of clinical trial for life threatening diseases
 
 #### Using SVR
 - Data centered and scaled before applying SVR, Gaussian kernel used, grid search (using exponentially growing sequences) and cross validation used to select tuning parameters $\zeta$ and $C$. 
-  - they used $C = 2^-5, 2^-3, \ldots 2^15$ and $\zeta = 2^-15, 2^-13, \ldots, 2^3$
+  - they used $C = 2^{-5}, 2^{-3}, \ldots 2^{15}$ and $\zeta = 2^{-15}, 2^{-13}, \ldots, 2^3$
   
 #### Using ERT
 
@@ -115,6 +115,7 @@ new kind of clinical trial for life threatening diseases
 Based on Q estimates from before, $\{\hat{Q}_5, \ldots, \hat{Q}_0\}$, optimal actions (as function of state vars) estimated by maximizing over dose (action)
 
 Generated a virtual phase III trial to estimate how above estimated treatment polices performed:
+
 - 11 treatments generated from optimal treatment regime each with 200 patients
 - 10 fixed dose levels ranging from 0.1 to 1.0 (increments of 0.1) each also with 200 patients
 inital values for state vars ($M_0$ and $W_0$) chosen from same uniform distributions used above
