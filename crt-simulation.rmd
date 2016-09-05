@@ -229,3 +229,30 @@ for (i in 1:nrow(r)) {
 }
 ```
 
+Overall, by letting $\gamma = 1$ (we would like to fully consider maximizing rewards in the long run), the one-step Q-learning with recursive form is utilized, with $Q_t(S_t, A_t)$ predicting
+
+$$
+\hat{R}_t = R_t + \max_{a_{t+1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
+$$
+
+where $R_t = R_{t, 1}(D_t, W_{t + 1}, M_{t + 1}) + R_{t, 2}(W_t, D_t, W_{t + 1}) + R_{t, 3}(M_t, D_t, M_{t + 1}), t = 0, \ldots, 5$. Note note that $\hat{r}_t$ mentioned previously is defined as a realization of $R_t$. This recursive estimation process is called SARSA (state, action, reward, next state, next action) in the reinforcement learning literature.
+
+To obtain the estimator $\hat{Q}_t$, we apply SVR and ERT respectively for fitting $Q_t$ backward, and save the results as $\{\hat{Q}_5, \hat{Q}_4, \ldots, \hat{Q}_0\}$. 
+
+Figure 2 illustrates the treatment plan and relevant Q-function estimation procedures. 
+
+![](fig2.png)
+
+```{r}
+colnames(D) <- c(0:5)
+colnames(M) <- c(0:6)
+colnames(W) <- c(0:6)
+colnames(r) <- c(0:5)
+dat <- data.frame(D = D, M = M, W = W, r = r) %>% tbl_df()
+```
+
+
+```{r}
+
+```
+
