@@ -1,0 +1,121 @@
+---
+title: "Reinforcement learning design for cancer clinical trials Notes"
+output: html_document
+---
+
+
+# Variables
+- $D_t$ is dose level @ time $t$
+- $A_t$ is action variable ($D_t$)
+- $S_t$ is state variable consisting of 
+	- $M_t$ - tumor size
+	- $W_t$ - negative part of wellness (toxicity)
+- $R_t$ is reward function consisting of three parts:
+  - $R_{t,1}(D_t, W_{t+1}, M_{t+1})$ due to survival status
+  - $R_{t,2}(W_t, D_t, W{t+1})$ due to wellness effects
+  - $R_{t,3}(M_t, D_t, M_{t+1})$ due to tumor size effects
+
+
+
+# 1. Introduction
+
+Standard method for treatment discovery:
+
+- lab/basic science -> animal models -> human trials -> market
+  - problem: not many treatments make it to human trials and only about 10% of those are effective enough to be marketed
+
+Regimes for advanced cancers:
+  - single agent in combination with platinum-based compound
+  - consist of multiple stages
+    - more lines given if tolerable by patient
+
+
+
+
+
+# 4. Clinical Reinforcement Trial
+
+new kind of clinical trial for life threatening diseases
+
+## Design consists of:
+1. a "reasonably small" set of decision times
+  - either specific time points from trial onset or decision points (at the beginning of each new line of cancer treatment)
+  
+- In simulation: 6 time points at spaced one month apart
+
+2. a set of possible treatments to randomize at decision time
+	- can be a continuum or a finite set
+		- if set is finite, design reduces to SMART design
+	- can include restrictions (which may be functions of covariates)
+	
+- In simulation: a continuum of dose levels of a single drug (restricted between 0 and 2, and > 0 at t = 0)
+
+3. a utility function assessed at each decision time
+	- contains an appropriately weighted combination of outcomes available at each interval between decision times and at the end of the final treatment interval.
+	
+- In simulation: reward function penalizes heavily for patient death, moderately for patient being cured, and a little for improvements in toxicity ($W_t$) and tumor mass ($M_t$)
+	
+4. may need to develop virtual patient model 
+
+- In simulation: virtual patient/chemotherapy model developed
+
+## Conduct of trial:
+
+1. patients recruited and randomized to treatment (according to protocol restrictions at each time point)
+
+2. outcome measures used to compute patient state and utility are obtained (for each patient at each time point)
+
+3. repeat through end of trial
+
+4. Q-learning applied at each time point (Q funct can differ from time point to time point) to determine optimal treatment rule (as funct of patient vars/biomarkers).
+
+> yields individualized and time varying treatment rule superior to constant dose scheme
+
+
+
+
+### Virtual patient/chemotherapy model captures:
+
+1. tumors grow in absence of chemo
+2. chemo causes toxicity (negative effects on wellness)
+3. chemo kills tumors
+4. interaction between tumor and wellness (as wellness decreases, tumor growth increases)
+
+# 5.2. Q-function estimation and optimal regimen discovery
+
+# Simulation in sum
+1. inputs: generate training data consisting of states ($M_t$, $W_t$), actions ($D_t$) rewards ($r_t$)
+2. initialization: let t = T + 1 and $\hat{Q}_{T+1}$ be a function that equals zero on $S_t \times A_t$
+3. iterations: repeat until t = 0
+      1. t <- t - 1
+      2. estimate Q_t using SVR or ERT via:
+          $$ Q_t(s_t, a_t) = r_t + \max_{a_t + 1}\hat{Q}_{t+1}(s_{t+1}, a_{t+1}) + \epsilon $$
+      3. choose plausible tuning parameters (e.g. via cross validation)
+4. compute optimal polices (\hat{\pi}_0, \ldots, \hat{\pi}_5) using sequencial estimates of Q_t, apply to phase III trial
+          $$ \hat{\pi}_{t}(s_t) = \argmax_{a_t}\hat{Q}_t(s_t, a_t; \hat{\theta}_t) $$
+
+### Q learning
+
+- one-step Q-learning with recursive form utilized
+
+- to obtain the estimator $\hat{Q}_t$, apply SVR and ERT for fitting $Q_t$ backward ($t = 5, \ldots, 0$), and save results $\{\hat{Q}_5, \ldots, \hat{Q}_0\}$. 
+
+#### Using SVR
+- Data centered and scaled before applying SVR, Gaussian kernel used, grid search (using exponentially growing sequences) and cross validation used to select tuning parameters $\zeta$ and $C$. 
+  - they used $C = 2^-5, 2^-3, \ldots 2^15$ and $\zeta = 2^-15, 2^-13, \ldots, 2^3$
+  
+#### Using ERT
+
+- Geurts suggest default value of $K$ should be equal to the number of attributes in regression problem 
+  - in our case, dimension of state plus dimension of action vars.
+  - $G = 50$, $n_{min} = 2$
+  
+# 
+
+Based on Q estimates from before, $\{\hat{Q}_5, \ldots, \hat{Q}_0\}$, optimal actions (as function of state vars) estimated by maximizing over dose (action)
+
+Generated a virtual phase III trial to estimate how above estimated treatment polices performed:
+- 11 treatments generated from optimal treatment regime each with 200 patients
+- 10 fixed dose levels ranging from 0.1 to 1.0 (increments of 0.1) each also with 200 patients
+inital values for state vars ($M_0$ and $W_0$) chosen from same uniform distributions used above
+
