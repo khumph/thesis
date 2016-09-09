@@ -6,16 +6,8 @@ What does equalling zero on equals zero on $\bold{S}_t \times \bold{A}_t$ mean?
 \
 What does the \hat{\theta}_t in the optimal polices equation represent? 
 
-The parameter estimators for the $t$th Q-function
 
-
-
-
-
-
-
-
-\
+---
 What is reinforcement learning?
 
 Area of machine learning more focused on goal-directed learning from interaction than are other approaches to machine learning.
@@ -36,19 +28,19 @@ a computational approach to learning from interaction. Rather than directly theo
 
 
 
-\
+---
 stochastic sequential decision processes 
 
 reinforcement learning methods
 
-\
+---
 reinforcement learning method
 
 any method that is suited to solving this problem (Finite Markov Decision Processes) we consider to be a reinforcement learning method
 
 
 
-\
+---
 What is Q-learning?
 
 Doesn't estimate value function directly, estimates a Q-function instead.
@@ -56,83 +48,80 @@ requires no prior knowledge, is exploration insensitive and easy to implement, a
 
 once the Q functions have been estimated, it is only necessary to know the state to determine the best action.
 
-\
+---
 What is a Q-function?
 
-\
+---
 What does it mean that Q-learning is "model free"?
 
-\
+---
 What does it mean that Q-learning is "doesn't require prior knowledge"?
 
-\
+---
 What does it mean that Q-learning is "exploration insensitive"?
 
-\
+---
 What does it mean that Q-learning is an "off policy" TD-learning method?
 
-\
+---
 Why does Q-learning require less memory and less computation?
 
-\
+---
 Why is Q-learning easy to implement?
 
-\
-What is one-step Q-learning with recursive form?
+---
+Why in Q-learning is it only necessary to know the state to determine the best action, once the Q functions have been estimated.
 
-\
-Why can (Q-learning) such a model-free method be used to find optimal strategies from the unknown system in the setting where we don't have any information about the transition function or the probability distribution of the random variables?
+---
+How does the Q-function optimize rewards without explicitly referencing their form??
 
-\
-Why is it only necessary to know the state to determine the best action once the Q functions have been estimated?
-
-\
+---
 What is Temporal-difference learning (TD-learning)?
 
-\
+---
 Why can TD-learning find optimal polices without any knowledge of the dynamic model?
 
-\
+---
 What is the "eligibility traces" problem?
 
-\
+---
 What is an adaptive design
 
-\
+---
 What is a dynamic treatment regime?
 
-\
+---
 What are extremely randomized trees?
 
-\
+---
 What are multi-stage decision problems?
 
-\
+---
 What is support vector regression?
 
 
-\
+---
 What is the Bellman optimality equation?
 
-\
+---
 Why is it not possible to directly compute an optimal policy by just solving the Bellman optimality equation (even with complete and accurate model of the environment's dynamics)?
 
-\
+---
 What is a value function?
 
-\
+---
 What is dynamic programming
 
-\
+---
 What are Monte Carlo methods?
 
-\
+---
 What is a Markov decision process (MDP)?
 
-\
-What are discounted infinite horizon Markov decision processes?
+---
+What are discounted infinite horizon Markov descision processes?
 
-\
+---
 What is a Clinical Reinforcement trial?
 
 new kind of clinical trial for life threatening diseases
@@ -151,7 +140,7 @@ Design consists of:
 may need to develop virtual patient model for design 
 
 
-\
+---
 How would one conduct a Clinical Reinforcement trial?
 
 1. patients recruited and randomized to the treatment set (according to protocol restrictions at each time point)
@@ -165,10 +154,10 @@ How would one conduct a Clinical Reinforcement trial?
 > yields individualized and time varying treatment rule superior to constant dose scheme
 
 
-\
+---
 What is a SMART design?
 	
-\
-transition functions
+---
+What are transition functions?
 
 A function from (state/ input symbol) to state describing what state to move to on receiving a given input in a given state.
