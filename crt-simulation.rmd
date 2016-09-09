@@ -25,11 +25,13 @@ The initial values $W_0$ and $M_0$ for each patient are generated from independe
 
 $W_0$ indicates the initial value of patient's wellness
 ```{r}
+set.seed(1)
 W0 <- runif(N, min = 0, max = 2)
 ```
 
 $M_0$ indicates the value of tumor size when the patient is at the beginning of the study
 ```{r}
+set.seed(1)
 M0 <- runif(N, min = 0, max = 2)
 ```
 
@@ -41,6 +43,7 @@ D0 <- runif(N, min = 0.5, max = 1)
 
 moreover, $D_1, \ldots, D_5$ are drawn according to a uniform distribution in the interval (0, 1). 
 ```{r}
+set.seed(1)
 D <- replicate(5, runif(N, min = 0, max = 1))
 
 D <- cbind(D0, D)
@@ -57,7 +60,7 @@ Thus, the model we present must exhibit:
 To obtain data which satisfy these requirements, we propose using a system of ordinary difference equations (ODE) modeled as follows:
 
 $$
-\dot{W}_t = a_1 (M_t \lor M_0) + b_1(D_t - d_1),
+\dot{W}_t = a_1 (M_t \lor M_0) + b_1(D_t - d_1)
 $$
 
 ```{r}
@@ -75,6 +78,7 @@ Mdot <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5) {
   (a2 * W - b2 * (D - d2)) * ifelse(M > 0, 1, 0)
 }
 ```
+
 
 where time (with month as unit) $t = 0, 1, \ldots, T − 1$, and $\dot{W}_t$ and $\dot{M}_t$ indicate transition functions. Note that these changing rates yield a piecewise linear model over time. Without loss of trade-off between toxicity and efficacy, the piecewise linear model can be implemented very easily. For simplicity, we here consider tumor size instead of number of tumor cells.  
 $M_t$ denotes the tumor size at time $t$.  
@@ -195,11 +199,10 @@ The survival status (with death coded as 1) is drawn according to a Bernoulli di
 ```{r}
 set.seed(1)
 died <- apply(p, c(1, 2), function(p) rbinom(1, 1, p)) 
-r1 <- ifelse(died == 1, -60, 0) # everytime someone dies, reward is -60
+r1 <- ifelse(died == 1, -60, 0)
 ```
 
 ```{r}
-# find total reward
 r <- r1 + r2 + r3
 ```
 
@@ -213,14 +216,10 @@ zeroR <- function(x, died = died, i) {
   # returns:
   #   row vector of rewards for the patient with rewards following death = 0
   if (sum(died[i, ]) >= 1) {
-    # if patient died, identify first death
     first <- which(died[i, ] == 1)[1]
-    # set all rewards after death to zero
     if (first < ncol(died)) {x[i, (first + 1):ncol(died)] <- 0} 
-    # return new rewards with rewards after death = 0
     return(x[i, ])
   } 
-  # return orginal rewards if patient did not die before end
   return(x[i, ])
 }
 
@@ -244,15 +243,26 @@ Figure 2 illustrates the treatment plan and relevant Q-function estimation proce
 ![](fig2.png)
 
 ```{r}
-colnames(D) <- c(0:5)
-colnames(M) <- c(0:6)
-colnames(W) <- c(0:6)
-colnames(r) <- c(0:5)
-dat <- data.frame(D = D, M = M, W = W, r = r) %>% tbl_df()
+X <- list()
+for (i in 1:(ncol(M) - 1)) {
+  X[[i]] <- cbind(M[, i], W[, i])
+}
+D_df <- data.frame(D)
+r_df <- data.frame(r)
+```
+
+```{r}
+# install.packages("DTRlearn")
+library(DTRlearn)
+Q <- Qlearning(X = X, AA = D_df, RR = r_df, K = 6, pentype = "lasso", m = 4)
+plot.qlearn(Q[[1]])
+preds <- predict.qlearn(Q[[1]], X[[1]])
 ```
 
 
 ```{r}
+Q5 <- lm(r.5 ~ D.5, data = dat)
 
+ggplot(dat, aes(x = D.5, y = r.5)) + geom_point() + geom_smooth()
 ```
 
