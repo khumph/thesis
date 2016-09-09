@@ -1,0 +1,154 @@
+---
+What is reinforcement learning?
+
+Area of machine learning more focused on goal-directed learning from interaction than are other approaches to machine learning.
+
+Basic idea is to capture the most important aspects of the real problem facing a learning agent interacting with its environment to achieve a goal
+
+basic process involves: 
+1. trying a sequence of actions, 
+	- learner is not told which actions to take, but instead must discover which actions yield the most reward by trying them out.
+2. recording the consequences (reward) of those actions,
+3. statistically estimating the relationship between actions and consequences,
+	- If response to action is positive, it tends to increase the probability that the response will occur again in the same situation (reinforcement).
+4. and then choosing the action that results in the most desirable consequence (maximize total reward)
+
+
+
+a computational approach to learning from interaction. Rather than directly theorizing about how people or animals learn, we explore idealized learning situations and evaluate the effectiveness of various learning methods. (the perspective of an artificial intelligence researcher or engineer)
+
+
+
+---
+stochastic sequential decision processes 
+
+reinforcement learning methods
+
+---
+reinforcement learning method
+
+any method that is suited to solving this problem (Finite Markov Decision Processes) we consider to be a reinforcement learning method
+
+
+
+---
+What is Q-learning?
+
+Doesn't estimate value function directly, estimates a Q-function instead.
+requires no prior knowledge, is exploration insensitive and easy to implement, and is so far one of the most popular and seems to be the most effective model-free algorithm for learning from delayed reinforcement
+
+once the Q functions have been estimated, it is only necessary to know the state to determine the best action.
+
+---
+What is a Q-function?
+
+---
+What does it mean that Q-learning is "model free"?
+
+---
+What does it mean that Q-learning is "doesn't require prior knowledge"?
+
+---
+What does it mean that Q-learning is "exploration insensitive"?
+
+---
+What does it mean that Q-learning is an "off policy" TD-learning method?
+
+---
+Why does Q-learning require less memory and less computation?
+
+---
+Why is Q-learning easy to implement?
+
+---
+Why in Q-learning is it only necessary to know the state to determine the best action, once the Q functions have been estimated.
+
+---
+How does the Q-function optimize rewards without explicitly referencing their form??
+
+---
+What is Temporal-difference learning (TD-learning)?
+
+---
+Why can TD-learning find optimal polices without any knowledge of the dynamic model?
+
+---
+What is the "eligibility traces" problem?
+
+---
+What is an adaptive design
+
+---
+What is a dynamic treatment regime?
+
+---
+What are extremely randomized trees?
+
+---
+What are multi-stage decision problems?
+
+---
+What is support vector regression?
+
+
+---
+What is the Bellman optimality equation?
+
+---
+Why is it not possible to directly compute an optimal policy by just solving the Bellman optimality equation (even with complete and accurate model of the environment's dynamics)?
+
+---
+What is a value function?
+
+---
+What is dynamic programming
+
+---
+What are Monte Carlo methods?
+
+---
+What is a Markov decision process (MDP)?
+
+---
+What are discounted infinite horizon Markov descision processes?
+
+---
+What is a Clinical Reinforcement trial?
+
+new kind of clinical trial for life threatening diseases
+
+Design consists of:
+1. a finite, reasonably small set of decision times
+	- could be either specific time points measured from trial onset or decision points in the treatment process such as the starting times of each new line of cancer treatment. 
+
+2. a set of possible treatments randomize for each decision time
+	- can be a continuum or a finite set
+	- can include restrictions (which may be functions covariates)
+
+3. a utility function is identified which can be assessed at each time point
+	- contains an appropriately weighted combination of outcomes available at each interval between decision times and at the end of the final treatment interval.
+	
+may need to develop virtual patient model for design 
+
+
+---
+How would one conduct a Clinical Reinforcement trial?
+
+1. patients recruited and randomized to the treatment set (according to protocol restrictions at each time point)
+
+2. outcome measures used to compute patient state and utility are obtained (for each patient at each time point)
+
+3. repeat through end of trial
+
+4. Q-learning applied (with SVR or ERT) at each time point (Q function can differ from time point to time point) to determine optimal treatment rule (as function of patient vars/biomarkers).
+
+> yields individualized and time varying treatment rule superior to constant dose scheme
+
+
+---
+What is a SMART design?
+	
+---
+What are transition functions?
+
+A function from (state/ input symbol) to state describing what state to move to on receiving a given input in a given state.
