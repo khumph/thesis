@@ -9,7 +9,7 @@ A <- ifelse(D[, 6] >= 0.5, 1, -1) # dichotimize treatment so it plays nice with 
 qlearn <- Qlearning_Single(H, A, R, pentype = "lasso", m = 4)
 
 # Complete funciton (comments mine)
-Qlearn_Single <- function (H, A, R, pentype = "lasso", m = 4) 
+Qlearn_Single <- function(H, A, R, pentype = "lasso", m = 4) 
 {
   # H is matrix of state variables
   # A is a vector of actions
@@ -26,7 +26,7 @@ Qlearn_Single <- function (H, A, R, pentype = "lasso", m = 4)
   
   # estimate coefficients for the above
   if (pentype == "lasso") {
-    cvfit = cv.glmnet(X, R, nfolds = 4)
+    cvfit = cv.glmnet(X, R, nfolds = m)
     co = as.matrix(predict(cvfit, s = "lambda.min", type = "coeff"))
   }
   else if (pentype == "LSE") {

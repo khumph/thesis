@@ -12,11 +12,13 @@ p_load(dplyr)
 p 11
 
 We generate a simulated clinical reinforcement trial with N = 1000 patients (replicates)
+
 ```{r}
 N <- 1000
 ```
 
 with each simulated patient experiencing 6 months (T = 6) of treatment based on this ODE model. 
+
 ```{r}
 Ttot <- 6
 ```
@@ -24,12 +26,14 @@ Ttot <- 6
 The initial values $W_0$ and $M_0$ for each patient are generated from independent uniform (0, 2) deviates.
 
 $W_0$ indicates the initial value of patient's wellness
+
 ```{r}
 set.seed(1)
 W0 <- runif(N, min = 0, max = 2)
 ```
 
 $M_0$ indicates the value of tumor size when the patient is at the beginning of the study
+
 ```{r}
 set.seed(1)
 M0 <- runif(N, min = 0, max = 2)
@@ -42,6 +46,7 @@ D0 <- runif(N, min = 0.5, max = 1)
 ```
 
 moreover, $D_1, \ldots, D_5$ are drawn according to a uniform distribution in the interval (0, 1). 
+
 ```{r}
 set.seed(1)
 D <- replicate(5, runif(N, min = 0, max = 1))
@@ -111,7 +116,7 @@ for (i in 1:(Ttot)) {
 
 # 5.2. Q-function estimation and optimal regimen discovery
 
-### here the hazard and rewards occur at then end of each interval/beginning of subsequent interval, so the first column is the reward/hazard/death at the end of the first interval, not the initial reward/hazard (which is zero since rewards depend on a comparison between intervals and everyone was alive initially)
+**here the hazard and rewards occur at then end of each interval/beginning of subsequent interval, so the first column is the reward/hazard/death at the end of the first interval, not the initial reward/hazard (which is zero since rewards depend on a comparison between intervals and everyone was alive initially)**
 
 We decompose this reward function $R_t$ into three parts: $R_{t, 1}(D_t, W_{t + 1}, M_{t + 1})$ due to survival status, $R_{t, 2}(W_t, D_t, W_{t + 1})$ due to wellness effects, and $R_{t, 3}(M_t, D_t, M_{t + 1})$ due to tumor size effects. It can be described by:
 
@@ -151,7 +156,7 @@ lambda <- function(W, M, mu0, mu1, mu2) {
 where $\mu_0$, $\mu_1$, and $\mu_2$ are constant pre-specified parameters. In particular, assigning $\mu_1 = \mu_2 = 1$ indicates that we consider wellness and tumor size to have an equally weighted influence on the survival rate. 
 
 ```{r}
-mu0 <- -5 ### MADE UP. NO VALUE GIVEN IN TEXT
+mu0 <- -7 ### MADE UP. NO VALUE GIVEN IN TEXT
 mu1 <- 1
 mu2 <- 1
 ```
@@ -174,9 +179,6 @@ $$
 \end{align*}
 $$
 
-#### ??? In ths instance $\Delta\Lambda(t) = \int_{t-1}^{t}\lambda(s)ds = \lambda(t)$?
-#### ??? Should $W_s$ and $M_s$ be treated as constants over the interval?
-
 ```{r}
 lams <- matrix(numeric(6000), ncol = 6)
 for (i in 1:(Ttot)) {
@@ -186,8 +188,6 @@ deltaF <- exp(-lams)
 ```
 
 The reason the term $R_{t,1}(D_t, W_{t+1}, M_{t+1})$ is expressed as a function of $W_{t+1}$ and $M_{t+1}$ is that the hazard function is only determined by the states at the end of each time interval. 
-
-#### ??? How does this follow?
 
 The conditional probability of death for each time interval is $p = 1 − \Delta F(t)$. 
 ```{r}
@@ -206,8 +206,8 @@ r1 <- ifelse(died == 1, -60, 0)
 r <- r1 + r2 + r3
 ```
 
-```{r}
-zeroR <- function(x, died = died, i) { 
+```{r, zero-rewards}
+zeroRewards <- function(x, died = died, i) { 
   # zeroR function zeros rewards after death of a patient
   # inputs:
   #   matrix of total rewards (r) 
@@ -224,7 +224,7 @@ zeroR <- function(x, died = died, i) {
 }
 
 for (i in 1:nrow(r)) {
-  r[i, ] <- zeroR(r, died, i)
+  r[i, ] <- zeroRewards(r, died, i)
 }
 ```
 
@@ -242,27 +242,11 @@ Figure 2 illustrates the treatment plan and relevant Q-function estimation proce
 
 ![](fig2.png)
 
-```{r}
-X <- list()
-for (i in 1:(ncol(M) - 1)) {
-  X[[i]] <- cbind(M[, i], W[, i])
-}
-D_df <- data.frame(D)
-r_df <- data.frame(r)
-```
-
-```{r}
-# install.packages("DTRlearn")
-library(DTRlearn)
-Q <- Qlearning(X = X, AA = D_df, RR = r_df, K = 6, pentype = "lasso", m = 4)
-plot.qlearn(Q[[1]])
-preds <- predict.qlearn(Q[[1]], X[[1]])
-```
-
-
-```{r}
-Q5 <- lm(r.5 ~ D.5, data = dat)
-
-ggplot(dat, aes(x = D.5, y = r.5)) + geom_point() + geom_smooth()
+```{r make-df}
+colnames(D) <- c(0:5)
+colnames(M) <- c(0:6)
+colnames(W) <- c(0:6)
+colnames(r) <- c(0:5)
+dat <- data.frame(D = D, M = M, W = W, r = r) %>% tbl_df()
 ```
 
