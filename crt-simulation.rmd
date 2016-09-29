@@ -5,7 +5,7 @@ output: html_document
 
 ```{r}
 library(pacman)
-p_load(dplyr)
+p_load(tidyverse)
 ```
 
 # 5.1. Simple chemotherapy mathematical model
@@ -247,6 +247,7 @@ colnames(D) <- c(0:5)
 colnames(M) <- c(0:6)
 colnames(W) <- c(0:6)
 colnames(r) <- c(0:5)
-dat <- data.frame(D = D, M = M, W = W, r = r) %>% tbl_df()
+dat <- data.frame(D = D, M = M, W = W, r = r) %>% tbl_df() %>%
+  rownames_to_column(var = "ID") %>% mutate(ID = factor(ID))
 ```
 
