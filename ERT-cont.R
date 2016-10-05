@@ -1,7 +1,8 @@
 # Run all chunks in crt-simulation.rmd
-
-# single step Q-learning with ERT and continuous treatment ---------------------
 library(caret)
+library(rms)
+
+# fit ERT model ---------------------------------------------------------------
 
 # Tuning parameters:
 #   mtry (# Randomly Selected Predictors) - also K ?
@@ -19,11 +20,50 @@ mod_ert <- train(
   ntree = 50, # G in CRT paper
   nodesize = 2 # nmin in CRT paper
 )
-mod <- mod_ert
-plot(mod_ert)
-mod$finalModel
+# mod <- mod_ert
+# plot(mod_ert)
+# mod$finalModel
 
-preds <- predict(mod)
+
+# fit LASSO model ---------------------------------------------------------
+
+tc <- trainControl(method = "cv",
+                   number = 4
+)
+
+grid <- expand.grid(alpha = 1, # for lasso
+                    lambda = seq(.0000001, 1, length.out = 100))
+
+set.seed(1)
+mod_lasso <- train(
+  r.5 ~ M.5 + D.5 + W.5 + M.5 * D.5 + W.5 * D.5,
+  data = dat,
+  method = 'glmnet',
+  tuneGrid = grid,
+  trControl = tc
+)
+# mod <- mod_lasso
+
+
+# Fit OLS with RCS --------------------------------------------------------
+
+mod_rcs <- ols(r.5 ~ rcs(M.5) + rcs(D.5) + rcs(W.5) +
+                 rcs(M.5) %ia% rcs(D.5) + rcs(W.5) %ia% rcs(D.5),
+               data = dat)
+mod <- mod_rcs
+
+ggplot(dat, aes(x = predict(mod), y = residuals(mod, "ordinary"))) + geom_point()
+
+ggplot(dat, aes(x = M.5, y = r.5)) + geom_point() +
+         geom_point(aes(x = M.5, y = predict(mod)), color = "blue")
+
+ggplot(dat, aes(x = W.5, y = r.5)) + geom_point() +
+  geom_point(aes(x = W.5, y = predict(mod)), color = "blue")
+
+ggplot(dat, aes(x = predict(mod), y = r.5)) + geom_point()
+
+
+# Get predictions, pick best --------------------------------------------------
 
 x <- seq(0, 1, by = 0.01)
 
@@ -45,18 +85,18 @@ preds <- map(x,  get_preds) %>%
 t5 <- dat %>% select(M.5, W.5) %>% bind_cols(preds) %>%
   gather(dose, pred, one_of(x_char)) %>% 
   mutate(dose = as.numeric(dose)) %>% 
-  group_by(M.5, W.5) %>% nest() %>%
+  group_by(M.5, W.5) %>% nest() %>% 
   bind_cols(
-    map(t5$data, ~ col_summ(select(., pred), max)) %>%
+    map(.$data, ~ col_summ(select(., pred), max)) %>%
       as_vector() %>% tbl_df() %>% set_names(nm = "max")
   ) %>%
   bind_cols(
-    map(t5$data, ~ col_summ(select(., pred), ~ (which.max(.) - 1)/100)) %>%
+    map(.$data, ~ col_summ(select(., pred), ~ (which.max(.) - 1)/100)) %>%
       as_vector() %>% tbl_df() %>% set_names(nm = "optim_dose")
   )
 
 names(t5$data) <- dat$ID
 
-ggplot(t5$data$`1`, aes(x = dose, y = pred)) + geom_line()
+ggplot(t5$data$`470`, aes(x = dose, y = pred)) + geom_point()
 
 # I chose the max, we could get more sophisticated in how to pick which is "best"

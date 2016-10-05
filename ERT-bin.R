@@ -85,7 +85,9 @@ preds_trt <- predict(mod, all_trt)
 preds_cntrl <- predict(mod, all_cntrl)
 
 best_lasso <- data_frame(preds_trt, preds_cntrl) %>%
-  mutate(best = as.numeric(preds_trt > preds_cntrl))
+  mutate(
+    best = as.numeric(preds_trt > preds_cntrl)
+    ) %>% cbind(dat_bin) %>% tbl_df()
 
 best_lasso
 

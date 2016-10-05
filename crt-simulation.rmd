@@ -42,6 +42,7 @@ M0 <- runif(N, min = 0, max = 2)
 The treatment set consists of doses of a chemotherapy agent with an acceptable dose range of [0, 1], where the value 1 corresponds to the maximum acceptable dose. The values chosen for chemotherapy drug level $D_0$ are simulated from the uniform (0.5, 1) distribution,
 
 ```{r}
+set.seed(1)
 D0 <- runif(N, min = 0.5, max = 1)
 ```
 
@@ -64,9 +65,9 @@ Thus, the model we present must exhibit:
 
 To obtain data which satisfy these requirements, we propose using a system of ordinary difference equations (ODE) modeled as follows:
 
-$$
+\[
 \dot{W}_t = a_1 (M_t \lor M_0) + b_1(D_t - d_1)
-$$
+\]
 
 ```{r}
 Wdot <- function(M, D, a1 = 0.1, b1 = 1.2, d1 = 0.5) { 
@@ -74,9 +75,9 @@ Wdot <- function(M, D, a1 = 0.1, b1 = 1.2, d1 = 0.5) {
 }
 ```
 
-$$
+\[
 \dot{M}_t = [a_2 (W_t \lor W_0) - b_2(D_t - d_2)] \times 1\{M_t > 0\},
-$$
+\]
 
 ```{r}
 Mdot <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5) { 
@@ -108,8 +109,9 @@ W <- matrix(c(W0, numeric(6000)), ncol = 7)
 M <- matrix(c(M0, numeric(6000)), ncol = 7)
 
 for (i in 1:(Ttot)) {
+  M_next <- ifelse(M[, i] == 0, 0, Wdot(M[, i], D[, i]) + W[, i])
   W[, i + 1] <- Wdot(M[, i], D[, i]) + W[, i]
-  M[, i + 1] <- Mdot(M[, i], W[, i], D[, i]) + M[, i]
+  M[, i + 1] <- ifelse(M_next <= 0, 0, M_next)
 }
 ```
 
@@ -127,9 +129,12 @@ R2 <- function(W1, W0) {
 }
 
 R3 <- function(M1, M0) {
-  ifelse(M1 == 0, 15,
-         ifelse(M1 - M0 <= -0.5, 5,
-                ifelse(M1 - M0 >= 0.5, -5, 0)))
+  ifelse(M1 == 0 & M0 == 0, 0,
+         ifelse(M1 == 0, 15,
+                ifelse(M1 - M0 <= -0.5, 5,
+                       ifelse(M1 - M0 >= 0.5, -5, 0)))
+  )
+
 }
 
 r2 <- matrix(c(numeric(6000)), ncol = 6)
@@ -249,5 +254,20 @@ colnames(W) <- c(0:6)
 colnames(r) <- c(0:5)
 dat <- data.frame(D = D, M = M, W = W, r = r) %>% tbl_df() %>%
   rownames_to_column(var = "ID") %>% mutate(ID = factor(ID))
+
+dat_long <- dat %>%
+  gather(key, value, -ID) %>%
+  extract(col = key,
+          into = c("var", "month"),
+          regex = "(.)\\.(.)") %>%
+  spread(var, value) %>%
+  select(
+    ID,
+    month,
+    dose = D,
+    tumor_mass = M,
+    toxicity = W,
+    reward = r
+  )
 ```
 
