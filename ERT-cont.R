@@ -45,17 +45,22 @@ mod_lasso <- train(
 # mod <- mod_lasso
 
 
-# Fit OLS with RCS --------------------------------------------------------
+# Single step Q-learning - OLS with RCS -----------------------------------
 
-mod_rcs <- ols(r.5 ~ rcs(M.5) + rcs(D.5) + rcs(W.5) +
-                 rcs(M.5) %ia% rcs(D.5) + rcs(W.5) %ia% rcs(D.5),
-               data = dat)
+mod_rcs <- ols(
+  r.5 ~ rcs(M.5) + rcs(D.5) + rcs(W.5) +
+    rcs(M.5) %ia% rcs(D.5) + rcs(W.5) %ia% rcs(D.5),
+  x = T,
+  y = T,
+  data = dat
+)
 mod <- mod_rcs
 
-ggplot(dat, aes(x = predict(mod), y = residuals(mod, "ordinary"))) + geom_point()
+# residual plot
+ggplot(dat, aes(x = predict(mod), y = residuals(mod, "dffits"))) + geom_point()
 
 ggplot(dat, aes(x = M.5, y = r.5)) + geom_point() +
-         geom_point(aes(x = M.5, y = predict(mod)), color = "blue")
+  geom_point(aes(x = M.5, y = predict(mod)), color = "blue")
 
 ggplot(dat, aes(x = W.5, y = r.5)) + geom_point() +
   geom_point(aes(x = W.5, y = predict(mod)), color = "blue")
@@ -63,7 +68,7 @@ ggplot(dat, aes(x = W.5, y = r.5)) + geom_point() +
 ggplot(dat, aes(x = predict(mod), y = r.5)) + geom_point()
 
 
-# Get predictions, pick best --------------------------------------------------
+## Get predictions, pick best
 
 x <- seq(0, 1, by = 0.01)
 
@@ -82,14 +87,16 @@ x_char <- as.character(x)
 preds <- map(x,  get_preds) %>%
   set_names(x_char) %>% tbl_df()
 
-t5 <- dat %>% select(M.5, W.5) %>% bind_cols(preds) %>%
-  gather(dose, pred, one_of(x_char)) %>% 
+t5 <- dat %>% select(ID, M.5, W.5) %>% bind_cols(preds) %>%
+  gather(dose, pred, one_of(x_char), -ID) %>% 
   mutate(dose = as.numeric(dose)) %>% 
-  group_by(M.5, W.5) %>% nest() %>% 
+  group_by(ID, M.5, W.5) %>% nest() %>% 
+  # make a new variable from the maximium predicted rewards
   bind_cols(
     map(.$data, ~ col_summ(select(., pred), max)) %>%
       as_vector() %>% tbl_df() %>% set_names(nm = "max")
   ) %>%
+  # make a new variable from the dose corresponding to the max reward
   bind_cols(
     map(.$data, ~ col_summ(select(., pred), ~ (which.max(.) - 1)/100)) %>%
       as_vector() %>% tbl_df() %>% set_names(nm = "optim_dose")
@@ -97,6 +104,10 @@ t5 <- dat %>% select(M.5, W.5) %>% bind_cols(preds) %>%
 
 names(t5$data) <- dat$ID
 
-ggplot(t5$data$`470`, aes(x = dose, y = pred)) + geom_point()
+# plot predicted rewards across doses for a patient
+ggplot(t5$data$`11`, aes(x = dose, y = pred)) + geom_point()
 
-# I chose the max, we could get more sophisticated in how to pick which is "best"
+# plot predicted rewards across doses for random sample of patients
+set.seed(1)
+ggplot(data = filter(unnest(t5), ID %in% sample(1:1000, 50))) +
+  geom_line(mapping = aes(x = dose, y = pred, group = ID))
