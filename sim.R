@@ -21,10 +21,7 @@ data_frame(
   toxicity = W0,
   dose = D0,
   month = 0
-) %>% 
-  add_column(
-    D[, 1:5]
-  )
+)
 
 # define functions for how tumor mass & toxicity change as a result of dose, each other
 Wdot <- function(M, D, a1 = 0.1, b1 = 1.2, d1 = 0.5) { 

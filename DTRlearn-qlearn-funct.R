@@ -49,3 +49,22 @@ Qlearn_Single <- function(H, A, R, pentype = "lasso", m = 4)
   class(Qsingle) = "qlearn"
   Qsingle
 }
+
+#### DTRlearn package ####
+X <- list()
+for (i in 1:(ncol(M) - 1)) {
+  X[[i]] <- cbind(M[, i], W[, i])
+}
+D_df <- data.frame(D)
+r_df <- data.frame(r)
+
+# install.packages("DTRlearn")
+library(DTRlearn)
+Q <- Qlearning(X = X, AA = D_df, RR = r_df, K = 6, pentype = "lasso", m = 4)
+plot.qlearn(Q[[1]])
+preds <- predict.qlearn(Q[[1]], X[[1]])
+
+# The optimal treatment option is the the sign of the interaction term
+# which maximize the predicted value from the regression model.
+
+# Not sure this really helps'
