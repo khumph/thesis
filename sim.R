@@ -17,14 +17,17 @@ D0 <- runif(N, min = 0.5, max = 1)
 D <- replicate(5, runif(N, min = 0, max = 1))
 D <- cbind(D0, D)
 
+# function for how toxicity changes
 Wdot <- function(M, D, a1 = 0.1, b1 = 1.2, d1 = 0.5) { 
   a1 * M + b1 * (D - d1)
 }
 
+# function for how tumor mass changes
 Mdot <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5) { 
   (a2 * W - b2 * (D - d2)) * ifelse(M > 0, 1, 0)
 }
 
+# reward functions
 R2 <- function(W1, W0) {
   ifelse(W1 - W0 <= -0.5, 5,
          ifelse(W1 - W0 >= 0.5, -5, 0))
@@ -50,12 +53,23 @@ M <- matrix(c(M0, numeric(6000)), ncol = 7)
 for (i in 1:(Ttot)) {
   for (j in 1:N) {
     if (sum(died[j, 1:i]) == 0) {
-      # if patient cured (tumor mass == 0), mass stays 0
-      M_next <- ifelse(M[j, i] == 0, 0, Mdot(M[j, i], W[j, i], D[j, i]) + M[j, i])
+      M_next <- ifelse(
+        M[j, i] == 0, # if patient cured (tumor mass == 0)
+        0, # mass stays 0
+        Mdot(M[j, i], W[j, i], D[j, i]) + M[j, i] # otherwise find next mass
+      )
       W_next <- Wdot(M[j, i], D[j, i]) + W[j, i]
       # mass and toxicity bounded at 0
-      W[j, i + 1] <- ifelse(W_next <= 0, 0, W_next)
-      M[j, i + 1] <- ifelse(M_next <= 0, 0, M_next)
+      W[j, i + 1] <- ifelse(
+        W_next <= 0,
+        0,
+        W_next
+      )
+      M[j, i + 1] <- ifelse(
+        M_next <= 0,
+        0,
+        M_next
+      )
       # determine if patient died
       lam <- lambda(W[j, i + 1], M[j, i + 1])
       deltaF <- exp(-lam)
@@ -82,9 +96,9 @@ colnames(D) <- 0:5
 colnames(M) <- 0:6
 colnames(W) <- 0:6
 colnames(r) <- 0:5
-colnames(died) <- 0:5
+colnames(died) <- 1:6
 dat <- data.frame(D = D, M = M, W = W, r = r, d = died) %>% tbl_df() %>% 
-  rownames_to_column(var = "ID")
+  rownames_to_column(var = "ID") %>% mutate(ID = as.numeric(ID))
 
 dat_long <- dat %>%
   gather(key, value, -ID) %>%
