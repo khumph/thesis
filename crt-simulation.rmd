@@ -100,6 +100,10 @@ Figure 2 illustrates the treatment plan and relevant Q-function estimation proce
 
 ![](fig2.png)
 
+
+```{r}
+source("sim.R")
+```
 # Q-learning
 
 1. Inputs: a set of training data consists of attributes $x$ (states $s_{t}$, actions $a_t$) and index $y$ (rewards $r_{t}$), i.e.$\{(s_{t}, a_{t}, r_{t})_{i}; \; t = 0, \ldots, T; \; i = 1, \ldots, N\}$.
@@ -116,19 +120,16 @@ c. Use cross-validation to choose tuning parameters C and $\zeta$ if fitting Qt 
 }
 4. Given the sequential estimates of {Q̂0, Q̂1,..., Q̂5}, the sequential individualized optimal polices {π̂0,..., π̂5} for application to the virtual phase III trial are computed.
 
-```{r}
-source("sim.R")
-```
+
 
 ### Initialize $Q(s, a)$, for all $s \in \mathcal{S}$, $a \in \mathcal{A}(s)$, arbitrarily, and $Q(\texttt{terminal_state}, \cdot) = 0$ 
 ```{r}
-dat_long <- dat_long %>% mutate(
-  Q_hat = ifelse(month == 5, reward, 0)
-  )
+
 ```
 
 ### Repeat (for each episode):
 Initialize $S$
+
 ### Repeat (for each step of episode):
 1. Choose $A$ from $S$ using policy derived from $Q$ (e.g., epsilon-greedy) Take action $A$, observe $R, S'$
 
@@ -140,75 +141,11 @@ Q(S, A) \leftarrow Q(S, A) + \alpha * (R + \gamma * \max_a Q(S',a) - Q(S, A))
 $$
 
 ```{r}
-
-subset_df <- function(occasion, data = dat_long) {
-  filter(data, month == occasion)
-}
-
-fit_rcs <- function(df) {
-  ols(
-    Q_hat ~
-      rcs(tumor_mass) +
-      rcs(dose) +
-      rcs(toxicity) +
-      rcs(tumor_mass) %ia% rcs(dose) +
-      rcs(toxicity) %ia% rcs(dose),
-    x = T,
-    y = T,
-    data = df
-  )
-}
-
-get_preds_df <- function(x, df, mod) {
-  get_preds <- function(x, df, mod) {
-    df <- df %>%
-      select(tumor_mass, toxicity) %>%
-      mutate(dose = rep(x, 1000))
-    predict(mod, df)
-  }
-  map(x,  ~ get_preds(., df, mod)) %>%
-    set_names(as.character(x)) %>% tbl_df()
-}
-
-nest_max_df <- function(df, preds) {
-  df %>%
-    select(ID, tumor_mass, toxicity) %>%
-    bind_cols(preds) %>%
-    gather(dose, pred, one_of(names(preds)), -ID) %>% 
-    mutate(dose = as.numeric(dose)) %>% 
-    group_by(ID, tumor_mass, toxicity) %>%
-    nest() %>% 
-    mutate(
-      max = map_dbl(.$data, ~ max(.$pred)),
-      dose_optim = ifelse(is.na(max), NA, map_dbl(.$data, ~ min((which.max(ifelse(is.na(.$pred), 999, .$pred)) - 1) / 100)))
-    )
-}
-
-max_df <- function(occasion) {
-  df <- subset_df(occasion)
-  mod <- fit_rcs(df)
-  x <- seq(0, 1, by = 0.01)
-  preds <- get_preds_df(x, df, mod)
-  nest_max_df(df, preds)
-}
-
-maxQ <- function(occasion) {
-  max_df(occasion)$max
-}
-```
-
-```{r}
-one_step_Q <- function(occasion) {
-  subset_df(occasion - 1)$reward + maxQ(occasion)
-}
-
-# occasion <-  5
-# dat_long <- dat_long %>% mutate(
-#   Q_hat = ifelse(month == occasion, one_step_Q(occasion), Q_hat)
-# )
+source("qlearn.R")
 ```
 
 3. $S \leftarrow S'$
+
 ### Until S is terminal
 
 
