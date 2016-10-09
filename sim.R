@@ -53,23 +53,17 @@ M <- matrix(c(M0, numeric(6000)), ncol = 7)
 for (i in 1:(Ttot)) {
   for (j in 1:N) {
     if (sum(died[j, 1:i]) == 0) {
-      M_next <- ifelse(
-        M[j, i] == 0, # if patient cured (tumor mass == 0)
-        0, # mass stays 0
-        Mdot(M[j, i], W[j, i], D[j, i]) + M[j, i] # otherwise find next mass
-      )
+      M_next <- ifelse(M[j, i] == 0, # if patient cured (tumor mass == 0)
+                       0, # mass stays 0
+                       Mdot(M[j, i], W[j, i], D[j, i]) + M[j, i]) # otherwise find next mass
       W_next <- Wdot(M[j, i], D[j, i]) + W[j, i]
       # mass and toxicity bounded at 0
-      W[j, i + 1] <- ifelse(
-        W_next <= 0,
-        0,
-        W_next
-      )
-      M[j, i + 1] <- ifelse(
-        M_next <= 0,
-        0,
-        M_next
-      )
+      W[j, i + 1] <- ifelse(W_next <= 0,
+                            0,
+                            W_next)
+      M[j, i + 1] <- ifelse(M_next <= 0,
+                            0,
+                            M_next)
       # determine if patient died
       lam <- lambda(W[j, i + 1], M[j, i + 1])
       deltaF <- exp(-lam)
@@ -115,4 +109,26 @@ dat_long <- dat %>%
     reward = r,
     died = d
   )
-# View(dat_long)
+
+
+p_load(gridExtra)
+
+tox_mass_plot <- ggplot(
+  data = filter(dat_long, ID == 66)
+) +
+  geom_line(
+    mapping = aes(x = month, y = toxicity, group = ID), color = "green"
+  ) +
+  geom_line(
+    
+    mapping = aes(x = month, y = tumor_mass, group = ID) 
+  )
+
+dose_plot <- ggplot(
+  data = filter(dat_long, ID == 66)
+) +
+  geom_line(
+    mapping = aes(x = month, y = dose, group = ID), color = "red"
+  ) + ylim(0, 1)
+
+grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1)
