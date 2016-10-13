@@ -123,9 +123,6 @@ c. Use cross-validation to choose tuning parameters C and $\zeta$ if fitting Qt 
 
 
 ### Initialize $Q(s, a)$, for all $s \in \mathcal{S}$, $a \in \mathcal{A}(s)$, arbitrarily, and $Q(\texttt{terminal_state}, \cdot) = 0$ 
-```{r}
-
-```
 
 ### Repeat (for each episode):
 Initialize $S$
@@ -163,12 +160,10 @@ ggplot(df) +
 ggplot(df) +
   geom_point(aes(x = toxicity, y = reward)) +
   geom_point(aes(x = toxicity, y = predict(mod)), color = "blue")
-
-ggplot(df, aes(x = predict(mod), y = reward)) + geom_point()
 ```
 
 ```{r}
-nested_df <- max_df(5)
+nested_df <- max_df(5, mod = fit_rcs(subset_df(5)))
 set.seed(2)
 i <- sample(nrow(nested_df), 1)
 ggplot(nested_df$data[[i]], aes(x = dose, y = pred)) +

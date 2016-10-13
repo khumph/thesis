@@ -1,4 +1,4 @@
-# source("qlearn.R")
+source("qlearn.R")
 
 # 200 patients per each of 11 treatments
 N <- 200 * 10
@@ -16,6 +16,29 @@ W0 <- runif(N, min = 0, max = 2)
 M0 <- runif(N, min = 0, max = 2)
 
 # estimate optimal treatment regime for 200
+tibble(toxicity = W0, tumor_mass = )
+
+predict(mod_list[[1]], 
+for (i in 4:0) {
+  subsetted_df <- subset_df(i + 1)
+  mod_list[[i + 1]] <- fit_rcs(subsetted_df)
+  df_max <- max_df(i + 1, mod = mod_list[[i + 1]])
+  dat_long[dat_long$month == (i), ]$Q_hat <- subset_df(i)$reward + df_max$max
+  dat_long[dat_long$month == (i + 1), ]$dose_optim <- df_max$dose_optim
+  if (i == 0) {
+    df <- max_df(0, mod = mod_list[[1]])
+    dat_long[dat_long$month == 0, ]$dose_optim <- df_max$dose_optim
+  }
+}
+
+
+max_df()
+
+df <- subset_df(occasion)
+mod <- fit_rcs(df)
+x <- seq(0, 1, by = 0.01)
+preds <- get_preds_df(x, df, mod)
+nest_max_df(df, preds)
 
 # function for how toxicity changes
 Wdot <- function(M, D, a1 = 0.1, b1 = 1.2, d1 = 0.5) { 
@@ -131,36 +154,34 @@ View(dat_long)
 dat_long_summ <- dat_long %>% group_by(group, month) %>% 
   summarise(
     mean_tox = mean(toxicity, na.rm = T),
-    mean_tumor = mean(tumor_mass, na.rm = T),
+    mean_tumor = mean(tumor_mass, na.rm = T)
+  ) %>% mutate(
     sum_means = mean_tox + mean_tumor
   )
 
-ggplot(
-  data = dat_long_summ
-) +
-  geom_line(
-    mapping = aes(x = month, y = mean_tox, color = group, group = group)
-  )
+ggplot(data = dat_long_summ) +
+  geom_line(mapping = aes(
+    x = month,
+    y = mean_tox,
+    color = group,
+    group = group
+  ))
 
-ggplot(
-  data = dat_long_summ
-) +
-  geom_line(
-    mapping = aes(x = month, y = mean_tumor, color = group, group = group)
-  )
+ggplot(data = dat_long_summ) +
+  geom_line(mapping = aes(
+    x = month,
+    y = mean_tumor,
+    color = group,
+    group = group
+  ))
 
-ggplot(
-  data = dat_long_summ %>% filter(month == 0)
-) +
-  geom_line(
-    mapping = aes(x = month, y = sum_means, color = group, group = group)
-  )
+ggplot(data = dat_long_summ) +
+  geom_line(mapping = aes(
+    x = month,
+    y = sum_means,
+    color = group,
+    group = group
+  ))
 
-ggplot(
-  data = dat_long_summ %>% filter(month == 0)
-) +
-  geom_boxplot(
-    mapping = aes(x = month, y = mean_tox, color = group, group = group)
-  )
 
-dat_long_summ %>% filter(month == 0)
+

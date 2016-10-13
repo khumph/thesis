@@ -1,5 +1,4 @@
-library(tidyverse)
-
+# source("sim.R")
 
 # Q-learning functions ----------------------------------------------------
 
@@ -55,20 +54,20 @@ nest_max_df <- function(df, preds) {
     )
 }
 
-max_df <- function(occasion) {
+max_df <- function(occasion, mod) {
   df <- subset_df(occasion)
-  mod <- fit_rcs(df)
+  # mod <- fit_rcs(df)
   x <- seq(0, 1, by = 0.01)
-  preds <- get_preds_df(x, df, mod)
+  preds <- get_preds_df(x, df = subset_df(occasion), mod)
   nest_max_df(df, preds)
 }
 
-maxQ <- function(occasion) {
-  max_df(occasion)$max
+maxQ <- function(occasion, mod) {
+  max_df(occasion, mod)$max
 }
 
-one_step_Q <- function(occasion) {
-    subset_df(occasion - 1)$reward + maxQ(occasion)
+one_step_Q <- function(occasion, mod) {
+    subset_df(occasion - 1)$reward + maxQ(occasion, mod)
 }
 
 
@@ -81,15 +80,21 @@ dat_long <- dat_long %>% mutate(
   dose_optim = ifelse(month == 6, NA, 999)
 )
 
+mod_list <- list()
+i = 4
+
 for (i in 4:0) {
-  df <- max_df(i + 1)
-  dat_long[dat_long$month == (i), ]$Q_hat <- subset_df(i)$reward + df$max
-  dat_long[dat_long$month == (i + 1), ]$dose_optim <- df$dose_optim
+  subsetted_df <- subset_df(i + 1)
+  mod_list[[i + 1]] <- fit_rcs(subsetted_df)
+  df_max <- max_df(i + 1, mod = mod_list[[i + 1]])
+  dat_long[dat_long$month == (i), ]$Q_hat <- subset_df(i)$reward + df_max$max
+  dat_long[dat_long$month == (i + 1), ]$dose_optim <- df_max$dose_optim
   if (i == 0) {
-    df <- max_df(0)
-    dat_long[dat_long$month == 0, ]$dose_optim <- df$dose_optim
+    df <- max_df(0, mod = mod_list[[1]])
+    dat_long[dat_long$month == 0, ]$dose_optim <- df_max$dose_optim
   }
 }
+
 
 dat <- dat_long %>%
   select(ID,
@@ -105,8 +110,9 @@ dat <- dat_long %>%
          Q_hat = lag(Q_hat),
          dose_optim = ifelse(died != 1 | is.na(died), dose_optim, NA))
 
-dat %>% View()
+# dat %>% View()
 
 ggplot(filter(dat, month == 4)) +
   geom_point(aes(x = tumor_mass, y = reward)) +
   geom_point(aes(x = tumor_mass, y = Q_hat), color = "blue")
+
