@@ -1,0 +1,469 @@
+---
+title: "Simulation: Reinforcement learning design for cancer clinical trials"
+output: html_notebook
+---
+
+```{r}
+library(pacman)
+p_load(tidyverse, rms, stringr)
+```
+
+# 5.1. Simple chemotherapy mathematical model
+p 11
+
+We generate a simulated clinical reinforcement trial with N = 1000 patients (replicates)
+
+```{r}
+N <- 1000
+dat <- tibble(id = 1:N)
+```
+
+with each simulated patient experiencing 6 months (T = 6) of treatment based on this ODE model. 
+
+```{r}
+end_month <- 6
+```
+
+The initial values $W_0$ and $M_0$ for each patient are generated from independent uniform (0, 2) deviates.
+
+$W_0$ indicates the initial value of patient's wellness, $M_0$ indicates the value of tumor size when the patient is at the beginning of the study
+
+```{r}
+set.seed(1)
+dat <- dat %>% 
+  mutate(
+    W0 = runif(N, min = 0, max = 2),
+    M0 = runif(N, min = 0, max = 2)
+  )
+```
+
+The treatment set consists of doses of a chemotherapy agent with an acceptable dose range of [0, 1], where the value 1 corresponds to the maximum acceptable dose. The values chosen for chemotherapy drug level $D_0$ are simulated from the uniform (0.5, 1) distribution, moreover, $D_1, \ldots, D_5$ are drawn according to a uniform distribution in the interval (0, 1). 
+
+```{r}
+set.seed(3)
+dat %>% mutate(
+  # choose initial dose of 0.5 or more
+  d0 = runif(1, min = 0.5, max = 1),
+  # choose any subsequent dose
+  d1 = runif(1, min = 0, max = 1),
+  d2 = runif(1, min = 0, max = 1),
+  d3 = runif(1, min = 0, max = 1),
+  d4 = runif(1, min = 0, max = 1),
+  d5 = runif(1, min = 0, max = 1)
+)
+
+```
+
+Thus our treatment set is restricted differently at decision time $t = 0$ than at other decision times to reflect a requirement that patients receive at least some drug at onset of treatment. 
+
+Thus, the model we present must exhibit:  
+(1) tumor growth in the absence of chemotherapy;  
+(2) patients' negative wellness outcomes in response to chemotherapy;  
+(3) the drug's capability for killing tumor cells while also increasing toxicity; and  
+(4) an interaction between tumor cells and patient wellness. 
+
+To obtain data which satisfy these requirements, we propose using a system of ordinary difference equations (ODE) modeled as follows:
+
+$$
+\dot{W}_t = a_1 (M_t \lor M_0) + b_1(D_t - d_1)
+$$
+
+```{r}
+tox_change <- function(tumor_mass, dose, a1 = 0.1, b1 = 1.2, d1 = 0.5) { 
+  a1 * tumor_mass + b1 * (dose - d1)
+}
+```
+
+$$
+\dot{M}_t = [a_2 (W_t \lor W_0) - b_2(D_t - d_2)] \times 1\{M_t > 0\},
+$$
+
+```{r}
+tumor_change <- function(tumor_mass, toxicity, dose, a2 = 0.15, b2 = 1.2, d2 = 0.5) { 
+  (a2 * toxicity - b2 * (dose - d2)) * ifelse(tumor_mass > 0, 1, 0)
+}
+```
+
+
+where time (with month as unit) $t = 0, 1, \ldots, T − 1$, and $\dot{W}_t$ and $\dot{M}_t$ indicate transition functions. Note that these changing rates yield a piecewise linear model over time. Without loss of trade-off between toxicity and efficacy, the piecewise linear model can be implemented very easily. For simplicity, we here consider tumor size instead of number of tumor cells.  
+$M_t$ denotes the tumor size at time $t$.  
+$W_t$ measures the negative part of wellness (toxicity).  
+$D_t$ denotes the chemotherapy agent dose level. 
+
+The indicator function term $1\{M_t > 0\}$ in (3) represents the feature that when the tumor size is absorbed at 0, the patient has been cured, and there is no future recurrence of the tumor.
+
+The value of other different parameters for the model are fixed as: $a_1 = 0.1$, $a_2 = 0.15$, $b_1 = 1.2$, $b_2 = 1.2$, $d_1 = 0.5$ and $d_2 = 0.5$. 
+
+```{r}
+meow <- function(lag_tumor, lag_toxicity, lag_dose) {
+    lag_tumor + tumor_change(lag_tumor, lag_toxicity, lag_dose)
+}
+
+dat %>% mutate(
+  lag_tumor = lag(tumor_mass),
+  lag_tox = lag(toxicity),
+  lag_dose = lag(dose)
+) %>% by_row(~ meow, .collate = "cols", .to = "tumor_next")
+
+
+
+dat %>% group_by(id) %>% mutate(
+  tox_next = lag(toxicity) + tox_change(lag(tumor_mass), lag(dose)),
+  tox_next = ifelse(tox_next <= 0, 0 , tox_next),
+  tumor_next = lag(tumor_mass) + tumor_change(lag(tumor_mass), lag(toxicity), lag(dose)),
+  tumor_next = ifelse(tumor_next <= 0, 0 , tumor_next),
+  toxicity = ifelse(month != 0, toxicity, tox_next),
+  tumor_mass = ifelse(month != 0, tumor_mass, tumor_next)
+)
+d$.out[[8]]
+
+
+f <- c("runif", "rnorm", "rpois")
+param <- list(
+  list(min = -1, max = 1), 
+  list(sd = 5), 
+  list(lambda = 10)
+) 
+
+invoke_map(f, param, n = 5) %>% str()
+
+
+dat_nested <- dat %>% nest()
+
+d <- dat_nested$data[[1]]
+
+invoke_map(f, param, n = 5) %>% str()
+
+dat_l <- dat %>% ungroup() %>% select(month, toxicity, tumor_mass, dose) %>% as.list()
+View(dat_l)
+length(dat_l)
+
+i = 0
+
+for (i in 0:(end_month)) {
+  this_month <- filter(dat, month == i)
+  next_month <- filter(dat, month == i + 1)
+  tumor_next <-
+    ifelse(
+      this_month$tumor_mass == 0,
+      0,
+      tumor_change(
+        this_month$tumor_mass,
+        this_month$toxicity,
+        this_month$dose
+      )
+    )
+  tox_next <-
+    tox_change(this_month$tumor_mass,
+               this_month$dose) + this_month$toxicity
+  next_month$toxicity <-
+    ifelse(tox_next <= 0, 0, tox_next)
+  next_month$tumor_mass <-
+    ifelse(tumor_next <= 0, 0, tumor_next)
+}
+
+this_month
+```
+
+
+# 5.2. Q-function estimation and optimal regimen discovery
+
+**here the hazard and rewards occur at then end of each interval/beginning of subsequent interval, so the first column is the reward/hazard/death at the end of the first interval, not the initial reward/hazard (which is zero since rewards depend on a comparison between intervals and everyone was alive initially)**
+
+We decompose this reward function $R_t$ into three parts: $R_{t, 1}(D_t, W_{t + 1}, M_{t + 1})$ due to survival status, $R_{t, 2}(W_t, D_t, W_{t + 1})$ due to wellness effects, and $R_{t, 3}(M_t, D_t, M_{t + 1})$ due to tumor size effects. It can be described by:
+
+```{r}
+R2 <- function(W1, W0) {
+  ifelse(W1 - W0 <= -0.5, 5,
+         ifelse(W1 - W0 >= 0.5, -5, 0))
+}
+
+R3 <- function(M1, M0) {
+  ifelse(M1 == 0 & M0 == 0, 0,
+         ifelse(M1 == 0, 15,
+                ifelse(M1 - M0 <= -0.5, 5,
+                       ifelse(M1 - M0 >= 0.5, -5, 0)))
+  )
+
+}
+
+r2 <- matrix(c(numeric(6000)), ncol = 6)
+r3 <- matrix(c(numeric(6000)), ncol = 6)
+for (i in 1:(Ttot)) {
+  r2[, i] <- R2(W[, i + 1], W[, i])
+  r3[, i] <- R3(M[, i + 1], M[, i])
+}
+```
+
+In most phase III clinical trials, the primary endpoint of clinical interest is the overall survival (OS): this is why we put −60 as a high penalty for patient death. Additionally, we assign a relatively high value 15 as a bonus when a patient is cured.
+We assume that survival status depends on both toxicity and tumor size. For each time interval $(t − 1, t], t = 1,\ldots, 6$, we define the hazard function as $\lambda(t)$, which satisfies
+
+$$
+\log(\lambda(t)) = \mu_0 + \mu_1 W_t + \mu_2 M_t
+$$
+
+```{r}
+lambda <- function(W, M, mu0, mu1, mu2) {
+  exp(mu0 + mu1 * W + mu2 * M)
+}
+```
+
+where $\mu_0$, $\mu_1$, and $\mu_2$ are constant pre-specified parameters. In particular, assigning $\mu_1 = \mu_2 = 1$ indicates that we consider wellness and tumor size to have an equally weighted influence on the survival rate. 
+
+```{r}
+mu0 <- -7 ### MADE UP. NO VALUE GIVEN IN TEXT
+mu1 <- 1
+mu2 <- 1
+```
+
+The survival function is then
+
+$$
+\Delta F(t) = \exp[-\Delta\Lambda(t)]
+$$
+
+where $\Delta\Lambda(t) = \int_{t-1}^{t}\lambda(s)ds$ is the cumulative hazard function.
+
+$$
+\begin{align*}
+\Delta\Lambda(t) &= \int_{t-1}^{t}\lambda(s)ds \\
+\Delta\Lambda(t) &= \int_{t-1}^{t}\exp(\mu_0 + \mu_1 W_s + \mu_2 M_s)ds \\
+\Delta F(t) = \exp[- \Delta\Lambda(t)] &= \exp\left[ - \int_{t-1}^{t}\exp(\mu_0 + \mu_1 W_s + \mu_2 M_s)ds \right]
+\end{align*}
+$$
+
+```{r}
+lams <- matrix(numeric(6000), ncol = 6)
+for (i in 1:(Ttot)) {
+  lams[, i] <- lambda(W[, i + 1], M[, i + 1], mu0, mu1, mu2)
+}
+deltaF <- exp(-lams)
+```
+
+The reason the term $R_{t,1}(D_t, W_{t+1}, M_{t+1})$ is expressed as a function of $W_{t+1}$ and $M_{t+1}$ is that the hazard function is only determined by the states at the end of each time interval. 
+
+The conditional probability of death for each time interval is $p = 1 − \Delta F(t)$. 
+```{r}
+p <- 1 - deltaF
+```
+
+The survival status (with death coded as 1) is drawn according to a Bernoulli distribution $B(p)$. 
+
+```{r}
+set.seed(5)
+died <- apply(p, c(1, 2), function(p) rbinom(1, 1, p)) 
+r1 <- ifelse(died == 1, -60, 0)
+```
+
+```{r}
+r <- r1 + r2 + r3
+```
+
+```{r, zero-rewards}
+zeroRewards <- function(x, died = died, i) { 
+  # zeroR function zeros rewards after death of a patient
+  # inputs:
+  #   matrix of total rewards (r) 
+  #   matrix of deaths (died)
+  #   an index of a particular patient of interest (i)
+  # returns:
+  #   row vector of rewards for the patient with rewards following death = 0
+  if (sum(died[i, ]) >= 1) {
+    first <- which(died[i, ] == 1)[1]
+    if (first < ncol(died)) {x[i, (first + 1):ncol(died)] <- 0} 
+    return(x[i, ])
+  } 
+  return(x[i, ])
+}
+
+for (i in 1:nrow(r)) {
+  r[i, ] <- zeroRewards(r, died, i)
+}
+
+
+```
+
+Overall, by letting $\gamma = 1$ (we would like to fully consider maximizing rewards in the long run), the one-step Q-learning with recursive form is utilized, with $Q_t(S_t, A_t)$ predicting
+
+$$
+\hat{R}_t = R_t + \max_{a_{t+1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
+$$
+
+where $R_t = R_{t, 1}(D_t, W_{t + 1}, M_{t + 1}) + R_{t, 2}(W_t, D_t, W_{t + 1}) + R_{t, 3}(M_t, D_t, M_{t + 1}), t = 0, \ldots, 5$. Note note that $\hat{r}_t$ mentioned previously is defined as a realization of $R_t$. This recursive estimation process is called SARSA (state, action, reward, next state, next action) in the reinforcement learning literature.
+
+To obtain the estimator $\hat{Q}_t$, we apply SVR and ERT respectively for fitting $Q_t$ backward, and save the results as $\{\hat{Q}_5, \hat{Q}_4, \ldots, \hat{Q}_0\}$. 
+
+Figure 2 illustrates the treatment plan and relevant Q-function estimation procedures. 
+
+![](fig2.png)
+
+```{r make-df}
+colnames(D) <- 0:5
+colnames(M) <- 0:6
+colnames(W) <- 0:6
+colnames(r) <- 0:5
+dat <- data.frame(D = D, M = M, W = W, r = r) %>% tbl_df() %>%
+  rownames_to_column(var = "ID") %>% mutate(ID = factor(ID))
+
+dat_long <- dat %>%
+  gather(key, value, -ID) %>%
+  extract(col = key,
+          into = c("var", "month"),
+          regex = "(.)\\.(.)") %>%
+  spread(var, value) %>%
+  select(
+    ID,
+    month,
+    dose = D,
+    tumor_mass = M,
+    toxicity = W,
+    reward = r
+  )
+```
+
+
+# Q-learning
+
+1. Inputs: a set of training data consists of attributes $x$ (states $s_{t}$, actions $a_t$) and index $y$ (rewards $r_{t}$), i.e.$\{(s_{t}, a_{t}, r_{t})_{i}; \; t = 0, \ldots, T; \; i = 1, \ldots, N\}$.
+2. Initialization: Let $t = T + 1$ and $\hat{Q}T+1$ be a function equal to zero on $S_{t} \times A_{t}$.
+
+3. Iterations: repeat computations until stopping conditions are reached $(t = 0)$.
+    a. t <- t − 1 .
+    b. $Q_t$ is fitted with support vector regression (SVR) or extremely randomized trees (ERT) through the following recursive equation:
+$$
+Q_{t}(s_{t}, a_{t}) = r_{t} + max_{a_{t+1}}\hat{Q}_{t+1}(s_{t+1}, a_{t+1}) + \epsilon
+$$
+
+c. Use cross-validation to choose tuning parameters C and $\zeta$ if fitting Qt via SVR with Gaussian kernel; choose plausible values of parameters K, G, nmin if fitting Qt via ERT (K = 3,G = 50, nmin = 2 in our simulation).
+}
+4. Given the sequential estimates of {Q̂0, Q̂1,..., Q̂5}, the sequential individualized optimal polices {π̂0,..., π̂5} for application to the virtual phase III trial are computed.
+
+
+
+
+### Initialize $Q(s, a)$, for all $s \in \mathcal{S}$, $a \in \mathcal{A}(s)$, arbitrarily, and $Q(\texttt{terminal_state}, \cdot) = 0$ 
+```{r}
+dat_long <- dat_long %>% mutate(
+  Q_hat = ifelse(occasion == 5, reward, 0)
+  )
+```
+
+### Repeat (for each episode):
+Initialize $S$
+### Repeat (for each step of episode):
+1. Choose $A$ from $S$ using policy derived from $Q$ (e.g., epsilon-greedy) Take action $A$, observe $R, S'$
+
+(done in simulation by random assignment)
+
+2. 
+$$
+Q(S, A) \leftarrow Q(S, A) + \alpha * (R + \gamma * \max_a Q(S',a) - Q(S, A))
+$$
+
+```{r}
+subset_df <- function(occasion, data = dat_long) {
+  filter(data, month == occasion)
+}
+
+fit_rcs <- function(df) {
+  ols(
+    Q_hat ~
+      rcs(tumor_mass) +
+      rcs(dose) +
+      rcs(toxicity) +
+      rcs(tumor_mass) %ia% rcs(dose) +
+      rcs(toxicity) %ia% rcs(dose),
+    x = T,
+    y = T,
+    data = df
+  )
+}
+
+get_preds_df <- function(x, df, mod) {
+  get_preds <- function(x, df, mod) {
+    df <- df %>%
+      select(tumor_mass, toxicity) %>%
+      mutate(dose = rep(x, 1000))
+    predict(mod, df)
+  }
+  map(x,  ~ get_preds(., df, mod)) %>%
+    set_names(as.character(x)) %>% tbl_df()
+}
+
+nest_max_df <- function(df, preds) {
+  df %>%
+    select(ID, tumor_mass, toxicity) %>%
+    bind_cols(preds) %>%
+    gather(dose, pred, one_of(names(preds)), -ID) %>% 
+    mutate(dose = as.numeric(dose)) %>% 
+    group_by(ID, tumor_mass, toxicity) %>%
+    nest() %>% 
+    mutate(
+      max = map_dbl(.$data, ~ max(.$pred)),
+      dose_optim = map_dbl(.$data, ~ (which.max(.$pred) - 1)/100)
+    )
+}
+
+max_df <- function(occasion) {
+  df <- subset_df(occasion)
+  mod <- fit_rcs(df)
+  x <- seq(0, 1, by = 0.01)
+  preds <- get_preds_df(x, df, mod)
+  nest_max_df(df, preds)
+}
+
+maxQ <- function(occasion) {
+  max_df(occasion)$max
+}
+```
+
+```{r}
+one_step_Q <- function(occasion) {
+  subset_df(occasion - 1)$reward + maxQ(occasion)
+}
+
+occasion <-  5
+dat_long <- dat_long %>% mutate(
+  Q_hat = ifelse(month == occasion, one_step_Q(occasion), Q_hat)
+)
+```
+
+3. $S \leftarrow S'$
+### Until S is terminal
+
+
+```{r xplor-plots}
+df <- subset_df(5)
+
+mod <- fit_rcs(df)
+
+ggplot(df, aes(x = predict(mod), y = residuals(mod, "dffits"))) + geom_point()
+
+ggplot(df) +
+  geom_point(aes(x = tumor_mass, y = reward)) +
+  geom_point(aes(x = tumor_mass, y = predict(mod)), color = "blue")
+
+ggplot(df) +
+  geom_point(aes(x = toxicity, y = reward)) +
+  geom_point(aes(x = toxicity, y = predict(mod)), color = "blue")
+
+ggplot(df, aes(x = predict(mod), y = reward)) + geom_point()
+```
+
+```{r}
+nested_df <- max_df(5)
+set.seed(7)
+i <- sample(nrow(nested_df), 1)
+ggplot(nested_df$data[[i]], aes(x = dose, y = pred)) +
+  geom_point()
+
+set.seed(8)
+ggplot(data = filter(unnest(nested_df), ID %in% sample(1:1000, 50))) +
+  geom_line(mapping = aes(x = dose, y = pred, group = ID))
+```
+
+
+#### other packages:
+MDPtoolbox
+iqlearn
+qLearn
