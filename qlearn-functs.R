@@ -91,16 +91,10 @@ one_step_Q <- function(occasion, mod) {
 
 # testing -----------------------------------------------------------------
 
-
-
 d <- dat_long %>% mutate(noise = runif(7000), Q_hat = reward) %>% filter(month == 5)
 form <- makeRCS(Q_hat ~ noise + tumor_mass + dose + toxicity, "dose")
 
 mod <- fit_rcs(form$formula, data = d)
-
-get_preds <- function(data, mod) {
-
-}
 
 x <- seq(0, 1, by = 0.01)
 d %>%
