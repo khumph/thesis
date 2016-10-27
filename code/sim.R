@@ -86,11 +86,15 @@ for (i in 1:(Ttot)) {
   }
 }
 
+# set.seed(9)
+# noise <- replicate(7, runif(N))
+
 colnames(D) <- 0:5
 colnames(M) <- 0:6
 colnames(W) <- 0:6
 colnames(r) <- 0:5
 colnames(died) <- 1:6
+# colnames(noise) <- 0:6
 dat <- data.frame(D = D, M = M, W = W, r = r, d = died) %>% tbl_df() %>% 
   rownames_to_column(var = "ID") %>% mutate(ID = as.numeric(ID))
 
@@ -109,26 +113,3 @@ dat_long <- dat %>%
     reward = r,
     died = d
   )
-
-
-p_load(gridExtra)
-
-tox_mass_plot <- ggplot(
-  data = filter(dat_long, ID == 66)
-) +
-  geom_line(
-    mapping = aes(x = month, y = toxicity, group = ID), color = "green"
-  ) +
-  geom_line(
-    
-    mapping = aes(x = month, y = tumor_mass, group = ID) 
-  )
-
-dose_plot <- ggplot(
-  data = filter(dat_long, ID == 66)
-) +
-  geom_line(
-    mapping = aes(x = month, y = dose, group = ID), color = "red"
-  ) + ylim(0, 1)
-
-grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1)

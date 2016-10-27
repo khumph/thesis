@@ -13,11 +13,8 @@ M0 <- runif(N, min = 0, max = 2)
 D1 <- map(seq(from = 0.1, to = 1, by = 0.1), ~ rep(., 200)) %>% flatten_dbl()
 
 # estimate optimal treatment regime for 200
-df <- tibble(ID = tail(1:N, 200), toxicity = tail(W0, 200), tumor_mass = tail(M0, 200))
-mod <- mod_list[[1]]
-x <- seq(0, 1, by = 0.01)
-preds <- get_preds_df(x, df, mod)
-D0 <- nest_max_df(df, preds)$dose_optim
+dat <- tibble(ID = tail(1:N, 200), toxicity = tail(W0, 200), tumor_mass = tail(M0, 200))
+D0 <- max_df(data = dat, model = Q$mod_list[[1]], form = Q$formula, idvar = "ID")$best
 
 D1 <- c(D1, D0)
 
@@ -92,10 +89,9 @@ for (i in 1:(Ttot)) {
   }
   if (i < Ttot) {
     df <- tibble(ID = tail(1:N, 200), toxicity = tail(W[, i + 1], 200), tumor_mass = tail(M[, i + 1], 200))
-    mod <- mod_list[[i + 1]]
-    x <- seq(0, 1, by = 0.01)
-    preds <- get_preds_df(x, df, mod)
-    D[df$ID, i + 1] <- nest_max_df(df, preds)$dose_optim
+    D[df$ID, i + 1] <- max_df(data = df,
+                              model = Q$mod_list[[i + 1]],
+                              form = Q$formula)$best
   }
 }
 
