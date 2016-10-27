@@ -1,6 +1,8 @@
 ---
-title: "Simulation: Reinforcement learning design for cancer clinical trials"
-output: html_notebook
+title: 'Simulation: Reinforcement learning design for cancer clinical trials'
+output:
+  html_document: default
+  html_notebook: default
 ---
 
 # 5.1. Simple chemotherapy mathematical model
@@ -97,8 +99,35 @@ Figure 2 illustrates the treatment plan and relevant Q-function estimation proce
 
 
 ```{r}
+rm(list = ls())
+knitr::opts_chunk$set(warning = F)
 source("sim.R")
 ```
+
+```{r}
+p_load(gridExtra)
+
+tox_mass_plot <- ggplot(
+  data = filter(dat_long, ID == 66)
+) +
+  geom_line(
+    mapping = aes(x = month, y = toxicity, group = ID), color = "green"
+  ) +
+  geom_line(
+    mapping = aes(x = month, y = tumor_mass, group = ID) 
+  )
+
+dose_plot <- ggplot(
+  data = filter(dat_long, ID == 66)
+) +
+  geom_line(
+    mapping = aes(x = month, y = dose, group = ID), color = "red"
+  ) + ylim(0, 1)
+
+grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1)
+```
+
+
 # Q-learning
 
 1. Inputs: a set of training data consists of attributes $x$ (states $s_{t}$, actions $a_t$) and index $y$ (rewards $r_{t}$), i.e.$\{(s_{t}, a_{t}, r_{t})_{i}; \; t = 0, \ldots, T; \; i = 1, \ldots, N\}$.
@@ -133,8 +162,16 @@ Q(S, A) \leftarrow Q(S, A) + \alpha * (R + \gamma * \max_a Q(S',a) - Q(S, A))
 $$
 
 ```{r}
+source("qlearn-functs.R")
 source("qlearn.R")
 ```
+
+```{r}
+ggplot(filter(dat, month == 4)) +
+  geom_point(aes(x = tumor_mass, y = reward)) +
+  geom_point(aes(x = tumor_mass, y = Q_hat), color = "blue")
+```
+
 
 3. $S \leftarrow S'$
 
@@ -142,34 +179,44 @@ source("qlearn.R")
 
 
 ```{r xplor-plots}
-df <- subset_df(5)
+dat <- subset_df(dat, 5)
 
-mod <- fit_rcs(df)
+mod <- Q$mod_list[[5]]
 
-ggplot(df, aes(x = predict(mod), y = residuals(mod, "dffits"))) + geom_point()
+ggplot(dat, aes(x = predict(mod), y = residuals(mod, "dffits"))) + geom_point()
 
-ggplot(df) +
+ggplot(dat) +
   geom_point(aes(x = tumor_mass, y = reward)) +
   geom_point(aes(x = tumor_mass, y = predict(mod)), color = "blue")
 
-ggplot(df) +
+ggplot(dat) +
   geom_point(aes(x = toxicity, y = reward)) +
   geom_point(aes(x = toxicity, y = predict(mod)), color = "blue")
 ```
 
 ```{r}
-nested_df <- max_df(5, mod = fit_rcs(subset_df(5)))
+nested_df <- max_df(data = dat, model = mod, form = makeRCS(Q_hat ~ tumor_mass + dose + toxicity, treatment = "dose"))
+
+nested_df <- dat %>%
+  mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.01))) %>%
+  unnest() %>%
+  mutate(preds = predict(mod, .)) %>%
+  group_by(ID) %>%
+  mutate(max = max(preds),
+         best = ifelse(is.na(max),
+                       NA,
+                       which.max(preds) - 1) / 100)
 set.seed(2)
-i <- sample(nrow(nested_df), 1)
-ggplot(nested_df$data[[i]], aes(x = dose, y = pred)) +
+i <- sample(nested_df$ID, 1)
+ggplot(filter(nested_df, ID == i), aes(x = dose, y = preds)) +
   geom_point()
 
-set.seed(8)
-ggplot(data = filter(unnest(nested_df), ID %in% sample(1:1000, 50))) +
-  geom_line(mapping = aes(x = dose, y = pred, group = ID))
+set.seed(5)
+ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
+  geom_line(mapping = aes(x = dose, y = preds, group = ID))
 ```
 
-```{r}
+```{r, warning = F}
 source("sim-test.R")
 ```
 
