@@ -195,8 +195,6 @@ ggplot(dat) +
 ```
 
 ```{r}
-nested_df <- max_df(data = dat, model = mod, form = makeRCS(Q_hat ~ tumor_mass + dose + toxicity, treatment = "dose"))
-
 nested_df <- dat %>%
   mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.01))) %>%
   unnest() %>%
