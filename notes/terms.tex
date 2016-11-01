@@ -23,150 +23,185 @@ Basic process involves:
 > a computational approach to learning from interaction. Rather than directly theorizing about how people or animals learn, we explore idealized learning situations and evaluate the effectiveness of various learning methods. (the perspective of an artificial intelligence researcher or engineer)
 
 
-***
-#### What are stochastic sequential decision processes?
+\hrulefill
+
+What are stochastic sequential decision processes?
 
 reinforcement learning methods
 
-***
-#### What is a reinforcement learning method?
+\hrulefill
 
-Any method that is suited to "solving" Finite Markov Decision Processes we consider to be a reinforcement learning method
+What is a reinforcement learning method?
 
-***
-#### What does it mean to "solve" a reinforcement learning task?
+Any method that is suited to ``solving'' Finite Markov Decision Processes we consider to be a reinforcement learning method
+
+\hrulefill
+
+What does it mean to ``solve'' a reinforcement learning task?
 
 Roughly, finding a policy that achieves a lot of reward over the long run.
 
-***
-#### What is Q-learning?
+\hrulefill
+
+What is Q-learning?
 
 Doesn't estimate value function directly, estimates a Q-function instead.
 requires no prior knowledge, is exploration insensitive and easy to implement, and is so far one of the most popular and seems to be the most effective model-free algorithm for learning from delayed reinforcement
 
 once the Q functions have been estimated, it is only necessary to know the state to determine the best action.
 
-***
-#### What is a Q-function?
+\hrulefill
 
-***
-#### What does it mean that Q-learning is "model free"?
+What is a Q-function?
 
-***
-#### What does it mean that Q-learning is "doesn't require prior knowledge"?
+\hrulefill
 
-***
-#### What does it mean that Q-learning is "exploration insensitive"?
+What does it mean that Q-learning is "model free"?
 
-***
-#### What does it mean that Q-learning is an "off policy" TD-learning method?
+\hrulefill
 
-***
-#### Why does Q-learning require less memory and less computation?
+What does it mean that Q-learning is "doesn't require prior knowledge"?
 
-***
-#### Why is Q-learning easy to implement?
+\hrulefill
 
-***
-#### Why in Q-learning is it only necessary to know the state to determine the best action, once the Q functions have been estimated.
+What does it mean that Q-learning is "exploration insensitive"?
 
-***
-#### How does the Q-function optimize rewards without explicitly referencing their form??
+\hrulefill
 
-***
-#### What is Temporal-difference learning (TD-learning)?
+What does it mean that Q-learning is an "off policy" TD-learning method?
 
-***
-#### Why can TD-learning find optimal polices without any knowledge of the dynamic model?
+\hrulefill
 
-***
-#### What is the "eligibility traces" problem?
+Why does Q-learning require less memory and less computation?
 
-***
-#### What is an adaptive design
+\hrulefill
 
-***
-#### What is a dynamic treatment regime?
+Why is Q-learning easy to implement?
 
-***
-#### What are extremely randomized trees?
+\hrulefill
 
-***
-#### What are multi-stage decision problems?
+Why in Q-learning is it only necessary to know the state to determine the best action, once the Q functions have been estimated.
 
-***
-#### What is support vector regression?
+\hrulefill
 
-***
-#### What is a transition graph?
+How does the Q-function optimize rewards without explicitly referencing their form??
+
+\hrulefill
+
+What is Temporal-difference learning (TD-learning)?
+
+\hrulefill
+
+Why can TD-learning find optimal polices without any knowledge of the dynamic model?
+
+\hrulefill
+
+What is the "eligibility traces" problem?
+
+\hrulefill
+
+What is an adaptive design
+
+\hrulefill
+
+What is a dynamic treatment regime (DTR)?
+
+\hrulefill
+
+What are extremely randomized trees?
+
+\hrulefill
+
+What are multi-stage decision problems?
+
+\hrulefill
+
+What is support vector regression?
+
+\hrulefill
+
+What is a transition graph?
 
 
-***
-#### What is an absorbing state?
+\hrulefill
+
+What is an absorbing state?
 
 A state that transitions only to itself and generates only rewards of zero
 
-***
-#### What is a backup diagram?
+\hrulefill
+
+What is a backup diagram?
 
 they diagram relationships that form the basis of the update or backup operations that are at the heart of reinforcement learning methods. These operations transfer value information back to a state (or a state– action pair) from its successor states (or state–action pairs).
 
 unlike transition graphs, the state nodes of backup diagrams do not necessarily represent distinct states; for example, a state might be its own successor. We also omit explicit arrowheads because time always flows downward in a backup diagram
 
 
-***
-#### What is the Bellman optimality equation?
+\hrulefill
+
+What is the Bellman optimality equation?
 
 expressed the relationship between the value of a current state and the value its following (successor) states. It does this by looking ahead and averaging over all possible future states, weighted by each state's probability of occurring. 
 It states that the value of the starting state must equal the (discounted) expected value of the next state plus the reward expected along the way.
 
-***
-#### Why is it not possible to directly compute an optimal policy by just solving the Bellman optimality equation (even with complete and accurate model of the environment's dynamics)?
+\hrulefill
 
-***
-#### What is a value function?
+Why is it not possible to directly compute an optimal policy by just solving the Bellman optimality equation (even with complete and accurate model of the environment's dynamics)?
+
+\hrulefill
+
+What is a value function?
 
 functions of states (or state-action pairs) that estimate how good it is for the agent to be in a given state (or how good it is to perform a given action in a given state)
 
-Where "how good" is defined in terms of future rewards that can be expected: expected return
+Where ``how good'' is defined in terms of future rewards that can be expected: expected return
 
 Almost all RL algorithms involve estimating value functions
 
-***
-#### What recursive relationships do value functions satisfy?
+\hrulefill
+
+What recursive relationships do value functions satisfy?
 
 
-***
-#### What is dynamic programming
+\hrulefill
 
-***
-#### What are Monte Carlo methods?
+What is dynamic programming
+
+\hrulefill
+
+What are Monte Carlo methods?
 
 methods that average over many random samples to get a result
 
 
-***
-#### What is the Markov property?
+\hrulefill
+
+What is the Markov property?
 
 A state signal is Markov or has the Markov property if the state signal summarizes the past states, but retains all relevant information. 
 
 The policy chosen using actions as a function of a Markov state is just as good as using complete histories.
 
-***
-#### What is a Markov decision process (MDP)?
+\hrulefill
+
+What is a Markov decision process (MDP)?
 
 A reinforcement learning task the satisfies the Markov property.   
 
-***
-#### What is a finite Markov decision process (finite MDP)?
+\hrulefill
+
+What is a finite Markov decision process (finite MDP)?
 
 A MDP, where state and action spaces are finite.
 
-***
-#### What are discounted infinite horizon Markov decision processes?
+\hrulefill
 
-***
-#### What is a Clinical Reinforcement trial?
+What are discounted infinite horizon Markov decision processes?
+
+\hrulefill
+
+What is a Clinical Reinforcement trial?
 
 new kind of clinical trial for life threatening diseases
 
@@ -184,12 +219,13 @@ Design consists of:
 may need to develop virtual patient model for design 
 
 
-***
-#### How would one conduct a Clinical Reinforcement trial?
+\hrulefill
 
-1. patients recruited and randomized to the treatment set (according to protocol restrictions at each time point)
+How would one conduct a Clinical Reinforcement trial?
 
-2. outcome measures used to compute patient state and utility are obtained (for each patient at each time point)
+1. Patients recruited and randomized to the treatment set (according to protocol restrictions at each time point)
+
+2. Outcome measures used to compute patient state and utility are obtained (for each patient at each time point)
 
 3. repeat through end of trial
 
@@ -198,12 +234,14 @@ may need to develop virtual patient model for design
 > yields individualized and time varying treatment rule superior to constant dose scheme
 
 
-***
-#### What is a SMART design?
-	
-***
-#### What are transition functions?
+\hrulefill
 
-A function from (state/ input symbol) to state describing what state to move to on receiving a given input in a given state.
+What is a SMART design?
+	
+\hrulefill
+
+What are transition functions?
+
+A function from (state/input symbol) to state describing what state to move to on receiving a given input in a given state.
 
 \end{document}
