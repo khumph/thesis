@@ -7,7 +7,7 @@ library(broom)
 
 set.seed(20161027)
 dat_long <- dat_long %>% mutate(
-  # noise = runif(7000)
+  # noise = runif(7000),
   Q_hat = ifelse(month == 6, NA,
                  ifelse(month == 5, reward, 0)),
   best = ifelse(month == 6, NA, 999)

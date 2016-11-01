@@ -13,7 +13,12 @@ M0 <- runif(N, min = 0, max = 2)
 D1 <- map(seq(from = 0.1, to = 1, by = 0.1), ~ rep(., 200)) %>% flatten_dbl()
 
 # estimate optimal treatment regime for 200
-dat <- tibble(ID = tail(1:N, 200), toxicity = tail(W0, 200), tumor_mass = tail(M0, 200))
+dat <-
+  tibble(
+    ID = tail(1:N, 200),
+    toxicity = tail(W0, 200),
+    tumor_mass = tail(M0, 200)
+  )
 D0 <- max_df(data = dat, model = Q$mod_list[[1]], form = Q$formula, idvar = "ID")$best
 
 D1 <- c(D1, D0)
@@ -100,7 +105,7 @@ colnames(M) <- 0:6
 colnames(W) <- 0:6
 colnames(r) <- 0:5
 colnames(died) <- 1:6
-dat <-
+dat_test <-
   data.frame(
     D = D,
     M = M,
@@ -113,7 +118,7 @@ dat <-
          group = ifelse(ID < 2001, D1, "optim"),
          group = factor(group))
 
-dat_long <- dat %>%
+dat_test_long <- dat_test %>%
   gather(key, value, -ID, -group) %>%
   extract(col = key,
           into = c("var", "month"),
