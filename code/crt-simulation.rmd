@@ -220,7 +220,7 @@ source("sim-test.R")
 
 
 ```{r}
-dat_long_summ <- dat_long %>% group_by(group, month) %>% 
+dat_long_summ <- dat_test_long %>% group_by(group, month) %>% 
   summarise(
     mean_tox = mean(toxicity, na.rm = T),
     mean_tumor = mean(tumor_mass, na.rm = T)
@@ -252,10 +252,82 @@ ggplot(data = dat_long_summ) +
     group = group
   ))
 
-dat_long %>% group_by(group) %>% summarise(num_died = sum(died, na.rm = T), prop_died = num_died/200)
+dat_test_long %>% group_by(group) %>% summarise(num_died = sum(died, na.rm = T), prop_died = num_died/200)
 ```
+
+```{r}
+set.seed(20161027)
+dat <- dat_long %>% mutate(
+  noise = runif(7000),
+  Q_hat = ifelse(month == 6, NA,
+                 ifelse(month == 5, reward, 0)),
+  best = ifelse(month == 6, NA, 999)
+)
+
+Q <- Qlearn(dat, Q_hat ~ 
+              noise + 
+              tumor_mass + dose + toxicity, "dose")
+
+dat <- Q$data %>%
+  select(ID,
+         month,
+         dose,
+         best,
+         reward,
+         Q_hat,
+         tumor_mass,
+         toxicity,
+         died) %>%
+  mutate(reward = lag(reward),
+         Q_hat = lag(Q_hat),
+         best = ifelse(died != 1 | is.na(died), best, NA))
+
+source("sim-test-noise.R")
+```
+
+
+```{r}
+dat_long_summ <- dat_test_long %>% group_by(group, month) %>% 
+  summarise(
+    mean_tox = mean(toxicity, na.rm = T),
+    mean_tumor = mean(tumor_mass, na.rm = T)
+  ) %>% mutate(
+    sum_means = mean_tox + mean_tumor
+  )
+
+ggplot(data = dat_long_summ) +
+  geom_line(mapping = aes(
+    x = month,
+    y = mean_tox,
+    color = group,
+    group = group
+  ))
+
+ggplot(data = dat_long_summ) +
+  geom_line(mapping = aes(
+    x = month,
+    y = mean_tumor,
+    color = group,
+    group = group
+  ))
+
+ggplot(data = dat_long_summ) +
+  geom_line(mapping = aes(
+    x = month,
+    y = sum_means,
+    color = group,
+    group = group
+  ))
+
+dat_test_long %>% group_by(group) %>% summarise(num_died = sum(died, na.rm = T), prop_died = num_died/200)
+```
+
 
 #### other packages:
 MDPtoolbox
 iqlearn
 qLearn
+
+
+
+
