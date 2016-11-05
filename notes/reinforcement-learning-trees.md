@@ -47,7 +47,7 @@ However,
 
 
 #### general features:
-- choose variables for each split that will bring largest return from future branching splits (rather than immediate consquences via marginal effects)
+- choose variables for each split that will bring largest return from future branching splits (rather than immediate consequences via marginal effects)
   - break any hidden structure and avoid inconsistency by forcing splits on strong variables even if they do not show any marginal effect
 
 - progressively mute noise variables as go deeper down tree
