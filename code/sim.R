@@ -1,6 +1,3 @@
-library(pacman)
-p_load(tidyverse, rms, stringr)
-
 # 1000 patients
 N <- 1000
 # 6 months treatment

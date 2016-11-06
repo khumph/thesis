@@ -100,11 +100,11 @@ Figure 2 illustrates the treatment plan and relevant Q-function estimation proce
 rm(list = ls())
 knitr::opts_chunk$set(warning = F)
 source("sim.R")
+library(pacman)
+p_load(tidyverse, rms, stringr, gridExtra)
 ```
 
 ```{r}
-p_load(gridExtra)
-
 tox_mass_plot <- ggplot(
   data = filter(dat_long, ID == 66)
 ) +
@@ -161,8 +161,36 @@ $$
 
 ```{r}
 source("qlearn-functs.R")
-source("qlearn.R")
 ```
+
+```{r qlearn}
+set.seed(20161027)
+dat_long <- dat_long %>% mutate(
+  Q_hat = ifelse(month == 6, NA,
+                 ifelse(month == 5, reward, 0)),
+  best = ifelse(month == 6, NA, 999)
+)
+
+Q <- Qlearn(dat_long,
+            Q_hat ~
+              # noise +
+              tumor_mass + dose + toxicity, method = "rcs", "dose")
+
+dat <- Q$data %>%
+  select(ID,
+         month,
+         dose,
+         best,
+         reward,
+         Q_hat,
+         tumor_mass,
+         toxicity,
+         died) %>%
+  mutate(reward = lag(reward),
+         Q_hat = lag(Q_hat),
+         best = ifelse(died != 1 | is.na(died), best, NA))
+```
+
 
 ```{r}
 ggplot(filter(dat, month == 4)) +
@@ -181,7 +209,7 @@ dat <- subset_df(dat, 5)
 
 mod <- Q$mod_list[[5]]
 
-ggplot(dat, aes(x = predict(mod), y = residuals(mod, "dffits"))) + geom_point()
+ggplot(dat, aes(x = predict(mod), y = residuals(mod))) + geom_point()
 
 ggplot(dat) +
   geom_point(aes(x = tumor_mass, y = reward)) +
@@ -213,7 +241,7 @@ ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
 ```
 
 ```{r, warning = F}
-source("sim-test.R")
+dat_test_long <- sim_test(Q)
 ```
 
 
@@ -262,9 +290,21 @@ dat <- dat_long %>% mutate(
   best = ifelse(month == 6, NA, 999)
 )
 
-Q <- Qlearn(dat, Q_hat ~ 
-              noise + 
-              tumor_mass + dose + toxicity, "dose")
+Q <- Qlearn(
+  dat,
+  Q_hat ~
+    # noise +
+    tumor_mass + dose + toxicity,
+  "dose",
+  method = "rpart",
+  control =
+    rpart.control(
+      minsplit = 50,
+      minbucket = 20,
+      cp = 1e-1,
+      xval = 10
+    )
+)
 
 dat <- Q$data %>%
   select(ID,
@@ -280,7 +320,7 @@ dat <- Q$data %>%
          Q_hat = lag(Q_hat),
          best = ifelse(died != 1 | is.na(died), best, NA))
 
-source("sim-test-noise.R")
+dat_test_long <- sim_test(Q)
 ```
 
 
@@ -327,5 +367,12 @@ iqlearn
 qLearn
 
 
-
+```{r rf, eval = F}
+mod_rf <- train(
+  Q_hat ~ tumor_mass + toxicity + dose,
+  data = month5,
+  method = "rf",
+  na.action = na.exclude
+)
+```
 
