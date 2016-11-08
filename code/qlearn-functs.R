@@ -73,19 +73,22 @@ max_df <- function(data, model, form, idvar = NULL, x = seq(0, 1, by = 0.01), me
     unnest() 
   if (method == "rcs") {
     data_preds <- data_long %>%
-      mutate(preds = predict(model, .))
+      mutate(preds = predict(model, .)) %>%
+      group_by_(idvar) %>%
+      mutate(max = max(preds),
+             best = ifelse(is.na(max),
+                           NA,
+                           which.max(preds) - 1) / 100) 
   }
   if (method == "rpart") {
     data_preds <- data_long %>%
       mutate(preds = predict(model, .) %>%
-               apply(1, function(z) as.numeric(names(which.max(z)))))
+               apply(1, function(z) as.numeric(names(which.max(z))))) %>% 
+      group_by_(idvar) %>%
+      mutate(max = max(preds),
+             best = ifelse(preds == max, dose, NA) %>% median(na.rm = T))
   }
   data_preds %>%
-    group_by_(idvar) %>%
-    mutate(max = max(preds),
-           best = ifelse(is.na(max),
-                               NA,
-                               which.max(preds) - 1) / 100) %>%
     select(-dose, -preds) %>% unique()
 }
 
@@ -136,95 +139,10 @@ Qlearn <- function(data, formula, treatment, method = "rcs", ...) {
   list(data = data, mod_list = mod_list, formula = Q1$formula, method = method)
 }
 
-
-# testing -----------------------------------------------------------------
-
-# data <- dat_long %>% filter(month == 5) %>% mutate(Q_hat = factor(Q_hat))
-# formula <- Q_hat ~ tumor_mass + dose + toxicity
-# method <- "rcs"
-# treatment <- "dose"
-# model <- fit_rpart(form$formula, data = data)
-# form <- makeRCS(formula = formula, treatment = "dose", method = "rpart")
-# idvar <- "ID"
-# method = "rpart"
-# x <- seq(0,1,0.01)
-# max_df(data = data, model = model, form, method = "rpart")
-# 
-# if (is.null(idvar)) {
-#   data <- data %>% mutate(ID = 1:nrow(.))
-#   idvar <- "ID"
-# }
-# data_long <- data %>%
-#   select(matches(idvar),
-#          one_of(form$covariates)) %>%
-#   mutate(dose = map(1:nrow(.), ~ x)) %>%
-#   unnest() 
-# if (method == "rcs") {
-#   data_preds <- data_long %>%
-#     mutate(preds = predict(model, .))
-# }
-# if (method == "rpart") {
-#   data_preds <- data_long %>%
-#     mutate(preds = predict(model, .) %>%
-#              apply(1, function(x) as.numeric(names(which.max(x)))))
-# }
-# 
-# predict(model, data_long)
-# 
-# 
-# data_preds %>%
-#   group_by_(idvar) %>%
-#   mutate(max = max(preds),
-#          best = ifelse(is.na(max),
-#                        NA,
-#                        which.max(preds) - 1) / 100) %>%
-#   select(-dose, -preds) %>% unique()
-
-
-# 
-# # Q1 <- one_step_Q(
-# #   Q_hat ~ noise + tumor_mass + dose + toxicity,
-# #   data = mutate(dat_long, noise = runif(7000), Q_hat = reward) %>% filter(month == 5),
-# #   treatment = "dose"
-# # )
-# 
-#   form_char <- as.character(formula)
-#   response <- form_char[2]
-#   predictors <- form_char[3]
-#   predictor_names <- strsplit(predictors, " \\+ ")[[1]]
-#   if (method == "rcs") {
-#     form_base_rcs <- paste(response,
-#                            "~",
-#                            paste0("rcs(", predictor_names, ")", collapse = " + "))
-#     ints <-
-#       paste0("rcs(", predictor_names, ")", " %ia% ", "rcs(", treatment, ")")
-#     trtbytrt <-
-#       paste0("rcs(", treatment, ")", " %ia% ", "rcs(", treatment, ")")
-#     ints <- ints[ints != trtbytrt]
-#     ints <- paste(ints, collapse = " + ")
-#     formula <- paste(c(form_base_rcs, ints), collapse = " + ")
-#   }
-#   covariates <- predictor_names[!(predictor_names %in% treatment)]
-#   list(formula = as.formula(formula), covariates = covariates, treatment = treatment)
-# 
-# data %>%
-#   select(matches(idvar),
-#          one_of(form$covariates)) %>%
-#   mutate(dose = map(1:nrow(.), ~ x)) %>%
-#   unnest() %>%
-#   mutate(preds = predict(model, .)) %>%
-#   group_by_(idvar) %>%
-#   mutate(max = max(preds),
-#          best = ifelse(is.na(max),
-#                        NA,
-#                        which.max(preds) - 1) / 100) %>%
-#   select(-dose, -preds) %>% unique()
-
-
 # sim testing function ----------------------------------------------------
 
 sim_test <- function(Q) {
-  if (str_detect(Q$formula$covariates, "noise")) {
+  if (sum(str_detect(Q$formula$covariates, "noise")) > 0) {
     noise_vars <- T
   } else {
     noise_vars <- F
@@ -269,33 +187,6 @@ sim_test <- function(Q) {
   D1 <- c(D1, D0)
   
   D <- replicate(6, D1)
-  
-  # function for how toxicity changes
-  Wdot <- function(M, D, a1 = 0.1, b1 = 1.2, d1 = 0.5) { 
-    a1 * M + b1 * (D - d1)
-  }
-  
-  # function for how tumor mass changes
-  Mdot <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5) { 
-    (a2 * W - b2 * (D - d2)) * ifelse(M > 0, 1, 0)
-  }
-  
-  # reward functions
-  R2 <- function(W1, W0) {
-    ifelse(W1 - W0 <= -0.5, 5,
-           ifelse(W1 - W0 >= 0.5, -5, 0))
-  }
-  R3 <- function(M1, M0) {
-    ifelse(M1 == 0 & M0 == 0, 0,
-           ifelse(M1 == 0, 15,
-                  ifelse(M1 - M0 <= -0.5, 5,
-                         ifelse(M1 - M0 >= 0.5, -5, 0)))
-    )
-  }
-  
-  lambda <- function(W, M, mu0 = -7, mu1 = 1, mu2 = 1) {
-    exp(mu0 + mu1 * W + mu2 * M)
-  }
   
   r <- matrix(c(numeric(N * Ttot)), ncol = Ttot)
   died <- matrix(c(numeric(N * Ttot)), ncol = Ttot)
@@ -425,6 +316,4 @@ sim_test <- function(Q) {
       )
   }
 }
-
-
 
