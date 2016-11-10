@@ -35,7 +35,7 @@ mod <- mod_rf_fact
 
 levels(predict(mod))[predict(mod)] %>% as.numeric()
 
-dat_long %>% filter(month == 5) %>%
+nested_df <- dat_long %>% filter(month == 5) %>%
   select(ID, tumor_mass, toxicity, -dose) %>%
   mutate(dose = map(1:nrow(.), ~ seq(0, 1, 0.01))) %>%
   unnest() %>%
@@ -46,11 +46,22 @@ dat_long %>% filter(month == 5) %>%
   group_by(ID) %>%
   mutate(max = max(preds),
          # picks the lowest dose that corresponds to the best reward
-         best = (which.max(preds) - 1) / 100) %>% 
-  select(-preds, -dose) %>% unique()
+         best1 = (which.max(preds) - 1) / 100,
+         best2 = ifelse(preds == max, dose, NA) %>% median(na.rm = T))
+  # select(-preds, -dose) %>% unique()
 
 
+set.seed(2)
+i <- sample(nested_df$ID, 1)
+ggplot(filter(nested_df, ID == i)) +
+  geom_point(aes(x = dose, y = preds), shape = 2) +
+  geom_point(aes(x = dose, y = best1), color = "red")
 
+set.seed(5)
+ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
+  geom_jitter(mapping = aes(x = dose, y = preds, color = factor(ID), alpha  = 0.5), show.legend = F) +
+  geom_jitter(mapping = aes(x = best1, y = preds, group = factor(ID)), color = "blue", shape = 2, show.legend = F) +
+  geom_jitter(mapping = aes(x = best2, y = preds, group = factor(ID)), color = "red", shape = 2, show.legend = F)
 
 # Using caret -------------------------------------------------------------
 
