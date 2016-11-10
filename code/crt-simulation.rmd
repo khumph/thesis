@@ -153,6 +153,7 @@ died <- matrix(c(numeric(6000)), ncol = 6)
 W <- matrix(c(W0, numeric(6000)), ncol = 7)
 M <- matrix(c(M0, numeric(6000)), ncol = 7)
 
+set.seed(20161110)
 for (i in 1:(Ttot)) {
   for (j in 1:N) {
     if (sum(died[j, 1:i]) == 0) {
@@ -291,25 +292,29 @@ Q <- Qlearn(dat_long,
             Q_hat ~
               # noise +
               tumor_mass + dose + toxicity, method = "rcs", "dose")
-
-dat <- Q$data %>%
-  select(ID,
-         month,
-         dose,
-         best,
-         reward,
-         Q_hat,
-         tumor_mass,
-         toxicity,
-         died) %>%
-  mutate(reward = lag(reward),
-         Q_hat = lag(Q_hat),
-         best = ifelse(died != 1 | is.na(died), best, NA))
 ```
 
 
 ```{r}
-ggplot(filter(dat, month == 4)) +
+align_df <- function(Q) {
+  Q$data %>%
+    select(ID,
+           month,
+           dose,
+           best,
+           reward,
+           Q_hat,
+           tumor_mass,
+           toxicity,
+           died) %>%
+    mutate(reward = lag(reward),
+           Q_hat = lag(Q_hat),
+           best = ifelse(died != 1 | is.na(died), best, NA))
+}
+
+dat <- align_df(Q)
+
+ggplot(filter(dat, month == 5)) +
   geom_point(aes(x = tumor_mass, y = reward)) +
   geom_point(aes(x = tumor_mass, y = Q_hat), color = "blue")
 ```
@@ -324,7 +329,10 @@ ggplot(dat, aes(x = predict(mod), y = residuals(mod))) + geom_point()
 
 ggplot(dat) +
   geom_point(aes(x = tumor_mass, y = reward)) +
-  geom_point(aes(x = tumor_mass, y = predict(mod)), color = "blue")
+  geom_point(aes(
+    x = tumor_mass,
+    y = predict(mod)
+  ), color = "blue")
 
 ggplot(dat) +
   geom_point(aes(x = toxicity, y = reward)) +
@@ -332,21 +340,14 @@ ggplot(dat) +
 ```
 
 ```{r}
-nested_df <- dat %>%
-  mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.01))) %>%
-  unnest() %>%
-  mutate(preds = predict(mod, .)) %>%
-  group_by(ID) %>%
-  mutate(max = max(preds),
-         best = ifelse(is.na(max),
-                       NA,
-                       which.max(preds) - 1) / 100)
-set.seed(2)
+nested_df <- max_df(dat, mod, Q$formula, idvar = "ID", nested = T)
+
+set.seed(8)
 i <- sample(nested_df$ID, 1)
 ggplot(filter(nested_df, ID == i), aes(x = dose, y = preds)) +
   geom_point()
 
-set.seed(5)
+set.seed(77)
 ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
   geom_line(mapping = aes(x = dose, y = preds, group = ID))
 ```
@@ -394,6 +395,93 @@ list(plot_tox = plot_tox, plot_tumor = plot_tumor, plot_sum = plot_sum, table_de
 sim_test(Q) %>% plots_tab()
 ```
 
+# RCS with one noise var
+```{r}
+set.seed(20161027)
+dat <- dat_long %>% mutate(
+  noise = runif(7000),
+  Q_hat = ifelse(month == 6, NA,
+                 ifelse(month == 5, reward, 0)),
+  best = ifelse(month == 6, NA, 999)
+)
+
+Q <- Qlearn(dat,
+            Q_hat ~
+              noise +
+              tumor_mass + dose + toxicity, method = "rcs", "dose")
+
+sim_test(Q) %>% plots_tab()
+```
+
+
+# Use rpart with reward as a factor
+
+```{r}
+set.seed(20161027)
+dat <- dat_long %>% mutate(
+  Q_hat = ifelse(month == 6, NA,
+                 ifelse(month == 5, reward, 0)),
+  best = ifelse(month == 6, NA, 999)
+)
+
+Q <- Qlearn(
+  dat,
+  Q_hat ~
+    tumor_mass + dose + toxicity,
+  "dose",
+  method = "rpart",
+  control =
+    rpart.control(
+      minsplit = 10,
+      minbucket = 5,
+      cp = 1e-4,
+      xval = 20
+    )
+)
+```
+
+```{r xplor-plots}
+dat <- align_df(Q) %>% subset_df(5)
+
+mod <- Q$mod_list[[5]]
+
+ggplot(dat) +
+  geom_point(aes(x = tumor_mass, y = reward), shape = 5, color = "red") +
+  geom_point(aes(
+    x = tumor_mass,
+    y = predict(mod) %>%
+      apply(
+        1, function(z) which.max(z) %>% names() %>% as.numeric()
+        )
+  ), color = "blue", shape = 2)
+
+
+ggplot(dat) +
+  geom_point(aes(x = toxicity, y = reward), shape = 5, color = "red") +
+  geom_point(aes(x = toxicity, y = predict(mod) %>%
+      apply(
+        1, function(z) which.max(z) %>% names() %>% as.numeric()
+        )), color = "blue", shape = 2)
+```
+
+```{r}
+nested_df <- max_df(dat, Q$mod_list[[5]], Q$formula, idvar = "ID", method = "rpart", nested = T)
+set.seed(2)
+i <- sample(nested_df$ID, 1)
+ggplot(filter(nested_df, ID == i), aes(x = dose, y = preds)) +
+  geom_point()
+
+set.seed(5)
+ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
+  geom_jitter(mapping = aes(x = dose, y = preds, color = factor(ID), alpha  = 0.5), show.legend = F)
+```
+
+
+```{r}
+sim_test(Q) %>% plots_tab()
+```
+
+# Add noise to rpart  
 
 ```{r}
 set.seed(20161027)
@@ -407,45 +495,29 @@ dat <- dat_long %>% mutate(
 Q <- Qlearn(
   dat,
   Q_hat ~
-    # noise +
+    noise +
     tumor_mass + dose + toxicity,
   "dose",
   method = "rpart",
   control =
     rpart.control(
-      minsplit = 50,
-      minbucket = 20,
-      cp = 1e-1,
-      xval = 10
+      minsplit = 10,
+      minbucket = 5,
+      cp = 1e-4,
+      xval = 20
     )
 )
-
-# dat <- Q$data %>%
-#   select(ID,
-#          month,
-#          dose,
-#          best,
-#          reward,
-#          Q_hat,
-#          tumor_mass,
-#          toxicity,
-#          died) %>%
-#   mutate(reward = lag(reward),
-#          Q_hat = lag(Q_hat),
-#          best = ifelse(died != 1 | is.na(died), best, NA))
-
-dat_test_long <- sim_test(Q)
 ```
 
 ```{r}
-dat_test_long %>% plots_tab()
+sim_test(Q) %>% plots_tab()
 ```
+
 
 #### other packages:
 MDPtoolbox
 iqlearn
 qLearn
-
 
 ```{r rf, eval = F}
 mod_rf <- train(

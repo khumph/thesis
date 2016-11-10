@@ -61,7 +61,7 @@ fit_rpart <- function(formula, data, cpmethod = "min", ...) {
 }
 
 
-max_df <- function(data, model, form, idvar = NULL, x = seq(0, 1, by = 0.01), method = "rcs") {
+max_df <- function(data, model, form, idvar = NULL, x = seq(0, 1, by = 0.01), method = "rcs", nested = F) {
   if (is.null(idvar)) {
     data <- data %>% mutate(ID = 1:nrow(.))
     idvar <- "ID"
@@ -86,10 +86,15 @@ max_df <- function(data, model, form, idvar = NULL, x = seq(0, 1, by = 0.01), me
                apply(1, function(z) as.numeric(names(which.max(z))))) %>% 
       group_by_(idvar) %>%
       mutate(max = max(preds),
-             best = ifelse(preds == max, dose, NA) %>% median(na.rm = T))
+             best = ifelse(preds == max, dose, NA) %>% median(na.rm = T)
+      )
   }
-  data_preds %>%
-    select(-dose, -preds) %>% unique()
+  if (nested == T) {
+    data_preds
+  } else {
+    data_preds %>%
+      select(-dose, -preds) %>% unique()  
+  }
 }
 
 one_step_Q <- function(formula, treatment, data, method = "rcs", ...) {
