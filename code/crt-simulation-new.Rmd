@@ -99,12 +99,63 @@ Figure 2 illustrates the treatment plan and relevant Q-function estimation proce
 
 ```{r}
 source("~/Google Drive/active/setup.R")
-p_load(gridExtra, rpart)
+p_load(gridExtra, rpart, rms)
 ```
 
 ```{r sim}
 source("sim-new-reward.R")
+source("qlearn-functs.R")
+set.seed(20161116)
+dat_long <- sim(reward.type = "orig")
 ```
+
+```{r}
+dat <- dat_long %>% filter(month == 5 | month == 6)
+
+dat <- dat %>% mutate(reward = lag(reward))
+
+dat_long %>%
+    select(ID,
+           month,
+           dose,
+           reward,
+           tumor_mass,
+           toxicity,
+           died) %>%
+    mutate(reward = lag(reward))
+
+dat %>% group_by(ID) %>%  mutate(
+  r = R2(lead(toxicity), toxicity, reward.type = "orig") +
+      R3(lead(tumor_mass), tumor_mass, reward.type = "orig") +
+          ifelse(lead(died, default = 0) == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
+
+dat %>% filter(tumor_mass > 0.5, dose < 0.5 | is.na(dose)) %>% group_by(ID) %>%  mutate(
+  r = R2(lead(toxicity), toxicity, reward.type = "orig") +
+      R3(lead(tumor_mass), tumor_mass, reward.type = "orig") +
+          ifelse(lead(died, default = 0) == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
+
+dat %>% filter(tumor_mass > 0.5, dose > 0.5 | is.na(dose)) %>% group_by(ID) %>%  mutate(
+  r = R2(lead(toxicity), toxicity, reward.type = "orig") +
+      R3(lead(tumor_mass), tumor_mass, reward.type = "orig") +
+          ifelse(lead(died, default = 0) == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
+
+dat %>% filter(tumor_mass < 0.5, dose < 0.5 | is.na(dose)) %>% group_by(ID) %>% mutate(
+  r = R2(toxicity, lag(toxicity), reward.type = "orig") +
+      R3(tumor_mass, lag(toxicity), reward.type = "orig") +
+          ifelse(died == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
+
+dat %>% filter(tumor_mass < 0.5, dose > 0.5 | is.na(dose)) %>% group_by(ID) %>% mutate(
+  r = R2(toxicity, lag(toxicity), reward.type = "orig") +
+      R3(tumor_mass, lag(toxicity), reward.type = "orig") +
+          ifelse(died == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
+```
+
+
 
 ```{r}
 tox_mass_plot <- ggplot(
@@ -165,10 +216,6 @@ $$
 
 ### Until S is terminal
 
-```{r}
-source("qlearn-functs.R")
-```
-
 ```{r qlearn}
 set.seed(20161027)
 dat_long <- dat_long %>% mutate(
@@ -226,6 +273,6 @@ ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
 ```
 
 ```{r}
-sim_test(Q) %>% plots_tab()
+sim_test(Q, reward.type = "exp") %>% plots_tab()
 ```
 

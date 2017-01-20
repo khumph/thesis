@@ -10,8 +10,6 @@ for (i in 1:200) {
   reward[i] <- opt$objective
 }
 
-f
-
 x <- seq(0, 1, by = 0.01)
 dat %>%
   mutate(dose = map(1:nrow(.), ~ x)) %>%

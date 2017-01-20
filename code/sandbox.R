@@ -1,5 +1,152 @@
-library(caret)
-library(randomForest)
+# redefining loss function in rpart ----------------------------------------
+
+library(pacman)
+p_load(randomForest, rattle, rpart.plot, RColorBrewer)
+
+fancyRpartPlot(mytree)
+
+data <- dat_long %>% filter(month == 5) %>%
+  mutate(Q_hat = ifelse(Q_hat == -65 | Q_hat == -55, -60,
+                        Q_hat) %>% factor())
+formula <- Q_hat ~ tumor_mass + dose + toxicity
+method <- "rcs"
+treatment <- "dose"
+form <- makeRCS(formula = formula, treatment = "dose", method = "rpart")
+model <- fit_rpart(form$formula, data = data)
+idvar <- "ID"
+method = "rpart"
+x <- seq(0,1,0.01)
+max_df(data = data, model = model, form, method = "rpart")
+
+fit <- rpart(
+  formula,
+  data = data,
+  method = "class",
+  parms = list(
+    split = "information",
+    loss = rbind(
+      c(0, 55, 60, 65, 70, 75),
+      c(0, 55, 60, 65, 70, 75),
+      c(0, 55, 60, 65, 70, 75),
+      c(0, 55, 60, 65, 70, 75),
+      c(0, 55, 60, 65, 70, 75),
+      c(0, 55, 60, 65, 70, 75)
+    )
+  ),
+  control = rpart.control(usesurrogate = 0, maxsurrogate = 0)
+)
+
+data$Q_hat
+
+fit_rpart <- function(formula, data, cpmethod = "min", ...) {
+  mod_rpart <- rpart(formula, 
+                     data = data, ...)
+  if (cpmethod == "min_sd") {
+    pruned <- mod_rpart$cptable %>%
+      as_data_frame() %>%
+      mutate(
+        xerror_min = min(xerror),
+        xerror_min_sd = ifelse(xerror == xerror_min, xstd, 0) %>% sum(na.rm = T)
+      ) %>% filter(near(xerror, xerror_min + xerror_min_sd, tol = 0.01)) %>%
+      filter(nsplit == min(nsplit)) %>% 
+      select(CP) %>% flatten_dbl() %>%
+      prune(mod_rpart, .)
+  }
+  if (cpmethod == "min") {
+    pruned <- mod_rpart$cptable %>%
+      as_data_frame() %>%
+      filter(xerror == min(xerror)) %>% 
+      filter(nsplit == min(nsplit)) %>% 
+      select(CP) %>% flatten_dbl() %>%
+      prune(mod_rpart, .)
+  }
+  pruned
+}
+
+rpart(Q$formula$formula, data = filterdat_long, )
+
+
+
+# testing -----------------------------------------------------------------
+
+
+# 
+# if (is.null(idvar)) {
+#   data <- data %>% mutate(ID = 1:nrow(.))
+#   idvar <- "ID"
+# }
+# data_long <- data %>%
+#   select(matches(idvar),
+#          one_of(form$covariates)) %>%
+#   mutate(dose = map(1:nrow(.), ~ x)) %>%
+#   unnest() 
+# if (method == "rcs") {
+#   data_preds <- data_long %>%
+#     mutate(preds = predict(model, .))
+# }
+# if (method == "rpart") {
+#   data_preds <- data_long %>%
+#     mutate(preds = predict(model, .) %>%
+#              apply(1, function(x) as.numeric(names(which.max(x)))))
+# }
+# 
+# predict(model, data_long)
+# 
+# 
+# data_preds %>%
+#   group_by_(idvar) %>%
+#   mutate(max = max(preds),
+#          best = ifelse(is.na(max),
+#                        NA,
+#                        which.max(preds) - 1) / 100) %>%
+#   select(-dose, -preds) %>% unique()
+
+
+# 
+# # Q1 <- one_step_Q(
+# #   Q_hat ~ noise + tumor_mass + dose + toxicity,
+# #   data = mutate(dat_long, noise = runif(7000), Q_hat = reward) %>% filter(month == 5),
+# #   treatment = "dose"
+# # )
+# 
+#   form_char <- as.character(formula)
+#   response <- form_char[2]
+#   predictors <- form_char[3]
+#   predictor_names <- strsplit(predictors, " \\+ ")[[1]]
+#   if (method == "rcs") {
+#     form_base_rcs <- paste(response,
+#                            "~",
+#                            paste0("rcs(", predictor_names, ")", collapse = " + "))
+#     ints <-
+#       paste0("rcs(", predictor_names, ")", " %ia% ", "rcs(", treatment, ")")
+#     trtbytrt <-
+#       paste0("rcs(", treatment, ")", " %ia% ", "rcs(", treatment, ")")
+#     ints <- ints[ints != trtbytrt]
+#     ints <- paste(ints, collapse = " + ")
+#     formula <- paste(c(form_base_rcs, ints), collapse = " + ")
+#   }
+#   covariates <- predictor_names[!(predictor_names %in% treatment)]
+#   list(formula = as.formula(formula), covariates = covariates, treatment = treatment)
+# 
+# data %>%
+#   select(matches(idvar),
+#          one_of(form$covariates)) %>%
+#   mutate(dose = map(1:nrow(.), ~ x)) %>%
+#   unnest() %>%
+#   mutate(preds = predict(model, .)) %>%
+#   group_by_(idvar) %>%
+#   mutate(max = max(preds),
+#          best = ifelse(is.na(max),
+#                        NA,
+#                        which.max(preds) - 1) / 100) %>%
+#   select(-dose, -preds) %>% unique()
+
+
+
+# random forest -----------------------------------------------------------
+
+
+
 
 set.seed(20161107)
 mod_rf <- randomForest(Q_hat ~ tumor_mass + toxicity + dose,

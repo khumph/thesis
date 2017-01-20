@@ -1,4 +1,4 @@
-# Q-learning functions ----------------------------------------------------
+ # Q-learning functions ----------------------------------------------------
 
 makeRCS <- function(formula, treatment, method = "rcs") {
   form_char <- as.character(formula)
@@ -37,7 +37,7 @@ fit_rcs <- function(formula, data, ...) {
 
 fit_rpart <- function(formula, data, cpmethod = "min", ...) {
   mod_rpart <- rpart(formula, 
-                     data = data, ...)
+                     data = data, method = "class", ...)
   if (cpmethod == "min_sd") {
     pruned <- mod_rpart$cptable %>%
       as_data_frame() %>%
@@ -128,7 +128,7 @@ Qlearn <- function(data, formula, treatment, method = "rcs", ...) {
       data[data$month == (i), ]$Q_hat <- dat$reward + Q1$max
     }
     if (method == "rpart") {
-      data[data$month == (i), ]$Q_hat <- dat$reward + Q1$max
+      data[data$month == (i), ]$Q_hat <- dat$reward + Q1$max %>% factor()
     }
     data[data$month == (i + 1), ]$best <- Q1$best
     if (i == 0) {
@@ -146,7 +146,7 @@ Qlearn <- function(data, formula, treatment, method = "rcs", ...) {
 
 # sim testing function ----------------------------------------------------
 
-sim_test <- function(Q) {
+sim_test <- function(Q, reward.type = "orig") {
   if (sum(str_detect(Q$formula$covariates, "noise")) > 0) {
     noise_vars <- T
   } else {
@@ -219,8 +219,8 @@ sim_test <- function(Q) {
         died[j, i] <- rbinom(1, 1, p)
         # add up rewards
         r[j, i] <-
-          R2(W[j, i + 1], W[j, i]) +
-          R3(M[j, i + 1], M[j, i]) +
+          R2(W[j, i + 1], W[j, i], reward.type) +
+          R3(M[j, i + 1], M[j, i], reward.type) +
           ifelse(died[j, i] == 1, -60, 0)
       } else {
         # if patient already died, can't die again or get rewards, mass and tox to NA
@@ -322,3 +322,83 @@ sim_test <- function(Q) {
   }
 }
 
+
+# Getting results functions -----------------------------------------------
+
+align_df <- function(Q) {
+  Q$data %>%
+    select(ID,
+           month,
+           dose,
+           best,
+           reward,
+           Q_hat,
+           tumor_mass,
+           toxicity,
+           died) %>%
+    mutate(reward = lag(reward),
+           Q_hat = lag(Q_hat),
+           best = ifelse(died != 1 | is.na(died), best, NA))
+}
+
+align_df <- function(Q) {
+  Q$data %>%
+    select(ID,
+           month,
+           dose,
+           best,
+           reward,
+           Q_hat,
+           tumor_mass,
+           toxicity,
+           died) %>%
+    mutate(reward = lag(reward),
+           Q_hat = lag(Q_hat),
+           best = ifelse(died != 1 | is.na(died), best, NA))
+}
+
+plots_tab <- function(dat_test_long) {
+  dat_long_summ <- dat_test_long %>% group_by(group, month) %>% 
+    summarise(
+      mean_tox = mean(toxicity, na.rm = T),
+      mean_tumor = mean(tumor_mass, na.rm = T)
+    ) %>% mutate(
+      sum_means = mean_tox + mean_tumor
+    )
+  
+  plot_tox <- ggplot(data = dat_long_summ) +
+    geom_line(mapping = aes(
+      x = month,
+      y = mean_tox,
+      color = group,
+      group = group
+    ))
+  
+  plot_tumor <- ggplot(data = dat_long_summ) +
+    geom_line(mapping = aes(
+      x = month,
+      y = mean_tumor,
+      color = group,
+      group = group
+    ))
+  
+  plot_sum <- ggplot(data = dat_long_summ) +
+    geom_line(mapping = aes(
+      x = month,
+      y = sum_means,
+      color = group,
+      group = group
+    ))
+  
+  tab <-
+    dat_test_long %>% group_by(group) %>%
+    summarise(num_died = sum(died, na.rm = T),
+              prop_died = num_died / 200)
+  
+  list(
+    plot_tox = plot_tox,
+    plot_tumor = plot_tumor,
+    plot_sum = plot_sum,
+    table_deaths = tab
+  )
+}

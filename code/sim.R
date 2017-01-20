@@ -83,9 +83,6 @@ for (i in 1:(Ttot)) {
   }
 }
 
-# set.seed(9)
-# noise <- replicate(7, runif(N))
-
 colnames(D) <- 0:5
 colnames(M) <- 0:6
 colnames(W) <- 0:6

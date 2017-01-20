@@ -1,0 +1,185 @@
+previous methods to identify subgroups:
+
+# Previous methods:
+## with clear a priori hypotheses re: subgroups
+> factorial analysis of variance (ANOVA) with a first factor pertaining to treatment methods and a second one to subgroups (Shaffer 1991), and regression analyses with suitable interaction terms being included in the regression model
+
+factorial analysis of variance (ANOVA)
+
+## without a priori hypotheses re: subgroups (the five rpart methods)
+many potential subgropus: a problem of cluster analysis: goal to find clusters with meaningful cluster x trt interactions
+
+# example data
+### motivational interviewing techniques
+goal: increase interviewee's motivation for change (of behavior?)
+includes:
+1. motivational interview style: asking open-ended questions, listening reflectively (?), affirming change-related participant statements and efforts, eliciting self-motivational statements with directive methods (?), handling resistance without direct confrontation
+2. motivation-enhancing strategies: practicing empathy, providing choice, removing barriers, providing feedback, and clarifying goals
+
+18 pretreatment variables available including demographics, aspects of substance abuse
+
+outcome: number of sessions completed 28 days after treatment assignment
+
+primary interest is in the type of output of each method, not detailed comparison based off of example data
+
+### data
+423 patients who were seeking treatment for a substance use problem
+1. baseline assessment
+2. randomization into standard (n = 214) and motivational interviewing techniques (n = 209)
+3. 178 in the standard and 174 in treatment available due to missing values
+
+Treatment variable indicated by T
+T = 1 for motivation interviewing
+T = 0 standard
+
+# Model-based recursive partitioning (MOB) (Zeileis et al. 2008)
+
+main idea: in many situations, a single global model that fits all observations cannot be found, but well fitting models may be available after splitting into subgroups
+
+1. Grow a tree, every node of which is associated with a parametric model of type $M(O_n,\theta)$ with $O_n$ = number of observations in node, and $\theta$ a vector of parameters $\in \Theta$.
+  Model type and $J$ $X_j, j = 1, \ldots, J$ covariates must be prespecified (e.g., a logistic regression model representing the regression of a binary outcome variable Y on two predictors)
+For each node:
+    2.  the model can be fit by minimizing some objective function $\Psi$
+    3. To assess whether it is necessary to split a node, a fluctuation test for parameter instability is performed. the variable associated with the highest parameter instability is selected
+      (are parameter estimates stable across all partitions of covariates? vs does splitting the node on one of the covariates capture instabilities-improve fit?) belong to the class of generalized M-fluctuation tests. (May need to add a multiplicity correction)
+    4. node is then partitioned according to this variable and according to the split point that locally optimizes $\Psi$ in the child nodes
+repeat until when no further instabilities can be found or when a potential split results in a child node that contains less than a prespecified number of observations.
+
+can use Model-based partitioning to identify subgroups involved in meaningful treatment–subgroup interactions by putting M(On, θ) equal to a regression of treatment outcome (Y ) on treatment type (T ) while partitioning on the pre-treatment characteristics (X1, . . . , X J ).
+
+objective functions include error sums of squares, and minus the log- likelihood
+
+# Interaction Trees
+
+specifically developed to account for heterogeneity of treatment effects: goal is to create subgroups with treatment effects as different as possible
+
+Start by splitting a node on some covariate $X_j$, compare two models linear main effects with treatment and indicator for $X_j$ node split ($Z$), and the same model with a treatment by indicator interaction (equivalent to a t test for interaction term coef = 0).
+
+Search across all partitioning variables and splits, pick the one that produces the largest difference in treatment effect between child nodes (i.e. largest t stat squared from above)
+
+repeat until stopping criteria are met: a preset maximum tree depth, and the number of observations in a parent node or in one of the child nodes being under some thresholds that are to be prespecified by the user.
+
+procedure results in a large initial tree, denoted by Q0.
+
+best subtree of Q0 is determined using an interaction-complexity pruning algorithm (find the subtree that displays the best balance between amount of interaction and tree complexity):
+amount of interaction of a tree Q (denoted by G(Q)) is defined as the sum of the measures of the interaction of all its internal nodes h, denoted by g(h) (eqn 4)
+tree complexity is measured by the sum of it's internal nodes $(#\tilde{Q})$
+
+To choose a subtree optimied wrt amount of interaction and tree complexity:
+remove node h and the subtree $Q_h$ below it, such that Q_h $G(Q_h)/#\tilde{Q}_h$ is minimal
+
+-> get a nested sequence of subtrees. best is selected by maximizing an interaction complexity measure: eqn 5
+
+# Simultaneous Threshold Interaction Modelling Algorithm (STIMA)
+
+goal of STIMA is to automatically search for hihger order interactions (nodes in tree) among variables already in model
+
+ultiple regression model with main effects and higher order interactions and the regression tree are estimated simultaneously
+
+(precursor of STIMA, called the regression trunk approach, used a two-step algorithm for this estimation)
+
+continuous outcome, constructs a tree based on binary splits of the predictor variables (as long as nodes bigger than cutoff)
+
+starts at tree with a linear main effects model as (initial reference model)
+
+determine increase in variance accounted for by adding an indicator cutoff for one covariate.
+If covariate is categorical, dummy variable main effects correspoding to Xj* are removed to avoid linear dependence, can be considered only as splitting variable provided that in the child node under study all of its values have a marginal frequency ≥ 4
+prior to splitting, Xj∗ is transformed into an ordinal variable by replacing each of its values by the mean residual Y − Yˆ , with Yˆ taken from main effects only model, and the mean being calculated across all experimental units that take the value in question.
+
+exhaustive search among all covariates and all possible splits, STIMA will ultimately select the covariate—split point combination, say (X1, c1), that induces the highest increase in variance accounted for.
+
+Make the split, now that mode is new "main effects"/reference model
+
+add on interacting split with first cutoff, go through same procedure
+
+
+results in a nested sequence of regression models, best model among these is determined using V -fold cross-validation (perhaps repeated), lowest relative error plus some constant times cross validated SE
+
+To use in indentifying subgroups, force first split to be on treatment variable
+
+# Subgroup Identification based on Differential Effect Search (SIDES)
+
+one trt is reference
+
+tries to identify covariate combinations that have a much higher response on alternative than reference treatment
+ignores rest of covariate space as "uninteresting"
+end up with a number of possibly overlapping subgroups with a relatively higher response on alternative
+
+subgroups determined by recursively splitting the data while selecting M multiple splits for each parent node (M prespecified by user)
+
+only covariates not involved in definition of parent node are eligible to be split upon
+
+one of three possible splitting criteria is prespecified and then used (eqn 13, 14, 15). The first maximizes the difference between the daughter nodes in the extent that the alterative outperforms the reference treatment. The second maximizes the extent that the alternative outperforms the reference treatment in at least one of the two daughter nodes. The third is a combination of the first and second (picks the largest).
+
+Looks across all combinations of split points and covariates, ends up with M best splits. Within each of the M pairs of daughter nodes, the subgroup with the smallest p-value for the one sided treatment difference is considered for further splitting. If p < kappa where kappa is found using a permuation, the daughter node is also retained
+
+rows of covariates in data frame are randomly permuted, leaving treatment type and outcomes in place. SIDES is ran on each permuted data set for a grid of kappa values, for each kappa, the proportion of data sets for which SIDES identified at least one subgroup (Pr(kappa)). The optimal value of kappa is then defined to be the largest value of kappa for which Pr(kappa) does not exceed some prespecifed level alpha.
+
+Splitting continues until at least one criteria is met:
+1. a maximum number of covariates that may be involved
+2. minimum group size
+3. minimum improvement in performance with further splits  with the p-value pertaining to this level being at least a factor of λ smaller in the child subgroup than in the parent group (0 < λ < 1).
+
+
+
+# Virtual Twins
+
+Like SIDES, considers one treatment reference. Aims at identifying a single subgroup of persons that are likely to get a high benefit from the alternative versus the reference.
+
+Based on counterfactual or potential outcomes
+
+first estimates the potential outcome for each person for both the alternative and reference treatment (also refered to as virtual twins). the difference between these estimates represents the estimate of the individual treatment difference for each person.
+
+The estimated difference entered as outcome in classificaiton or regression tree, with covariates as predictors.
+The union of the leaves of this tree that exceeds some threshold average treatent effect consitute the subgroup identified by the algorithm
+
+constructs random forests of 1000 trees,
+based on bootstrap sample
+includes treatment type (T), all baseline characteristics (X_j), and their interaction
+
+the actual outcome under the treatment recieved is replaced by mean predicted from the trees that don't contain that person (out of bag)
+
+the outcome under the treatment not recieved is estimated by the mean after applying the entire random forest to that person's covariates
+
+or can do two random forests for each treatment, using out of bag on forest for treatment actually received, and estimated as above for the treatment not recieved
+
+$$
+G(i) = \hat{Y}_{i \mid T = 1} - \hat{Y}_{i \mid T = 0}
+$$
+
+Fit tree with G(i) as outcome
+
+The leaves in which the treatment effect exceeds a prespecified threshold c then consititue the subgroup identified
+
+treatment difference can be dichomonized, and outcome itself can be binary
+
+
+# differences and similarities
+
+all obviously aim at detecting treatment subgroup interactions (but two are broader)
+all use recursive partitioning, binary splits of covariates
+
+MOB, interaction trees, STIMA - represent full groups of person, use regression-type model structure (though method differs)
+
+SIDES and Virtual twins - focus on induction of subgroups
+
+# relevance of treatment subgroup interactions
+variance component analysis to provide a standardized measure of the effect of the interactions and associated main effects
+
+based on anova model one factor for treatment another for subgroups using type I SS
+
+eta^2 = ratio of the effect sum of squares to the total (proportion of variance in outcome accounted for by interaction and main effects)
+
+
+
+# which one to use?
+
+1. Do you want to consider the whole data or identify one or more subgroups that respond better than rest?
+
+2. only two methods can handle categorical outcomes
+
+3. only MOB and STIMA are publicly available
+
+
+
+None of above methods focus on "qualitative treatment-subgroup interactions": some subgroups of people one treatment is better, while for another subgroup the reverse is true. Utmost importance for personalized medicine and optimal treatment assignment: big payoff for future research

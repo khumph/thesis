@@ -1,7 +1,7 @@
 ---
-output: 
-  html_document: 
-    self_contained: no
+output:
+  html_document:
+    self_contained: yes
 ---
 
 
@@ -103,7 +103,7 @@ state-transition probabilities
 expected rewards for state–action–next-state triples,
 
 
-All you need to know to 
+All you need to know to
 
 Given any state and action s and a, the probability of each possible pair of next state and reward, s',r is completely specify the dynamics of a finite MDP
 
@@ -130,7 +130,7 @@ Informally, the value of state $s$ under policy $\pi$ (denoted $v_{\pi}(s)$) is 
 #### What is the value function for MDPs?
 
 \[
-v_{\pi}(s) \doteq \mathbb{E}_{\pi}[G_{t} \mid S_{t} = s] = 
+v_{\pi}(s) \doteq \mathbb{E}_{\pi}[G_{t} \mid S_{t} = s] =
   \mathbb{E}_{\pi}\left[ \sum_{k=0}^{\infty} \gamma^{k} R_{t+k+1} \mid S_{t} = s \right]
 \]
 
@@ -138,12 +138,12 @@ called the *state-value function for policy $\pi$*
 
 
 #### What is the value of an $a$ under policy $\pi$?
-Denoted $q_{\pi}(s,a)$ 
+Denoted $q_{\pi}(s,a)$
 The expected return starting from $s$, taking action $a$, and then following $\pi$ thereafter
 
 
 \[
-q_{\pi}(s,a) \doteq \mathbb{E}_{\pi}[G_{t} \mid S_{t} = s, A_{t} = a] = 
+q_{\pi}(s,a) \doteq \mathbb{E}_{\pi}[G_{t} \mid S_{t} = s, A_{t} = a] =
   \mathbb{E}_{\pi}\left[
     \sum_{k=0}^{\infty} \gamma^{k} R_{t+k+1} \mid S_{t} = s, A_{t} = a
   \right]
@@ -157,7 +157,7 @@ averaging over many random samples of actual results
 
 if an agent follows policy $\pi$ and maintains an average, for each state encountered, of the actual returns that have followed that state, then the average will converge to the state’s value, v_{\pi}(s), as the number of times that state is encountered approaches infinity. If separate averages are kept for each action taken in a state, then these averages will similarly converge to the action values, q$\pi$ (s, a).
 
-if there are very many states, then it may not be practical to keep separate averages for each state individually. 
+if there are very many states, then it may not be practical to keep separate averages for each state individually.
 
 Instead, the agent would have to maintain v$\pi$ and q$\pi$ as parameterized functions and adjust the parameters to better match the observed returns. This can also produce accurate estimates, although much depends on the nature of the parameterized function approximator (Chapter 9).
 
@@ -166,7 +166,7 @@ A fundamental property of value functions used throughout reinforcement learning
 
 What recursive relationships do value functions satisfy?
 
-bellman eqn p 17-18 
+bellman eqn p 17-18
 
 backup diagrams
 
@@ -178,6 +178,6 @@ These operations transfer value information back to a state (or a state– actio
 
 For finite MDPs, A policy $\pi$ is better than another policy $\pi$' if its expected return is greater than or equal to $\pi$' for all states:
 
-$\pi   $\pi$' if and only if v_{\pi}(s) \geq v{\pi'}(s) for all s \in \mathcal{S}.
+$\pi $\pi$' if and only if v_{\pi}(s) \geq v{\pi'}(s) for all s \in \mathcal{S}.
 
 There is always one policy that is better than or equal to all others

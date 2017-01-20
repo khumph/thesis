@@ -1,0 +1,123 @@
+\documentclass[12pt]{article}
+\usepackage[margin = 1in]{geometry}
+
+% makes table of contents and such hyperlinks
+\usepackage{hyperref}
+
+% nicely formatted tables
+\usepackage{booktabs}
+
+% H to force figures and tables to where they appear in text
+\usepackage{float}
+
+% English language/hyphenation
+\usepackage[english]{babel}
+
+% > < print corectly, accented words hyphenate
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+% allows usage of \enquote to quote things
+\usepackage{csquotes}
+
+% \usepackage[backend = bibtex, sorting=none, hyperref = true]{biblatex}
+% \addbibresource{spray.bib}
+\usepackage{cite}
+\usepackage{ctable}
+
+\usepackage{amsmath}
+
+%--------------------------------------------------------------------------
+%  TITLE SECTION
+%--------------------------------------------------------------------------
+
+\title{\normalfont \Large The Effects of Disinfection Products and Procedures on Spread of Virus in an Outpatient Clinic}
+
+\author{\normalsize \sl Kyle Humphrey}
+
+\date{\normalsize \sl \today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+\section{Reinforcement Clinical Trial}
+
+
+I began by simulating 1000 patients over six months of treatment, each with a random starting tumor mass generated from a uniform distribution between 0 and 2 and a random starting toxicity between 0 and 2 also generated from a uniform distribution between 0 and 2. The initial does was picked from a uniform random distribution between 0.5 and 1, and subsequent month doses were randomly selected from a uniform distribution between 0 and 1.
+
+Toxicity responded to dose as follows:
+
+\[
+\dot{Tox} = 0.1 M + 1.2 (D - 0.5)
+\]
+
+Where $\dot{Tox}$ is the change in toxicity from one month to another, 
+$M$ is the tumor mass the previous month
+$D$ is the does for the previous month
+
+Tumor mass responded to dose as follows:
+
+\[
+\dot{M} = [0.15 Tox - 1.2 (D - 0.5)] I_{\{M > 0\}}(M)
+\]
+
+Where $\dot{M}$ is the change in tumor mass from one month to another,
+$Tox$ is the toxicity from the previous month 
+$M$ is the tumor mass the previous month
+$D$ is the does for the previous month
+$I_{\{M > 0\}}(M)$ indicates that if a person is cured (tumor mass = 0), then tumors do not recur
+
+
+Rewards were defined as follows:
+
+\[
+R_{1}(M, Tox, D) = 
+\begin{cases}
+  -60 & \text{patient died} \\
+  0 & \text{otherwise}
+\end{cases}
+\]
+
+\[
+R_{2}(M, Tox) = 
+\begin{cases}
+  -5 & \dot{W} > 0.5 \\
+  0 & -0.5 \leq \dot{W} \leq 0.5 \\
+  5 & \dot{W} < -0.5 \\
+  15 & \dot{W} + W \leq 0
+\end{cases}
+\]
+
+\[
+R_{3}(M, Tox) = 
+\begin{cases}
+  -5 & \dot{M} > 0.5 \\
+  0 & -0.5 \leq \dot{M} \leq 0.5 \\
+  5 & \dot{M} < -0.5
+\end{cases}
+\]
+
+\[
+\lambda = -7 + W + M
+\]
+
+\[
+\Delta F = e^{-\lambda}
+\]
+
+\[
+p = 1 - \Delta F
+\]
+
+\[
+\text{patient died} \sim B(p)
+\]
+
+
+
+
+
+\end{document}
