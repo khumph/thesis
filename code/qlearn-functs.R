@@ -17,6 +17,14 @@ makeRCS <- function(formula, treatment, method = "rcs") {
     ints <- paste(ints, collapse = " + ")
     formula <- paste(c(form_base_rcs, ints), collapse = " + ")
   }
+  if (method == "mars") {
+    formula <- paste(response,
+                     "~",
+                     paste0(
+                       predictor_names[predictor_names != treatment],
+                       " * ", treatment, collapse = " + ")
+    )
+  }
   covariates <- predictor_names[!(predictor_names %in% treatment)]
   list(formula = as.formula(formula), covariates = covariates, treatment = treatment)
 }
@@ -30,6 +38,14 @@ fit_rcs <- function(formula, data, ...) {
     formula,
     x = T,
     y = T,
+    data,
+    ...
+  )
+}
+
+fit_mars <- function(formula, data, ...) {
+  earth(
+    formula,
     data,
     ...
   )
@@ -71,14 +87,13 @@ max_df <- function(data, model, form, idvar = NULL, x = seq(0, 1, by = 0.01), me
            one_of(form$covariates)) %>%
     mutate(dose = map(1:nrow(.), ~ x)) %>%
     unnest() 
-  if (method == "rcs") {
+  if (method == "rcs" | method == "mars") {
     data_preds <- data_long %>%
-      mutate(preds = predict(model, .)) %>%
+      mutate(preds = predict(model, .),
+             preds = ifelse(is.na(preds), 0, preds)) %>%
       group_by_(idvar) %>%
       mutate(max = max(preds),
-             best = ifelse(is.na(max),
-                           NA,
-                           which.max(preds) - 1) / 100) 
+             best = (which.max(preds) - 1) / 100) 
   }
   if (method == "rpart") {
     data_preds <- data_long %>%
@@ -102,6 +117,9 @@ one_step_Q <- function(formula, treatment, data, method = "rcs", ...) {
   if (method == "rcs") {
     model <- fit_rcs(form$formula, data, ...)
   }
+  if (method == "mars") {
+    model <- earth(form$formula, na.omit(data), ...)
+  }
   if (method == "rpart") {
     data <- data %>% mutate(Q_hat = factor(Q_hat))
     model <- fit_rpart(form$formula,
@@ -111,8 +129,6 @@ one_step_Q <- function(formula, treatment, data, method = "rcs", ...) {
   new_dat <- max_df(data, model, form, method = method)
   list(formula = form, model = model, max = new_dat$max, best = new_dat$best, data_new = new_dat)
 }
-
-# subset_df(occasion - 1)$reward + maxQ(occasion, mod)
 
 Qlearn <- function(data, formula, treatment, method = "rcs", ...) {
   mod_list <- list()
@@ -124,7 +140,7 @@ Qlearn <- function(data, formula, treatment, method = "rcs", ...) {
                      method = method,
                      ...)
     mod_list[[i + 2]] <- Q1$model
-    if (method == "rcs") {
+    if (method == "rcs" | method == "mars") {
       data[data$month == (i), ]$Q_hat <- dat$reward + Q1$max
     }
     if (method == "rpart") {
@@ -146,7 +162,7 @@ Qlearn <- function(data, formula, treatment, method = "rcs", ...) {
 
 # sim testing function ----------------------------------------------------
 
-sim_test <- function(Q, reward.type = "orig") {
+sim_test <- function(Q) {
   if (sum(str_detect(Q$formula$covariates, "noise")) > 0) {
     noise_vars <- T
   } else {
@@ -219,8 +235,8 @@ sim_test <- function(Q, reward.type = "orig") {
         died[j, i] <- rbinom(1, 1, p)
         # add up rewards
         r[j, i] <-
-          R2(W[j, i + 1], W[j, i], reward.type) +
-          R3(M[j, i + 1], M[j, i], reward.type) +
+          R2(W[j, i + 1], W[j, i]) +
+          R3(M[j, i + 1], M[j, i]) +
           ifelse(died[j, i] == 1, -60, 0)
       } else {
         # if patient already died, can't die again or get rewards, mass and tox to NA
