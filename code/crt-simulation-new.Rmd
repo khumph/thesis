@@ -103,13 +103,13 @@ p_load(gridExtra, rpart, rms)
 ```
 
 ```{r sim}
-source("sim-new-reward.R")
+source("sim2.R")
 source("qlearn-functs.R")
 set.seed(20161116)
-dat_long <- sim(reward.type = "orig")
+dat_long <- sim()
 ```
 
-```{r}
+```{r, eval=FALSE, include=FALSE}
 dat <- dat_long %>% filter(month == 5 | month == 6)
 
 dat <- dat %>% mutate(reward = lag(reward))
@@ -154,8 +154,6 @@ dat %>% filter(tumor_mass < 0.5, dose > 0.5 | is.na(dose)) %>% group_by(ID) %>% 
           ifelse(died == 1, -60, 0)
 ) %>% ungroup() %>% summarise(mean(r, na.rm = T))
 ```
-
-
 
 ```{r}
 tox_mass_plot <- ggplot(
@@ -227,7 +225,7 @@ dat_long <- dat_long %>% mutate(
 Q <- Qlearn(dat_long,
             Q_hat ~
               # noise +
-              tumor_mass + dose + toxicity, method = "rcs", "dose")
+              tumor_mass + dose + toxicity, method = "mars", "dose")
 ```
 
 
@@ -273,6 +271,7 @@ ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
 ```
 
 ```{r}
-sim_test(Q, reward.type = "exp") %>% plots_tab()
+library(stringr)
+sim_test(Q) %>% plots_tab()
 ```
 

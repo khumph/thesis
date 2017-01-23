@@ -5,7 +5,7 @@ Wdot <- function(M, D, X, a1 = 0.1, b1 = 1.2, d1 = 0.5) {
 
 # function for how tumor mass changes
 Mdot <- function(M, W, D, X, a2 = 0.15, b2 = 1.2, d2 = 0.5) {
-  (a2 * W - b2 * (D - d2) + ifelse(X > 0.5 & D > 0.5, -1, 0)
+  (a2 * W - b2 * (D - d2) # + ifelse(X > 0.5 & D > 0.5, -1, 0)
    ) * ifelse(M > 0, 1, 0)
 }
 
