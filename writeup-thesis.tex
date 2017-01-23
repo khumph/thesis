@@ -31,7 +31,7 @@
 %  TITLE SECTION
 %--------------------------------------------------------------------------
 
-\title{\normalfont \Large The Effects of Disinfection Products and Procedures on Spread of Virus in an Outpatient Clinic}
+\title{\normalfont \Large Title}
 
 \author{\normalsize \sl Kyle Humphrey}
 
@@ -43,69 +43,103 @@
 
 \section{Introduction}
 
+\section{Reinforcement Learning} % (fold)
+\label{sec:reinforcement_learning}
+
+% section reinforcement_learning (end)
+
+\section{Q-learning} % (fold)
+\label{sec:q_learning}
+
+
+
+% section q_learning (end)
+
 \section{Reinforcement Clinical Trial}
 
+\subsection{Virtual Patient Model} % (fold)
+\label{sub:vpm}
 
-I began by simulating 1000 patients over six months of treatment, each with a random starting tumor mass generated from a uniform distribution between 0 and 2 and a random starting toxicity between 0 and 2 also generated from a uniform distribution between 0 and 2. The initial does was picked from a uniform random distribution between 0.5 and 1, and subsequent month doses were randomly selected from a uniform distribution between 0 and 1.
+I began by simulating 1000 patients, each receiving six months of treatment. Each patient had a random starting tumor mass and patient health, both generated from uniform distributions between 0 and 2. The initial treatment dose was selected from a uniform distribution between 0.5 and 1 (so that everyone entered the trial receiving some treatment). Subsequent doses were selected from a uniform distribution between 0 and 1 at the beginning of each month.
 
-Toxicity responded to dose as follows:
+Patient health change was modelled as a function of tumor mass and dosage of treatment, with doses above 0.5 decreasing health and doses below 0.5 allowing health to increase due to less toxic effects from the treatment.
 
 \[
-\dot{Tox} = 0.1 M + 1.2 (D - 0.5)
+\dot{H}_{t} = - 0.1 M_{t-1} - 1.2 (D_{t-1} - 0.5)
 \]
 
-Where $\dot{Tox}$ is the change in toxicity from one month to another, 
-$M$ is the tumor mass the previous month
-$D$ is the does for the previous month
+Where $\dot{H}_{t}$ is the change in patient health from month $t-1$ to month $t$, 
+$M_{t-1}$ is the tumor mass the previous month, and 
+$D_{t-1}$ is the dose of treatment for the previous month
 
-Tumor mass responded to dose as follows:
+Tumor mass change was modelled as a function of patient health and dosage, with doses above 0.5 decreasing tumor mass and doses below 0.5 allowing it to increase:
 
 \[
-\dot{M} = [0.15 Tox - 1.2 (D - 0.5)] I_{\{M > 0\}}(M)
+\dot{M}_{t} = [- 0.15 H_{t-1} - 1.2 (D_{t-1} - 0.5)] I_{\{M_{t-1} > 0\}}(M_{t-1})
 \]
 
-Where $\dot{M}$ is the change in tumor mass from one month to another,
-$Tox$ is the toxicity from the previous month 
-$M$ is the tumor mass the previous month
-$D$ is the does for the previous month
-$I_{\{M > 0\}}(M)$ indicates that if a person is cured (tumor mass = 0), then tumors do not recur
+Where $\dot{M}_{t}$ is the change in tumor mass from one month to another,
+$H_{t-1}$ is the health from the previous month,
+$M_{t-1}$ is the tumor mass the previous month,
+$D_{t-1}$ is the dose for the previous month,
+$I_{\{M_{t-1} > 0\}}(M)$ indicates that if a person is cured (previous tumor mass = 0), then tumors do not recur.
+
+% subsection vpm (end)
 
 
-Rewards were defined as follows:
+\subsection{} % (fold)
+\label{sub:}
+
+The reward was defined as the sum of three parts: 
 
 \[
-R_{1}(M, Tox, D) = 
+R_{t} = R_{t, 1} + R_{t, 2} + R_{t, 3}
+\]
+
+First, a large negative reward of -60 was given if the patient died, since a primary endpoint is typically overall survival:
+
+\[
+R_{t, 1}(M_{t-1}, H_{t-1}, D_{t-1}) = 
 \begin{cases}
   -60 & \text{patient died} \\
   0 & \text{otherwise}
 \end{cases}
 \]
 
+Second, a small negative reward of -5 was given for an decrease in patient health above 0.5 and a small positive reward of 5 if patient health increased by more than 0.5:
+
 \[
-R_{2}(M, Tox) = 
+R_{t, 2}(M_{t-1}, H_{t-1}, D_{t-1}) =  
 \begin{cases}
-  -5 & \dot{W} > 0.5 \\
-  0 & -0.5 \leq \dot{W} \leq 0.5 \\
-  5 & \dot{W} < -0.5 \\
-  15 & \dot{W} + W \leq 0
+  5 & \dot{H} > 0.5 \\
+  0 & -0.5 \leq \dot{H} \leq 0.5 \\
+  -5 & \dot{H} < -0.5
 \end{cases}
 \]
 
+Third, similar to the rewards for toxicity, a small negative reward of -5 was given for an increase in tumor mass above 0.5, no reward if the tumor mass did not increase or decrease by more than 0.5, a small positive reward of 5 if the tumor mass decreased by more than 0.5, and a moderate positive reward of 15 was given if the patient was cured (the resulting tumor mass was less than or equal to zero):
+
 \[
-R_{3}(M, Tox) = 
+R_{t, 3}(M_{t-1}, H_{t-1}, D_{t-1}) = 
 \begin{cases}
   -5 & \dot{M} > 0.5 \\
   0 & -0.5 \leq \dot{M} \leq 0.5 \\
-  5 & \dot{M} < -0.5
+  5 & \dot{M} < -0.5 \\
+  15 & \dot{M} + M \leq 0
 \end{cases}
 \]
 
+% subsection  (end)
+
+\subsection{death} % (fold)
+\label{sub:death}
+
 \[
-\lambda = -7 + W + M
+\lambda(t) = -7 + H_{t} + M_{t}
 \]
 
 \[
-\Delta F = e^{-\lambda}
+\Delta F(t) = e^{-\lambda}
 \]
 
 \[
@@ -115,6 +149,18 @@ p = 1 - \Delta F
 \[
 \text{patient died} \sim B(p)
 \]
+
+% subsection death (end)
+
+
+\[
+\hat{Q}_{t} = R_{t} + max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
+\]
+
+
+
+
+
 
 
 
