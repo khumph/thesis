@@ -43,8 +43,34 @@
 
 \section{Introduction}
 
+\subsection{Why should you care about personalized medicine} % (fold)
+\label{sub:why_should_you_care_about_personalized_medicine}
+
+\subsubsection{What reinforcement learning has to do with personalized medicine} % (fold)
+\label{ssub:what_reinforcement_learning_has_to_do_with_personalized_medicine}
+
+% subsubsection what_reinforcement_learning_has_to_do_with_personalized_medicine (end)
+
+% subsection why_should_you_care_about_personalized_medicine (end) 
+
 \section{Reinforcement Learning} % (fold)
 \label{sec:reinforcement_learning}
+
+% similarities and differences from other types of learning}
+
+Reinforcement learning is a branch of machine learning distinct from the other two main branches, supervised and unsupervised learning. As we will see however, techniques from both supervised and unsupervised learning can be useful in reinforcement learning problems.
+
+Supervised learning involves a learning agent being given a list of example actions to taken in given situations, with the goal being that the agent then extrapolates the correct example behavior to new situations. In reinforcement learning problems, agents do not receive direct instruction regarding which action they should take, instead they must learn which actions are best by trying them out. 
+
+Unsupervised learning involves finding hidden structure in collections of example actions and situations where the correct action is unknown. The goal in reinforcement learning problems is to maximize a reward signal (though finding hidden structure may be useful to this end).
+
+Unlike other machine learning problems, reinforcement learning problems are closed-loop: the actions of the agent affect the opportunities open to the agent later on. Further, the consequences of actions in reinforcement learning problems can manifest not only in the next opportunity, but in all subsequent opportunities.
+
+% basic process of RL
+
+The basic process of reinforcement learning involves a learning agent trying a sequence of actions, recording the consequences (rewards) of those actions, estimating the relationship between the actions and their consequences, and choosing a next action that leads to the best consequences (the action that maximizes the reward, so far as the agent can tell). This is where the ``reinforcement'' in reinforcement learning comes from: actions with favorable consequences (large rewards) tend to be repeated.
+
+% elements of RL problems?
 
 % section reinforcement_learning (end)
 
