@@ -98,12 +98,62 @@ Figure 2 illustrates the treatment plan and relevant Q-function estimation proce
 
 
 ```{r}
-source("~/Google Drive/active/setup.R")
-p_load(gridExtra, rpart)
+rm(list = ls())
+library(pacman)
+p_load(tidyverse, gridExtra, rpart, rms, ranger, earth, stringr)
 ```
 
 ```{r sim}
-source("sim-new-reward.R")
+source("sim.R")
+source("qlearn-functs.R")
+set.seed(20161116)
+dat_long <- sim()
+```
+
+```{r, eval=FALSE, include=FALSE}
+dat <- dat_long %>% filter(month == 5 | month == 6)
+
+dat <- dat %>% mutate(reward = lag(reward))
+
+dat_long %>%
+    select(ID,
+           month,
+           dose,
+           reward,
+           tumor_mass,
+           toxicity,
+           died) %>%
+    mutate(reward = lag(reward))
+
+dat %>% group_by(ID) %>%  mutate(
+  r = R2(lead(toxicity), toxicity, reward.type = "orig") +
+      R3(lead(tumor_mass), tumor_mass, reward.type = "orig") +
+          ifelse(lead(died, default = 0) == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
+
+dat %>% filter(tumor_mass > 0.5, dose < 0.5 | is.na(dose)) %>% group_by(ID) %>%  mutate(
+  r = R2(lead(toxicity), toxicity, reward.type = "orig") +
+      R3(lead(tumor_mass), tumor_mass, reward.type = "orig") +
+          ifelse(lead(died, default = 0) == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
+
+dat %>% filter(tumor_mass > 0.5, dose > 0.5 | is.na(dose)) %>% group_by(ID) %>%  mutate(
+  r = R2(lead(toxicity), toxicity, reward.type = "orig") +
+      R3(lead(tumor_mass), tumor_mass, reward.type = "orig") +
+          ifelse(lead(died, default = 0) == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
+
+dat %>% filter(tumor_mass < 0.5, dose < 0.5 | is.na(dose)) %>% group_by(ID) %>% mutate(
+  r = R2(toxicity, lag(toxicity), reward.type = "orig") +
+      R3(tumor_mass, lag(toxicity), reward.type = "orig") +
+          ifelse(died == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
+
+dat %>% filter(tumor_mass < 0.5, dose > 0.5 | is.na(dose)) %>% group_by(ID) %>% mutate(
+  r = R2(toxicity, lag(toxicity), reward.type = "orig") +
+      R3(tumor_mass, lag(toxicity), reward.type = "orig") +
+          ifelse(died == 1, -60, 0)
+) %>% ungroup() %>% summarise(mean(r, na.rm = T))
 ```
 
 ```{r}
@@ -165,10 +215,6 @@ $$
 
 ### Until S is terminal
 
-```{r}
-source("qlearn-functs.R")
-```
-
 ```{r qlearn}
 set.seed(20161027)
 dat_long <- dat_long %>% mutate(
@@ -177,10 +223,13 @@ dat_long <- dat_long %>% mutate(
   best = ifelse(month == 6, NA, 999)
 )
 
-Q <- Qlearn(dat_long,
-            Q_hat ~
-              # noise +
-              tumor_mass + dose + toxicity, method = "rcs", "dose")
+Q <- Qlearn(
+  data = dat_long,
+  formula = Q_hat ~ tumor_mass + dose + toxicity,
+  treatment = "dose",
+  method = "rcs" #,
+  # degree = 3
+)
 ```
 
 
@@ -193,8 +242,8 @@ ggplot(filter(dat, month == 5)) +
 ```
 
 
-```{r xplor-plots}
-dat <- subset_df(dat, 5)
+```{r xplor-plots, eval=FALSE, include=FALSE}
+
 
 mod <- Q$mod_list[[5]]
 
@@ -213,7 +262,8 @@ ggplot(dat) +
 ```
 
 ```{r}
-nested_df <- max_df(dat, mod, Q$formula, idvar = "ID", nested = T)
+dat <- filter(dat, month == 5)
+nested_df <- max_df(dat, Q$mod_list[[4]], Q$formula, idvar = "ID", method = "rcs", nested = T)
 
 set.seed(8)
 i <- sample(nested_df$ID, 1)

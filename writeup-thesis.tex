@@ -26,6 +26,7 @@
 \usepackage{ctable}
 
 \usepackage{amsmath}
+\usepackage{commath}
 
 %--------------------------------------------------------------------------
 %  TITLE SECTION
@@ -72,16 +73,43 @@ The basic process of reinforcement learning involves a learning agent trying a s
 
 % elements of RL problems?
 
+\subsubsection{policy, bellman equation, value functions, ?TD learning, ?eligibility traces} % (fold)
+\label{ssub:policy_bellman_equation_value_functions_td_learning_eligibility_traces}
+
+% subsubsection policy_bellman_equation_value_functions_td_learning_eligibility_traces (end)
+
 % section reinforcement_learning (end)
 
 \section{Q-learning} % (fold)
 \label{sec:q_learning}
 
+How it fits in with the above
+
+Properties
+
+single stage defintion
+
+\[
+Q(s_{t}, a{t}) \leftarrow Q(s_{t}, a{t}) + \alpha_{t} \del{r_{t+1} + \gamma \max_{a} Q(s_{s + 1}, a)}
+\]
+
+recursive form
+
 
 
 % section q_learning (end)
 
-\section{Reinforcement Clinical Trial}
+\section{MARS} % (fold)
+\label{sec:mars}
+
+% section mars (end)
+
+\section{other modelling methods} % (fold)
+\label{sec:other_modelling_methods}
+
+% section other_modelling_methods (end)
+
+\section{Simulation setup}
 
 \subsection{Virtual Patient Model} % (fold)
 \label{sub:vpm}
@@ -183,6 +211,12 @@ p = 1 - \Delta F
 \hat{Q}_{t} = R_{t} + max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
 \]
 
+\section{simulation} % (fold)
+\label{sec:simulation}
+
+
+
+% section simulation (end)
 
 
 

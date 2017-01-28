@@ -1,25 +1,31 @@
-banit problem - special case of rl problem wher there is only a single state
+banit problem - special case of rl problem where there is only a single state
 
-rl uses training infor that evaluates the actions taken rather than instructs by giving correct actions
+Most important distinguishing feature: rl uses training information that evaluates the actions taken rather than instructs by giving correct actions (supervised learning)
 
 evaluative feedback - indicates how good the action taken is (but not whether it is the best/worst action)
-  - basis for function optimization (including evo methods)
+  - basis for function optimization (including evolutionary methods)
+  - depends on action taken
 
-instructive feedback - indicates the correct action to take, independent of the action actually taken. 
+instructive feedback - indicates the correct action to take
   - basis of supervised learning
-  
+  - independent of action actually taken
+
 nonassociative setting - does not involve learning to act in more than one situation
+
+associative - actions taken in more than on situation
 
 # 2.1 k-armed bandit problem
 - faced repeatedly with a choice among k options (actions)
-- after each choice, you receive a numerical reward from a stationary prob dist depending on the action
-- objective: maximize reward over some time period (e.g. 100 action selections called time steps)
+- after each choice, you receive a numerical reward from a stationary prob dist that depends on action taken
+- objective: maximize reward over some time period e.g. 1000 action selections (time steps)
 
-name comes from a nickname for a slot machine (one armed bandit) but in this case you have k choices. A doctor treating successive seriously ill patients with experimental treatments is ssame prob.
+name comes from a nickname for a slot machine (one armed bandit) but in this case you have k choices. A doctor treating successive seriously ill patients with experimental treatments is the same problem
+
+"bandit problem" is generalization of the problem above
 
 value of action - expected reward given that action is selected
 
-greedy actions = the action at any time step with highest estimated value
+greedy action = the action at any time step with highest estimated value
 
 If you take a greedy action, you are exploiting your current knowledge of the values of the actions
 
@@ -33,7 +39,7 @@ we'll consider simple cases
 
 # 2.2 action-value methods
 
-sample-average method - natural way to estimate true value of action is to add up rewards and divide by the number of times action was taken (sample mean) 
+sample-average method - natural way to estimate true value of action is to add up rewards and divide by the number of times action was taken (sample mean)
 
 greedy selection method - always pick action with highest estimated value
 
@@ -45,7 +51,7 @@ nonstationary - the true values of the actions changed over time
 
 effective nonstationarity is the case most commonly encountered in reinforcement learning
 
-Even if the underlying task is stationary and deterministic, the learner faces a set of banditlike decision tasks each of which changes over time due to the learning process itself. 
+Even if the underlying task is stationary and deterministic, the learner faces a set of banditlike decision tasks each of which changes over time due to the learning process itself.
 
 # incremental implementation
 
@@ -54,7 +60,7 @@ NewEstimate <- OldEstimate + StepSize[Target - OldEstimate]
 
 [Target - OldEstimate] = error in estimate, reduced by takng a step towards the target (nth reward in the above)
 
-step-size parameter denoted by alpha 
+step-size parameter denoted by alpha
 or alpha_t(a) [step taking action a at time t]
 
 # tracking a nonstationary problem
@@ -80,7 +86,7 @@ bias disappears for sample-average methods once all acitons have been taken, but
 
 in practice this bias not a problem, but initial estimates become parameters that must be picked by user, but can be an easy way to supply prior knowledge.
 
-optimistic initial values: 
+optimistic initial values:
 can also use to encourage exploration: set values high
 useful on stationary problems, but not well suited to nonstationary (drive for exploration is temporary)
 
@@ -113,4 +119,3 @@ intermediate between k-armed bandit and general rl problem
 They are like the full reinforcement learning problem in that they involve learning a policy, but like our version of the k-armed bandit problem in that each action a↵ects only the immediate reward.
 
 # 2.9 Summary
-
