@@ -276,6 +276,7 @@ ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
 ```
 
 ```{r}
+set.seed(20170128)
 sim_test(Q) %>% plots_tab()
 ```
 

@@ -73,9 +73,9 @@ max_df <- function(data, model, form, idvar = NULL, method, x = seq(0, 1, by = 0
       group_by_(idvar) %>%
       mutate(max = max(preds))
     data_preds <- data_preds %>% 
-      mutate(# best = (nnet::which.is.max(preds) - 1) / 100,
+      mutate(best = (nnet::which.is.max(preds) - 1) / 100,
              # best = ifelse(near(preds, max), dose, NA) %>% median(na.rm = T),
-             best = (which.max(preds) - 1) / 100
+             # best = (which.max(preds) - 1) / 100
              )
   }
   if (method == "rpart") {
