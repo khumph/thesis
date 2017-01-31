@@ -47,12 +47,38 @@
 \subsection{Why should you care about personalized medicine} % (fold)
 \label{sub:why_should_you_care_about_personalized_medicine}
 
-\subsubsection{What reinforcement learning has to do with personalized medicine} % (fold)
-\label{ssub:what_reinforcement_learning_has_to_do_with_personalized_medicine}
 
-% subsubsection what_reinforcement_learning_has_to_do_with_personalized_medicine (end)
+% Why personalized medicine?}
+
+Patients often show significant differences in their responses to treatment. [\textbf{provide some examples}] Significant gains in public health can be made from identifying subgroups and the corresponding treatments which are most effective for them, rather than relying on identification of only the most effective treatment overall.
+
+% What is personalized medicine?
+This is the idea of personalized medicine (also called precision medicine, stratified medicine, or P4 medicine), which is the commonsensical notion that the best treatment for a given patient depends upon that patients' characteristics \textbf{[cite]}. The term is most often used today to describe a process where biomarkers, perhaps whether breast cancer cells are HER2-positive, are used to determine the best treatment, and when to use it \textbf{[defn-paper]}.
+% When/where did personalized medicine start?
+However, the general ideas go back at least as far as Hippocrates \textbf{[cite]}, and are implemented in principle whenever a physician tries to inform treatment decisions by determining whether the cause of an infection is bacterial or viral.
+
+% What are some methods that have been used in the past to find personalized treatment regimes?}
+
+\begin{itemize}
+  \item \textbf{standard trt * subgroup interaction testing}
+\end{itemize}
+
+% What are some challenges to implementing/discovering personalized treatments?}
+
+Lots of possible subgroups, complexity of disease
+
+% Dynamic Treatment regimes
+
+To formalize our idea of personalized medicine mentioned above, we can think of a personalized treatment as a decision rule that provides the best treatment given a patients' characteristics: their \emph{state}. A \emph{dynamic treatment regime} is a generalization of this idea to sequencial decisions where the aspects of a person's state can vary over time and optimal treatments are chosen at each time point based off of those changing (dynamic) states (dynamic treatment regimes are also known as adaptive treatment strategies \textbf{[cite]} or treatment policies \textbf{cite}). Dynamic treatment regimes lend themselves well to situations where a patient has to be treated over multiple occasions, where treatments can be adjusted based off of the changing state of the patient.
+
+% How can reinforcement learning be of use in determining personalized treatments?
 
 % subsection why_should_you_care_about_personalized_medicine (end) 
+
+\subsection{overview of contents} % (fold)
+\label{sub:overview_of_contents_of_thesis}
+
+% subsection overview_of_contents_of_thesis (end)
 
 \section{Reinforcement Learning} % (fold)
 \label{sec:reinforcement_learning}
@@ -109,9 +135,9 @@ recursive form
 
 % section other_modelling_methods (end)
 
-\section{Simulation setup}
+\section{Simulation}
 
-\subsection{Virtual Patient Model} % (fold)
+\subsection{Patient Model} % (fold)
 \label{sub:vpm}
 
 I began by simulating 1000 patients, each receiving six months of treatment. Each patient had a random starting tumor mass and patient health, both generated from uniform distributions between 0 and 2. The initial treatment dose was selected from a uniform distribution between 0.5 and 1 (so that everyone entered the trial receiving some treatment). Subsequent doses were selected from a uniform distribution between 0 and 1 at the beginning of each month.
@@ -141,7 +167,7 @@ $I_{\{M_{t-1} > 0\}}(M)$ indicates that if a person is cured (previous tumor mas
 % subsection vpm (end)
 
 
-\subsection{} % (fold)
+\subsection{rewards} % (fold)
 \label{sub:}
 
 The reward was defined as the sum of three parts: 
