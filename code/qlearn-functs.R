@@ -1,11 +1,11 @@
  # Q-learning functions ----------------------------------------------------
 
-makeRCS <- function(formula, treatment, method = "rcs") {
+makeRCS <- function(formula, treatment, mod_type = "rcs") {
   form_char <- as.character(formula)
   response <- form_char[2]
   predictors <- form_char[3]
   predictor_names <- strsplit(predictors, " \\+ ")[[1]]
-  if (method == "rcs") {
+  if (mod_type == "rcs") {
     form_base_rcs <- paste(response,
                            "~",
                            paste0("rcs(", predictor_names, ")", collapse = " + "))
@@ -31,10 +31,10 @@ fit_rcs <- function(formula, data, ...) {
   )
 }
 
-fit_rpart <- function(formula, data, cpmethod = "min", ...) {
+fit_rpart <- function(formula, data, cpmod_type = "min", ...) {
   mod_rpart <- rpart(formula, 
-                     data = data, method = "class", ...)
-  if (cpmethod == "min_sd") {
+                     data = data, mod_type = "class", ...)
+  if (cpmod_type == "min_sd") {
     pruned <- mod_rpart$cptable %>%
       as_data_frame() %>%
       mutate(
@@ -45,7 +45,7 @@ fit_rpart <- function(formula, data, cpmethod = "min", ...) {
       select(CP) %>% flatten_dbl() %>%
       prune(mod_rpart, .)
   }
-  if (cpmethod == "min") {
+  if (cpmod_type == "min") {
     pruned <- mod_rpart$cptable %>%
       as_data_frame() %>%
       filter(xerror == min(xerror)) %>% 
@@ -57,7 +57,7 @@ fit_rpart <- function(formula, data, cpmethod = "min", ...) {
 }
 
 
-max_df <- function(data, model, form, idvar = NULL, method, x = seq(0, 1, by = 0.01),  nested = F) {
+max_df <- function(data, model, form, idvar = NULL, mod_type, x = seq(0, 1, by = 0.01),  nested = F) {
   if (is.null(idvar)) {
     data <- data %>% mutate(ID = 1:nrow(.))
     idvar <- "ID"
@@ -66,19 +66,8 @@ max_df <- function(data, model, form, idvar = NULL, method, x = seq(0, 1, by = 0
     select(matches(idvar),
            one_of(form$covariates)) %>%
     mutate(dose = map(1:nrow(.), ~ x)) %>%
-    unnest() 
-  if (method == "rcs" | method == "mars" | method == "ert") {
-    data_preds <- data_long %>%
-      mutate(preds = ifelse(is.na(tumor_mass), 0, predict(model, .))) %>%
-      group_by_(idvar) %>%
-      mutate(max = max(preds))
-    data_preds <- data_preds %>% 
-      mutate(best = (nnet::which.is.max(preds) - 1) / 100,
-             # best = ifelse(near(preds, max), dose, NA) %>% median(na.rm = T),
-             # best = (which.max(preds) - 1) / 100
-             )
-  }
-  if (method == "rpart") {
+    unnest()
+  if (mod_type == "rpart") {
     data_preds <- data_long %>%
       mutate(preds = predict(model, .) %>%
                apply(1, function(z) as.numeric(names(which.max(z))))) %>% 
@@ -87,7 +76,7 @@ max_df <- function(data, model, form, idvar = NULL, method, x = seq(0, 1, by = 0
              best = ifelse(preds == max, dose, NA) %>% median(na.rm = T)
       )
   }
-  if (method == "ranger") {
+  if (mod_type == "ranger") {
     data_preds <- data_long %>%
       mutate(preds = ifelse(
         !is.na(tumor_mass),
@@ -97,6 +86,12 @@ max_df <- function(data, model, form, idvar = NULL, method, x = seq(0, 1, by = 0
       group_by_(idvar) %>%
       mutate(max = max(preds),
              best = (which.max(preds) - 1) / 100) 
+  } else {
+    data_preds <- data_long %>%
+      mutate(preds = ifelse(is.na(tumor_mass), 0, predict(model, .))) %>%
+      group_by_(idvar) %>%
+      mutate(max = max(preds),
+             best = ifelse(near(preds, max), dose, NA) %>% min(na.rm = T))
   }
   if (nested == T) {
     data_preds
@@ -106,60 +101,59 @@ max_df <- function(data, model, form, idvar = NULL, method, x = seq(0, 1, by = 0
   }
 }
 
-one_step_Q <- function(formula, treatment, data, method, ...) {
-  form <- makeRCS(formula, treatment, method) 
-  if (method == "rcs") {
+one_step_Q <- function(formula, treatment, data, mod_type, ...) {
+  form <- makeRCS(formula, treatment, mod_type) 
+  if (mod_type == "rcs") {
     model <- fit_rcs(form$formula, data, ...)
   }
-  if (method == "mars") {
+  if (mod_type == "caret") {
+    model <- train(formula,
+                   data,
+                   ...)
+  }
+  if (mod_type == "mars") {
     model <- earth(formula = formula,
                    data = na.omit(data),
                    ...)
   }
-  if (method == "rpart") {
+  if (mod_type == "rpart") {
     data <- data %>% mutate(Q_hat = factor(Q_hat))
     model <- fit_rpart(form$formula,
                        data,
                        ...)
   }
-  if (method == "ert") {
-    grid <- expand.grid(mtry = 3,
-                        numRandomCuts = 1:3)
+  if (mod_type == "ert") {
     model <- train(form$formula,
                    data,
                    method = 'extraTrees',
                    na.action = na.omit,
-                   tuneGrid = grid,
+                   tuneGrid = expand.grid(mtry = 3,
+                                          numRandomCuts = 1:3),
                    ntree = 50, # G in CRT paper
                    nodesize = 2, # nmin in CRT paper
                    ...)
   }
-  if (method == "ranger") {
+  if (mod_type == "ranger") {
     model <- ranger(formula,
                     na.omit(data),
                     always.split.variables = treatment,
                     ...)
   }
-  new_dat <- max_df(data, model, form, method = method)
+  new_dat <- max_df(data, model, form, mod_type = mod_type)
   list(formula = form, model = model, max = new_dat$max, best = new_dat$best, data_new = new_dat)
 }
 
-Qlearn <- function(data, formula, treatment, method, ...) {
+Qlearn <- function(data, formula, treatment, mod_type, ...) {
   mod_list <- list()
   for (i in 4:0) {
     dat <- filter(data, month == i + 1)
     Q1 <- one_step_Q(formula = formula,
                      data = dat,
                      treatment = treatment,
-                     method = method,
+                     mod_type = mod_type,
                      ...)
     mod_list[[i + 2]] <- Q1$model
-    if (method == "rcs" | method == "mars") {
-      data[data$month == i, ]$Q_hat <- dat$reward + Q1$max
-    }
-    if (method == "rpart") {
-      data[data$month == (i), ]$Q_hat <- dat$reward + Q1$max %>% factor()
-    }
+    data[data$month == i, ]$Q_hat <- dat$reward + Q1$max
     data[data$month == (i + 1), ]$best <- Q1$best
     if (i == 0) {
       subsetted_df <- filter(data, month == i)
@@ -167,11 +161,11 @@ Qlearn <- function(data, formula, treatment, method, ...) {
       Q1 <- one_step_Q(formula,
                        data = dat,
                        treatment = treatment, 
-                       method = method)
+                       mod_type = mod_type)
       data[data$month == i, ]$best <- Q1$best
     }
   }
-  list(data = data, mod_list = mod_list, formula = Q1$formula, method = method)
+  list(data = data, mod_list = mod_list, formula = Q1$formula, mod_type = mod_type)
 }
 
 # Getting results functions -----------------------------------------------

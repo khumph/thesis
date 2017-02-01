@@ -227,7 +227,7 @@ Q <- Qlearn(
   data = dat_long,
   formula = Q_hat ~ tumor_mass + dose + toxicity,
   treatment = "dose",
-  method = "rcs" #,
+  mod_type = "rcs" #,
   # degree = 3
 )
 ```
@@ -243,8 +243,6 @@ ggplot(filter(dat, month == 5)) +
 
 
 ```{r xplor-plots, eval=FALSE, include=FALSE}
-
-
 mod <- Q$mod_list[[5]]
 
 ggplot(dat, aes(x = predict(mod), y = residuals(mod))) + geom_point()
@@ -263,7 +261,7 @@ ggplot(dat) +
 
 ```{r}
 dat <- filter(dat, month == 5)
-nested_df <- max_df(dat, Q$mod_list[[4]], Q$formula, idvar = "ID", method = "rcs", nested = T)
+nested_df <- max_df(dat, Q$mod_list[[4]], Q$formula, idvar = "ID", mod_type = "rcs", nested = T)
 
 set.seed(8)
 i <- sample(nested_df$ID, 1)

@@ -1029,3 +1029,32 @@ mod_rf <- train(
 )
 ```
 
+
+
+```{r}
+fit_rpart <- function(formula, data, cpmod_type = "min", ...) {
+  mod_rpart <- rpart(formula, 
+                     data = data, mod_type = "class", ...)
+  if (cpmod_type == "min_sd") {
+    pruned <- mod_rpart$cptable %>%
+      as_data_frame() %>%
+      mutate(
+        xerror_min = min(xerror),
+        xerror_min_sd = ifelse(xerror == xerror_min, xstd, 0) %>% sum(na.rm = T)
+      ) %>% filter(near(xerror, xerror_min + xerror_min_sd, tol = 0.01)) %>%
+      filter(nsplit == min(nsplit)) %>% 
+      select(CP) %>% flatten_dbl() %>%
+      prune(mod_rpart, .)
+  }
+  if (cpmod_type == "min") {
+    pruned <- mod_rpart$cptable %>%
+      as_data_frame() %>%
+      filter(xerror == min(xerror)) %>% 
+      filter(nsplit == min(nsplit)) %>% 
+      select(CP) %>% flatten_dbl() %>%
+      prune(mod_rpart, .)
+  }
+  pruned
+}
+```
+

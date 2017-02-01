@@ -2,19 +2,19 @@
 
 # function for how toxicity changes
 updateW <- function(M, W, D, a1 = 0.1, b1 = 1.2, d1 = 0.5) { 
-  W_next <- a1 * M + b1 * (D - d1) + W
-  ifelse(W_next > 0, W_next, 0)
+    W_next <- a1 * M + b1 * (D - d1) + W
+    ifelse(W_next > 0, W_next, 0)
 }
 
 # function for updating tumor mass
 updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5) {
   # takes current value of tumor mass, outputs next value
-  if (M > 0) {
-    Mdot <- (a2 * W - b2 * (D - d2))
-    ifelse(Mdot + M > 0, Mdot + M, 0)
-  } else {
-    0
-  }
+    if (M > 0) {
+      Mdot <- (a2 * W - b2 * (D - d2))
+      ifelse(Mdot + M > 0, Mdot + M, 0)
+    } else {
+      0
+    }
 }
 
 # reward functions
@@ -29,9 +29,9 @@ R3 <- function(M_next, M) {
 }
 
 reward <- function(M_next, M, W_next, W, died) {
-  R2(W_next, W) +
-    R3(M_next, M) +
-    ifelse(died == 1, -60, 0)
+    R2(W_next, W) +
+      R3(M_next, M) +
+      ifelse(died == 1, -60, 0)
 }
 
 lambda <- function(W, M, mu0 = -7, mu1 = 1, mu2 = 1) {
@@ -39,21 +39,21 @@ lambda <- function(W, M, mu0 = -7, mu1 = 1, mu2 = 1) {
 }
 
 determineDeath <- function(M_next, W_next) {
-  lam <- lambda(W_next, M_next)
-  deltaF <- exp(-lam)
-  p <- 1 - deltaF
-  return(rbinom(1, 1, p))
+    lam <- lambda(W_next, M_next)
+    deltaF <- exp(-lam)
+    p <- 1 - deltaF
+    return(rbinom(1, 1, p))
 }
 
-sim <- function(N = 1000, Ttot = 6) {
+sim2 <- function(N = 1000, Ttot = 6) {
   # 1000 patients, 6 months treatment
   
   # choose random initial toxicities and tumor masses
   W0 <- runif(N, min = 0, max = 2)
   M0 <- runif(N, min = 0, max = 2)
   
-  # choose random baseline characteristic X that doubles the effect on tumor size if greater than 0.5
-  # X <- runif(N, min = 0, max = 1)
+  # generate 10 noise variables
+  X <- replicate(10, runif(N, min = 0, max = 1))
   
   # choose random starting dose > 0.5
   D0 <- runif(N, min = 0.5, max = 1)
@@ -115,15 +115,17 @@ sim <- function(N = 1000, Ttot = 6) {
     )
 }
 
+# set.seed(1)
+# dat <- sim()
+# set.seed(1)
+# dat2 <- sim2()
+# 
+# all_equal(dat, dat2)
+
 
 # sim testing function ----------------------------------------------------
 
-sim_test <- function(Q) {
-  if (sum(str_detect(Q$formula$covariates, "noise")) > 0) {
-    noise_vars <- T
-  } else {
-    noise_vars <- F
-  }
+sim_test2 <- function(Q) {
   # 200 patients per each of 11 treatments
   N <- 200 * 11
   # 6 months treatment
@@ -134,30 +136,17 @@ sim_test <- function(Q) {
   set.seed(5)
   W0 <- runif(N, min = 0, max = 2)
   M0 <- runif(N, min = 0, max = 2)
-  if (noise_vars == T) {
-    noise <- replicate(Ttot, runif(N, min = 0, max = 2))
-  }
   
   # treatments consisting of the estimated optimal treatment regime and each of the 10 possible fixed dose levels ranging from 0.1 to 1.0 with increments of size 0.1.
   D1 <- map(seq(from = 0.1, to = 1, by = 0.1), ~ rep(., 200)) %>% flatten_dbl()
   
   # estimate optimal treatment regime for 200
-  if (noise_vars == T) {
-    dat <-
-      tibble(
-        ID = tail(1:N, 200),
-        toxicity = tail(W0, 200),
-        tumor_mass = tail(M0, 200),
-        noise = tail(noise[, 1], 200)
-      )
-  } else {
     dat <-
       tibble(
         ID = tail(1:N, 200),
         toxicity = tail(W0, 200),
         tumor_mass = tail(M0, 200)
       )
-  }
   
   D0 <-
     max_df(
@@ -290,3 +279,9 @@ sim_test <- function(Q) {
       )
   }
 }
+
+# set.seed(1)
+# t1 <- sim_test(Q)
+# set.seed(1)
+# t2 <- sim_test2(Q)
+# all_equal(t1, t2)
