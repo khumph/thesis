@@ -25,19 +25,13 @@ makeForm <- function(formula, treatment, mod_type = "rcs") {
   )
 }
 
-max_df <-
-  function(data,
-           model,
-           form,
-           idvar = NULL,
-           mod_type,
-           x = seq(0, 1, by = 0.01),
-           nested = F) {
+max_df <- function(data, model, form, idvar = "ID", mod_type, 
+                   x = seq(0, 1, by = 0.01), nested = F) {
     if (is.null(idvar)) {
       data <- data %>% mutate(ID = 1:nrow(.))
       idvar <- "ID"
     }
-    data_long <- data %>%
+    data_long <- data %>% filter(!dead) %>% 
       select(matches(idvar),
              one_of(form$covariates)) %>%
       mutate(dose = map(1:nrow(.), ~ x)) %>%
@@ -45,13 +39,18 @@ max_df <-
     data_preds <- data_long %>%
       mutate(preds = ifelse(is.na(tumor_mass), 0, predict(model, .))) %>%
       group_by_(idvar) %>%
-      mutate(max = max(preds),
-             best = ifelse(near(preds, max), dose, NA) %>% min(na.rm = T))
-    if (nested == T) {
+      mutate(
+        max = max(preds),
+        best = ifelse(near(preds, max), dose, NA),
+        best = ifelse(tumor_mass > 0,
+                      max(best, na.rm = T),
+                      min(best, na.rm = T))
+      )
+    if (nested) {
       data_preds
     } else {
-      data_preds %>%
-        select(-dose, -preds) %>% unique()
+      data_preds %>% filter(near(best, dose)) %>%
+        bind_rows(filter(data, dead) %>% select(ID))
     }
   }
 
@@ -115,66 +114,32 @@ Qlearn <- function(data, formula, treatment, mod_type, ...) {
   )
 }
 
-# Getting results functions -----------------------------------------------
 
-align_df <- function(Q) {
-  Q$data %>%
-    select(ID,
-           month,
-           dose,
-           best,
-           reward,
-           Q_hat,
-           tumor_mass,
-           toxicity,
-           died) %>%
-    mutate(
-      reward = lag(reward),
-      Q_hat = lag(Q_hat),
-      best = ifelse(died != 1 | is.na(died), best, NA)
-    )
-}
+# ex_plots <- function(Q, month, ids) {
+#   dat <- align_df(Q)
+#   
+#   txr_plot <- ggplot(
+#     filter(dat, month == month)) +
+#       geom_point(aes(x = tumor_mass, y = reward)) +
+#       geom_point(aes(x = tumor_mass, y = Q_hat), color = "blue") +
+#       # labs(title = paste0("Tumor Mass by Reward month = ", as.character(j))
+#       )
+#   
+#   dat <- filter(dat, month == month)
+#   nested_df <-
+#     max_df(
+#       dat,
+#       Q$mod_list[[month + 1]],
+#       Q$formula,
+#       idvar = "ID",
+#       mod_type = "caret",
+#       nested = T
+#     )
+#   
+#   pred_plot <- ggplot(data = filter(nested_df, ID %in% ids)) +
+#     geom_line(mapping = aes(x = dose, y = preds, group = ID))
+#   list(txr_plot, pred_plot)
+# }
+# 
+# ex_plots(Q, ex_plots(Q, 5, sample(1:1000, 30)))
 
-plots_tab <- function(dat_test_long) {
-  dat_long_summ <- dat_test_long %>% group_by(group, month) %>%
-    summarise(
-      mean_tox = mean(toxicity, na.rm = T),
-      mean_tumor = mean(tumor_mass, na.rm = T)
-    ) %>% mutate(sum_means = mean_tox + mean_tumor)
-  
-  plot_tox <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = mean_tox,
-      color = group,
-      group = group
-    ))
-  
-  plot_tumor <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = mean_tumor,
-      color = group,
-      group = group
-    ))
-  
-  plot_sum <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = sum_means,
-      color = group,
-      group = group
-    ))
-  
-  tab <-
-    dat_test_long %>% group_by(group) %>%
-    summarise(num_died = sum(died, na.rm = T),
-              prop_died = num_died / 200)
-  
-  list(
-    plot_tox = plot_tox,
-    plot_tumor = plot_tumor,
-    plot_sum = plot_sum,
-    table_deaths = tab
-  )
-}
