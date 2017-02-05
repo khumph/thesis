@@ -3,6 +3,58 @@ title: 'Old code for thesis'
 output: html_document
 ---
 
+# reward functions as defined in paper
+
+```{r}
+R2 <- function(W_next, W) {
+  dW <- W_next - W
+  ifelse(
+    dW <= -0.5,
+    5,
+    ifelse(
+      dW > 0.5,
+      -5,
+      0
+    )
+  )
+}
+
+R3 <- function(M_next, M) {
+  ifelse(M_next == 0 & M == 0,
+         0,
+         ifelse(M_next == 0,
+                15,
+                ifelse(
+                  M_next - M < -0.5,
+                  5,
+                  ifelse(M_next - M > 0.5,
+                         -5,
+                         0)
+                )))
+}
+```
+
+```{r}
+best_possible <- function(dat_long) {
+  dat <- dat_long %>% filter(month == 0) %>% mutate(month = as.numeric(month))
+  d <- maxMonth(dat)
+  out <- d
+  for (i in 1:6) {
+    d <- d %>% mutate(month = i) %>%
+      select(ID,
+             month,
+             tumor_mass = M_next,
+             toxicity = W_next,
+             dose,
+             pdied,
+             reward) %>% maxMonth()
+    out <- bind_rows(out, d)
+  }
+  out
+}
+```
+
+
 # old simulation code
 
 ```{r, eval=FALSE, include=FALSE}
