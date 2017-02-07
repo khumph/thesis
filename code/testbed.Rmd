@@ -1,41 +1,38 @@
 ---
-title: 'Testbed'
+title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original"))`'
 output: html_document
 params:
-  sim: "sim-noise.R"
+  noise: F
+  int: F
 ---
 
-# `r params$sim`
+```{r, eval=FALSE, include=FALSE}
+rm(list = ls())
+int <- F
+noise <- F
+```
 
 ```{r setup}
-# params$sim <- "sim-noise.R"
+int <- params$int
+noise <- params$noise
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
 p_load(tidyverse, caret, gridExtra, stringr)
 ```
 
 ```{r sim}
-source(params$sim)
+source("sim.R")
 source("q-functs.R")
 set.seed(20161116)
-dat_long <- sim()
-dat_long <- dat_long %>% mutate(
-  Q_hat = ifelse(month == 6, NA,
-                 ifelse(month == 5, reward, 0)),
-  best = ifelse(month == 6, NA, 999)
-)
+dat_long <- sim(int = int, noise = noise)
 ```
 
 ```{r}
-if (params$sim == "sim.R") {
-    form <- Q_hat ~ tumor_mass + dose + toxicity
-  form_int <- Q_hat ~ tumor_mass + dose + toxicity + dose * tumor_mass +
-    dose * toxicity
-} else if (params$sim == "sim-int.R") {
+if (int) {
   form <- Q_hat ~ tumor_mass + dose + toxicity + X
   form_int <- Q_hat ~ tumor_mass + dose + toxicity + X + dose * tumor_mass +
     dose * toxicity + dose * X
-} else if (params$sim == "sim-noise.R") {
+} else if (noise) {
   form <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 +
     V6 + V7 + V8 + V9 + V10
   form_int <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 +
@@ -43,6 +40,10 @@ if (params$sim == "sim.R") {
     dose * tumor_mass + dose * toxicity + dose * V1 + dose * V2 + dose * V3 +
     dose * V4 + dose * V5 + dose * V6 + dose * V7 + dose * V8 + dose * V9 +
     dose * V10
+} else {
+  form <- Q_hat ~ tumor_mass + dose + toxicity
+  form_int <- Q_hat ~ tumor_mass + dose + toxicity + dose * tumor_mass +
+    dose * toxicity
 }
 ```
 
@@ -71,7 +72,7 @@ maxPlots(Q)
 
 ```{r}
 set.seed(20170128)
-sim_test(Q) %>% plots_tab()
+sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
 # GLMNET
@@ -96,7 +97,7 @@ maxPlots(Q)
 
 ```{r}
 set.seed(20170128)
-sim_test(Q) %>% plots_tab()
+sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
 
@@ -130,7 +131,7 @@ maxPlots(Q)
 
 ```{r}
 set.seed(20170128)
-sim_test(Q) %>% plots_tab()
+sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
 # MARS 
@@ -155,7 +156,7 @@ maxPlots(Q)
 
 ```{r}
 set.seed(20170128)
-sim_test(Q) %>% plots_tab()
+sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
 

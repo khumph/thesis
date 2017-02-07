@@ -1,7 +1,17 @@
-renderDocument <- function(sim_path) {
-  rmarkdown::render("./code/testbed.Rmd", params = list(sim = sim_path))
+library(pacman)
+p_load(stringr)
+setwd('~/Google Drive/active/thesis/code/')
+
+renderDocument <- function(int, noise) {
+  rmarkdown::render("testbed.Rmd", params = list(int = int, noise = noise),
+                    output_file = str_c("testbed-",
+                                        ifelse(noise, "noise",
+                                               ifelse(int, "int",
+                                                      "orig")), ".html"))
 }
 
-renderDocument("sim.R")
-renderDocument("sim-noise.R")
-renderDocument("sim-int.R")
+renderDocument(int = F, noise = F)
+renderDocument(int = T, noise = F)
+renderDocument(int = F, noise = T)
+
+

@@ -146,6 +146,7 @@ maxPlots <- function(Q, mon = 5) {
 plots_tab <- function(dat_test_long) {
   dat_long_summ <- dat_test_long %>% group_by(ID) %>%
     mutate(
+      tot_reward = sum(reward, na.rm = T),
       cumSurv = prod(1 - pdeath[1:6])
     ) %>% group_by(group, month) %>% 
     summarise(
