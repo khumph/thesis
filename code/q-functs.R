@@ -81,7 +81,7 @@ Qlearn <- function(data, formula, treatment, mod_type, ...) {
     dat <- filter(data, month == i + 1)
     Q1 <- one_step_Q(formula, treatment, dat, mod_type, ...)
     mod_list[[i + 2]] <- Q1$model
-    data[data$month == i, ]$Q_hat <- dat$reward + Q1$max
+    data[data$month == i, ]$Q_hat <- data[data$month == i, ]$reward + Q1$max
     data[data$month == (i + 1),]$best <- Q1$best
   }
   Q1 <- one_step_Q(formula, treatment, data = filter(data, month == 0),

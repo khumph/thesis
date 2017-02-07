@@ -2,12 +2,13 @@
 title: 'Testbed'
 output: html_document
 params:
-  sim: "sim-int.R"
+  sim: "sim-noise.R"
 ---
 
 # `r params$sim`
 
 ```{r setup}
+# params$sim <- "sim-noise.R"
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
 p_load(tidyverse, caret, gridExtra, stringr)
@@ -28,15 +29,20 @@ dat_long <- dat_long %>% mutate(
 ```{r}
 if (params$sim == "sim.R") {
     form <- Q_hat ~ tumor_mass + dose + toxicity
-  form_int <- Q_hat ~ tumor_mass + dose + toxicity + dose * tumor_mass + dose * toxicity
+  form_int <- Q_hat ~ tumor_mass + dose + toxicity + dose * tumor_mass +
+    dose * toxicity
 } else if (params$sim == "sim-int.R") {
   form <- Q_hat ~ tumor_mass + dose + toxicity + X
-  form_int <- Q_hat ~ tumor_mass + dose + toxicity + X + dose * tumor_mass + dose * toxicity + dose * X
+  form_int <- Q_hat ~ tumor_mass + dose + toxicity + X + dose * tumor_mass +
+    dose * toxicity + dose * X
 } else if (params$sim == "sim-noise.R") {
-  form <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 + V6 + V7 + V8 + V9 + V10
-  form_int <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 + V6 + V7 + V8 + V9 + V10 +
-    dose * tumor_mass + dose * toxicity + dose * V1 + dose * V2 + dose * V3 + dose * V4 + dose * V5 +
-    dose * V6 + dose * V7 + dose * V8 + dose * V9 + dose * V10
+  form <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 +
+    V6 + V7 + V8 + V9 + V10
+  form_int <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 +
+    V6 + V7 + V8 + V9 + V10 +
+    dose * tumor_mass + dose * toxicity + dose * V1 + dose * V2 + dose * V3 +
+    dose * V4 + dose * V5 + dose * V6 + dose * V7 + dose * V8 + dose * V9 +
+    dose * V10
 }
 ```
 
@@ -54,7 +60,7 @@ Q_rcs <- Qlearn(
   formula = form,
   treatment = "dose",
   mod_type = "rcs"
-  )
+)
 Q <- Q_rcs
 ```
 
@@ -78,7 +84,7 @@ Q_glmnet <- Qlearn(
   mod_type = "caret",
   na.action = na.omit,
   method = "glmnet"
-  )
+)
 Q <- Q_glmnet
 ```
 
@@ -138,7 +144,7 @@ Q_mars <- Qlearn(
   na.action = na.omit,
   method = 'gcvEarth',
   tuneGrid = expand.grid(degree = 3)
-  )
+)
 Q <- Q_mars
 ```
 
