@@ -55,9 +55,11 @@ Patients often show significant differences in their responses to treatment. [\t
 % What is personalized medicine?
 This is the idea of personalized medicine (also called precision medicine, stratified medicine, or P4 medicine), which is the commonsensical notion that the best treatment for a given patient depends upon that patients' characteristics \textbf{[cite]}. The term is most often used today to describe a process where biomarkers, perhaps whether breast cancer cells are HER2-positive, are used to determine the best treatment, and when to use it \textbf{[defn-paper]}.
 % When/where did personalized medicine start?
-However, the general ideas go back at least as far as Hippocrates \textbf{[cite]}, and are implemented in principle whenever a physician tries to inform treatment decisions by determining whether the cause of an infection is bacterial or viral.
+However, the general ideas go back at least as far as Hippocrates \textbf{[cite]}, and are implemented in principle whenever a physician tries to determine whether the cause of an infection is bacterial or viral, in order to make a treatment decision.
 
 % What are some methods that have been used in the past to find personalized treatment regimes?}
+
+
 
 \begin{itemize}
   \item \textbf{standard trt * subgroup interaction testing}
@@ -109,6 +111,30 @@ The basic process of reinforcement learning involves a learning agent trying a s
 \section{Q-learning} % (fold)
 \label{sec:q_learning}
 
+Q-learning is a model-free method, which means it doesn't use an explicit model of the environment or planning, to estimate optimal action-selection policies. The maximized Q-function is the same as the optimal value function:
+
+learned action-value fucntion $Q$ directly approximates $q_{*}$ the optimal action value function
+
+\[
+  V^{*}_{t} = \max_{a_{t}} Q(s_{t}, a_{t})
+\]
+
+$Q(s_{T}, a)$ for the terminal state $T$ is set at an arbitrary fixed value:
+
+\[
+  Q(s_{T}, a) \gets 0
+\]
+
+The Q-function for the previous state is then updated:
+
+\[
+Q(s_{T-1}, a_{T-1}) \gets Q(s_{T-1}, a_{T-1}) + \alpha_{T-1} \del{r_{T} + \gamma  \max_{a_{T}} Q(s_{T}, a_{T}) - Q(s_{T-1}, a_{T-1})}
+\]
+
+Where $\gamma$ is a discount factor $\in (0, 1]$, $\alpha_{T-1}$ is the learning rate or step size parameter $\in (0, 1]$, $r_{t+1}$ is the observed reward received after performing action $a_{T}$ in $s_{T}$. 
+
+value iteration/backwards induction
+
 How it fits in with the above
 
 Properties
@@ -116,7 +142,15 @@ Properties
 single stage defintion
 
 \[
-Q(s_{t}, a{t}) \leftarrow Q(s_{t}, a{t}) + \alpha_{t} \del{r_{t+1} + \gamma \max_{a} Q(s_{s + 1}, a)}
+Q(s_{t}, a{t}) \gets Q(s_{t}, a{t}) + \alpha_{t} \del{r_{t+1} + \gamma V^{*}_{t + 1}}
+\]
+
+\[
+V^{*}_{t} = \max_{a_{t}} Q(s_{t}, a_{t})
+\]
+
+\[
+Q(s_{t}, a{t}) \gets Q(s_{t}, a_{t}) + \alpha_{t} \del{r_{t+1} + \gamma \max_{a_{t}} Q(s_{s + 1}, a_{t})}
 \]
 
 recursive form
@@ -140,12 +174,12 @@ recursive form
 \subsection{Patient Model} % (fold)
 \label{sub:vpm}
 
-I began by simulating 1000 patients, each receiving six months of treatment. Each patient had a random starting tumor mass and patient health, both generated from uniform distributions between 0 and 2. The initial treatment dose was selected from a uniform distribution between 0.5 and 1 (so that everyone entered the trial receiving some treatment). Subsequent doses were selected from a uniform distribution between 0 and 1 at the beginning of each month.
+To generate training data, I began by simulating 1000 patients, each receiving six months of treatment. Each patient had a random starting tumor mass and patient health, both generated from uniform distributions between 0 and 2. The initial treatment dose was selected from a uniform distribution between 0.5 and 1 (so that everyone entered the trial receiving some treatment). Subsequent doses were selected from a uniform distribution between 0 and 1 at the beginning of each month.
 
 Patient health change was modelled as a function of tumor mass and dosage of treatment, with doses above 0.5 decreasing health and doses below 0.5 allowing health to increase due to less toxic effects from the treatment.
 
 \[
-\dot{H}_{t} = - 0.1 M_{t-1} - 1.2 (D_{t-1} - 0.5)
+\Delta W = - 0.1 M_{t-1} - 1.2 (D_{t-1} - 0.5)
 \]
 
 Where $\dot{H}_{t}$ is the change in patient health from month $t-1$ to month $t$, 
@@ -233,12 +267,13 @@ p = 1 - \Delta F
 % subsection death (end)
 
 
-\[
-\hat{Q}_{t} = R_{t} + max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
-\]
 
 \section{simulation} % (fold)
 \label{sec:simulation}
+
+\[
+\hat{Q}_{t} = R_{t} + \max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
+\]
 
 
 
