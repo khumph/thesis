@@ -159,7 +159,6 @@ sim_test2 <- function(Q) {
       data = dat,
       model = Q$mod_list[[1]],
       form = Q$formula,
-      idvar = "ID",
       mod_type = Q$mod_type
     )$best
   
@@ -263,12 +262,6 @@ sim_test2 <- function(Q) {
   dat_test
 }
 
-# set.seed(1)
-# t1 <- sim_test(Q)
-# set.seed(1)
-# t2 <- sim_test2(Q)
-# all_equal(t1, t2)
-
 
 # best possible -----------------------------------------------------------
 
@@ -339,7 +332,7 @@ simMonthT <- function(dat) {
     )
 }
 
-sim_test_df <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
+sim_test <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
   M0 <- runif(npergroup, min = 0, max = 2)
   W0 <- runif(npergroup, min = 0, max = 2)
   
@@ -358,7 +351,6 @@ sim_test_df <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
       data = dat,
       model = Q$mod_list[[1]],
       form = Q$formula,
-      idvar = "ID",
       mod_type = Q$mod_type
     )$best
   
@@ -398,261 +390,4 @@ sim_test_df <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
     select(ID, group, month, tumor_mass, toxicity, dose, pdeath, reward) %>%
     group_by(ID) %>%
     mutate(tot_reward = sum(reward, na.rm = T))
-}
-
-
-# results functions -------------------------------------------------------
-
-align_df <- function(Q) {
-  Q$data %>%
-    select(ID,
-           month,
-           dose,
-           best,
-           reward,
-           Q_hat,
-           tumor_mass,
-           toxicity,
-           died, dead) %>%
-    mutate(
-      reward = lag(reward),
-      Q_hat = lag(Q_hat),
-      best = ifelse(died != 1 | is.na(died), best, NA)
-    )
-}
-
-plots_tab <- function(dat_test_long) {
-  dat_long_summ <- dat_test_long %>% group_by(group, month) %>%
-    summarise(
-      mean_tox = mean(toxicity, na.rm = T),
-      mean_tumor = mean(tumor_mass, na.rm = T),
-      mean_reward = mean(reward, na.rm = T)
-    ) %>% mutate(sum_means = mean_tox + mean_tumor)
-  
-  plot_tox <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = mean_tox,
-      color = group,
-      group = group
-    ))
-  
-  plot_tumor <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = mean_tumor,
-      color = group,
-      group = group
-    ))
-  
-  plot_sum <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = sum_means,
-      color = group,
-      group = group
-    ))
-  
-  plot_reward <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = mean_reward,
-      color = group,
-      group = group
-    ))
-  
-  tab_deaths <-
-    dat_test_long %>% group_by(group) %>%
-    summarise(pdeath = sum(pdeath, na.rm = T) / n()) %>%
-    arrange(pdeath)
-  
-  tab_reward <-
-    dat_test_long %>% select(ID, group, tot_reward) %>% unique() %>%
-    group_by(group) %>%
-    summarise(avg_tot_reward = mean(tot_reward)) %>%
-    arrange(desc(avg_tot_reward))
-  
-  list(
-    plot_tox = plot_tox,
-    plot_tumor = plot_tumor,
-    plot_sum = plot_sum,
-    plot_reward = plot_reward,
-    table_deaths = tab_deaths,
-    table_rewards = tab_reward
-  )
-}
-
-# sim test with noise variables -------------------------------------------
-
-sim_testN <- function(Q) {
-  if (sum(str_detect(Q$formula$covariates, "noise")) > 0) {
-    noise_vars <- T
-  } else {
-    noise_vars <- F
-  }
-  # 200 patients per each of 11 treatments
-  N <- 200 * 11
-  # 6 months treatment
-  Ttot <- 6 
-  
-  # The initial values of W0 and M0 for the patients were randomly chosen from the 
-  # same uniform distribution used in the training data.
-  set.seed(5)
-  W0 <- runif(N, min = 0, max = 2)
-  M0 <- runif(N, min = 0, max = 2)
-  if (noise_vars == T) {
-    noise <- replicate(Ttot, runif(N, min = 0, max = 2))
-  }
-  
-  # treatments consisting of the estimated optimal treatment regime and each of the 10 possible fixed dose levels ranging from 0.1 to 1.0 with increments of size 0.1.
-  D1 <- map(seq(from = 0.1, to = 1, by = 0.1), ~ rep(., 200)) %>% flatten_dbl()
-  
-  # estimate optimal treatment regime for 200
-  if (noise_vars == T) {
-    dat <-
-      tibble(
-        ID = tail(1:N, 200),
-        toxicity = tail(W0, 200),
-        tumor_mass = tail(M0, 200),
-        noise = tail(noise[, 1], 200)
-      )
-  } else {
-    dat <-
-      tibble(
-        ID = tail(1:N, 200),
-        toxicity = tail(W0, 200),
-        tumor_mass = tail(M0, 200)
-      )
-  }
-  
-  D0 <-
-    max_df(
-      data = dat,
-      model = Q$mod_list[[1]],
-      form = Q$formula,
-      idvar = "ID",
-      mod_type = Q$mod_type
-    )$best
-  
-  D1 <- c(D1, D0)
-  
-  D <- replicate(6, D1)
-  
-  r <- matrix(c(numeric(N * Ttot)), ncol = Ttot)
-  died <- matrix(c(numeric(N * Ttot)), ncol = Ttot)
-  dead <- logical(N)
-  W <- matrix(c(W0, numeric(N * Ttot)), ncol = Ttot + 1)
-  M <- matrix(c(M0, numeric(N * Ttot)), ncol = Ttot + 1)
-  
-  for (j in 1:(Ttot)) {
-    for (i in 1:N) {
-      if (dead[i]) {
-        died[i, j] <- 0
-        M[i, j + 1] <- NA
-        W[i, j + 1] <- NA
-        r[i, j] <- 0
-      } else {
-        M[i, j + 1] <- updateM(M[i, j], W[i, j], D[i, j])
-        W[i, j + 1] <- updateW(M[i, j], W[i, j], D[i, j])
-        died[i, j] <- determineDeath(M[i, j + 1], W[i, j + 1])
-        r[i, j] <- reward(M[i, j + 1],
-                          M[i, j],
-                          W[i, j + 1],
-                          W[i, j],
-                          died[i , j])
-      }
-      if (died[i, j] == 1) {
-        dead[i] <- T
-      }
-    }
-    if (j < Ttot) {
-      if (noise_vars == T) {
-        df <- tibble(
-          ID = tail(1:N, 200),
-          toxicity = tail(W[, j + 1], 200),
-          tumor_mass = tail(M[, j + 1], 200),
-          noise = tail(noise[, j + 1], 200)
-        )
-      } else {
-        df <- tibble(
-          ID = tail(1:N, 200),
-          toxicity = tail(W[, j + 1], 200),
-          tumor_mass = tail(M[, j + 1], 200)
-        )
-      }
-      D[df$ID, j + 1] <- max_df(
-        data = df,
-        model = Q$mod_list[[j + 1]],
-        form = Q$formula,
-        mod_type = Q$mod_type
-      )$best
-    }
-  }
-  
-  colnames(D) <- 0:5
-  colnames(M) <- 0:6
-  colnames(W) <- 0:6
-  colnames(r) <- 0:5
-  colnames(died) <- 1:6
-  if (noise_vars == T) {
-    colnames(noise) <- 0:5
-    dat_test <-
-      data.frame(
-        D = D,
-        M = M,
-        W = W,
-        r = r,
-        d = died,
-        n = noise 
-      ) %>% tbl_df()
-  } else {
-    dat_test <-
-      data.frame(
-        D = D,
-        M = M,
-        W = W,
-        r = r,
-        d = died
-      ) %>% tbl_df()
-  }
-  
-  dat_test <- dat_test %>%
-    rownames_to_column(var = "ID") %>%
-    mutate(ID = as.numeric(ID),
-           group = ifelse(ID < 2001, D1, "optim"),
-           group = factor(group))
-  
-  dat_test <- dat_test %>%
-    gather(key, value, -ID, -group) %>%
-    extract(col = key,
-            into = c("var", "month"),
-            regex = "(.)\\.(.)") %>%
-    spread(var, value)
-  
-  if (noise_vars == T) {
-    dat_test %>%
-      select(
-        ID,
-        month,
-        group,
-        noise = n,
-        dose = D,
-        tumor_mass = M,
-        toxicity = W,
-        reward = r,
-        died = d
-      )
-  } else {
-    dat_test %>%
-      select(
-        ID,
-        month,
-        group,
-        dose = D,
-        tumor_mass = M,
-        toxicity = W,
-        reward = r,
-        died = d
-      ) 
-  }
 }

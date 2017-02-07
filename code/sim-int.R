@@ -153,7 +153,7 @@ simMonthT <- function(dat) {
     )
 }
 
-sim_test_df <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
+sim_test <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
   M0 <- runif(npergroup, min = 0, max = 2)
   W0 <- runif(npergroup, min = 0, max = 2)
   X <- runif(npergroup, min = 0, max = 1)
@@ -218,25 +218,6 @@ sim_test_df <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
 
 
 # results functions -------------------------------------------------------
-
-align_df <- function(Q) {
-  Q$data %>%
-    select(ID,
-           month,
-           dose,
-           best,
-           reward,
-           Q_hat,
-           tumor_mass,
-           toxicity,
-           X,
-           died, dead) %>%
-    mutate(
-      reward = lag(reward),
-      Q_hat = lag(Q_hat),
-      best = ifelse(died != 1 | is.na(died), best, NA)
-    )
-}
 
 plots_tab <- function(dat_test_long) {
   dat_long_summ <- dat_test_long %>% group_by(group, month) %>%

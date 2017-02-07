@@ -94,11 +94,9 @@ sim <- function(N = 1000, Ttot = 6) {
                     toxicity = W_next,
                     dose = NA, died = NA, dead = NA,
                     reward = NA)
-  bind_rows(out, d) 
-  # %>%
-  #   select(ID, month, tumor_mass,
-  #          toxicity, dose, died, dead, reward)
+  bind_rows(out, d)
 }
+
 
 # best possible -----------------------------------------------------------
 
@@ -151,7 +149,7 @@ simMonthT <- function(dat) {
     )
 }
 
-sim_test_df <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
+sim_test <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
   M0 <- runif(npergroup, min = 0, max = 2)
   W0 <- runif(npergroup, min = 0, max = 2)
   V <- replicate(10, runif(npergroup, min = 0, max = 1))
@@ -207,68 +205,4 @@ sim_test_df <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6) {
     select(ID, group, month, tumor_mass, toxicity, dose, pdeath, reward) %>%
     group_by(ID) %>%
     mutate(tot_reward = sum(reward, na.rm = T))
-}
-
-
-# results functions -------------------------------------------------------
-
-plots_tab <- function(dat_test_long) {
-  dat_long_summ <- dat_test_long %>% group_by(group, month) %>%
-    summarise(
-      mean_tox = mean(toxicity, na.rm = T),
-      mean_tumor = mean(tumor_mass, na.rm = T),
-      mean_reward = mean(reward, na.rm = T)
-    ) %>% mutate(sum_means = mean_tox + mean_tumor)
-  
-  plot_tox <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = mean_tox,
-      color = group,
-      group = group
-    ))
-  
-  plot_tumor <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = mean_tumor,
-      color = group,
-      group = group
-    ))
-  
-  plot_sum <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = sum_means,
-      color = group,
-      group = group
-    ))
-  
-  plot_reward <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = mean_reward,
-      color = group,
-      group = group
-    ))
-  
-  tab_deaths <-
-    dat_test_long %>% group_by(group) %>%
-    summarise(pdeath = sum(pdeath, na.rm = T) / n()) %>%
-    arrange(pdeath)
-  
-  tab_reward <-
-    dat_test_long %>% select(ID, group, tot_reward) %>% unique() %>%
-    group_by(group) %>%
-    summarise(avg_tot_reward = mean(tot_reward)) %>%
-    arrange(desc(avg_tot_reward))
-  
-  list(
-    plot_tox = plot_tox,
-    plot_tumor = plot_tumor,
-    plot_sum = plot_sum,
-    plot_reward = plot_reward,
-    table_deaths = tab_deaths,
-    table_rewards = tab_reward
-  )
 }

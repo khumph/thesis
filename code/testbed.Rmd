@@ -1,17 +1,20 @@
 ---
 title: 'Testbed'
 output: html_document
+params:
+  sim: "sim-int.R"
 ---
 
+# `r params$sim`
+
 ```{r setup}
-rm(list = ls())
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
 p_load(tidyverse, caret, gridExtra, stringr)
 ```
 
 ```{r sim}
-source("sim.R")
+source(params$sim)
 source("q-functs.R")
 set.seed(20161116)
 dat_long <- sim()
@@ -23,35 +26,54 @@ dat_long <- dat_long %>% mutate(
 ```
 
 ```{r}
-ex_ID <- sample(dat_long$ID, 1)
+if (params$sim == "sim.R") {
+    form <- Q_hat ~ tumor_mass + dose + toxicity
+  form_int <- Q_hat ~ tumor_mass + dose + toxicity + dose * tumor_mass + dose * toxicity
+} else if (params$sim == "sim-int.R") {
+  form <- Q_hat ~ tumor_mass + dose + toxicity + X
+  form_int <- Q_hat ~ tumor_mass + dose + toxicity + X + dose * tumor_mass + dose * toxicity + dose * X
+} else if (params$sim == "sim-noise.R") {
+  form <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 + V6 + V7 + V8 + V9 + V10
+  form_int <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 + V6 + V7 + V8 + V9 + V10 +
+    dose * tumor_mass + dose * toxicity + dose * V1 + dose * V2 + dose * V3 + dose * V4 + dose * V5 +
+    dose * V6 + dose * V7 + dose * V8 + dose * V9 + dose * V10
+}
+```
 
-tox_mass_plot <- ggplot(
-  data = filter(dat_long, ID == ex_ID)
-) +
-  geom_line(
-    mapping = aes(x = month, y = toxicity, group = ID), color = "green"
-  ) +
-  geom_line(
-    mapping = aes(x = month, y = tumor_mass, group = ID) 
+
+```{r}
+set.seed(20170207)
+indPlot(dat_long)
+```
+
+# RCS
+```{r}
+set.seed(20170128)
+Q_rcs <- Qlearn(
+  data = dat_long,
+  formula = form,
+  treatment = "dose",
+  mod_type = "rcs"
   )
+Q <- Q_rcs
+```
 
-dose_plot <- ggplot(
-  data = filter(dat_long, ID == ex_ID)
-) +
-  geom_line(
-    mapping = aes(x = month, y = dose, group = ID), color = "red"
-  ) + ylim(0, 1)
+```{r}
+set.seed(20170206)
+maxPlots(Q)
+```
 
-grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1)
+```{r}
+set.seed(20170128)
+sim_test(Q) %>% plots_tab()
 ```
 
 # GLMNET
-
 ```{r}
 set.seed(20170128)
 Q_glmnet <- Qlearn(
   data = dat_long,
-  formula = Q_hat ~ tumor_mass + dose + toxicity + dose * tumor_mass + dose * toxicity,
+  formula = form_int,
   treatment = "dose",
   mod_type = "caret",
   na.action = na.omit,
@@ -61,36 +83,18 @@ Q <- Q_glmnet
 ```
 
 ```{r}
-dat <- align_df(Q)
-
-ggplot(filter(dat_long, month == 5)) +
-  geom_point(aes(x = tumor_mass, y = reward), color = "red") +
-  geom_point(aes(x = tumor_mass, y = Q_hat), color = "blue", shape = 4, alpha = 0.6)
-```
-
-```{r}
-dat <- filter(dat, month == 5)
-nested_df <- max_df(dat, Q$mod_list[[4]], Q$formula, idvar = "ID", mod_type = "caret", nested = T)
-
-set.seed(8)
-i <- sample(nested_df$ID, 1)
-ggplot(filter(nested_df, ID == i), aes(x = dose, y = preds)) +
-  geom_point()
-
-set.seed(77)
-ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
-  geom_line(mapping = aes(x = dose, y = preds, group = ID))
+set.seed(20170206)
+maxPlots(Q)
 ```
 
 
 ```{r}
 set.seed(20170128)
-sim_test_df(Q) %>% plots_tab()
+sim_test(Q) %>% plots_tab()
 ```
 
 
 # ERT
-
 ```{r ert-qlearn}
 # Tuning parameters:
 #   mtry (# Randomly Selected Predictors) - also K ?
@@ -101,7 +105,7 @@ grid <- expand.grid(mtry = 3,
 
 Q_ert <- Qlearn(
   data = dat_long,
-  formula = Q_hat ~ tumor_mass + dose + toxicity + tumor_mass * dose + dose * toxicity,
+  formula = form,
   treatment = "dose",
   mod_type = "caret",
   method = 'extraTrees',
@@ -114,41 +118,21 @@ Q <- Q_ert
 ```
 
 ```{r}
-dat <- align_df(Q)
-
-ggplot(filter(dat, month == 5)) +
-  geom_point(aes(x = tumor_mass, y = reward)) +
-  geom_point(aes(x = tumor_mass, y = Q_hat), color = "blue")
+set.seed(20170206)
+maxPlots(Q)
 ```
-
-```{r}
-dat <- filter(dat, month == 5)
-nested_df <- max_df(dat, Q$mod_list[[4]], Q$formula, idvar = "ID", mod_type = "caret", nested = T)
-
-set.seed(8)
-i <- sample(nested_df$ID, 1)
-ggplot(filter(nested_df, ID == i), aes(x = dose, y = preds)) +
-  geom_point()
-
-set.seed(77)
-ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
-  geom_line(mapping = aes(x = dose, y = preds, group = ID))
-```
-
 
 ```{r}
 set.seed(20170128)
-sim_test_df(Q) %>% plots_tab()
+sim_test(Q) %>% plots_tab()
 ```
 
-
 # MARS 
-
 ```{r}
 set.seed(20170128)
 Q_mars <- Qlearn(
   data = dat_long,
-  formula = Q_hat ~ tumor_mass + dose + toxicity,
+  formula = form,
   treatment = "dose",
   mod_type = "caret",
   na.action = na.omit,
@@ -158,72 +142,14 @@ Q_mars <- Qlearn(
 Q <- Q_mars
 ```
 
-
 ```{r}
-dat <- align_df(Q)
-
-ggplot(filter(dat, month == 5)) +
-  geom_point(aes(x = tumor_mass, y = reward)) +
-  geom_point(aes(x = tumor_mass, y = Q_hat), color = "blue")
-```
-
-```{r}
-dat <- filter(dat, month == 5)
-nested_df <- max_df(dat, Q$mod_list[[4]], Q$formula, idvar = "ID", mod_type = "caret", nested = T)
-
-set.seed(8)
-i <- sample(nested_df$ID, 1)
-ggplot(filter(nested_df, ID == i), aes(x = dose, y = preds)) +
-  geom_point()
-
-set.seed(77)
-ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
-  geom_line(mapping = aes(x = dose, y = preds, group = ID))
+set.seed(20170206)
+maxPlots(Q)
 ```
 
 ```{r}
 set.seed(20170128)
-sim_test_df(Q) %>% plots_tab()
+sim_test(Q) %>% plots_tab()
 ```
 
 
-# RCS
-
-```{r}
-set.seed(20170128)
-Q_rcs <- Qlearn(
-  data = dat_long,
-  formula = Q_hat ~ tumor_mass + dose + toxicity,
-  treatment = "dose",
-  mod_type = "rcs"
-  )
-Q <- Q_rcs
-```
-
-
-```{r}
-dat <- align_df(Q)
-
-ggplot(filter(dat, month == 5)) +
-  geom_point(aes(x = tumor_mass, y = reward)) +
-  geom_point(aes(x = tumor_mass, y = Q_hat), color = "blue")
-```
-
-```{r}
-dat <- filter(dat, month == 5)
-nested_df <- max_df(dat, Q$mod_list[[4]], Q$formula, idvar = "ID", mod_type = "caret", nested = T)
-
-set.seed(8)
-i <- sample(nested_df$ID, 1)
-ggplot(filter(nested_df, ID == i), aes(x = dose, y = preds)) +
-  geom_point()
-
-set.seed(77)
-ggplot(data = filter(nested_df, ID %in% sample(1:1000, 50))) +
-  geom_line(mapping = aes(x = dose, y = preds, group = ID))
-```
-
-```{r}
-set.seed(20170128)
-sim_test_df(Q) %>% plots_tab()
-```
