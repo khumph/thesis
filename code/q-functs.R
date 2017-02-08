@@ -99,9 +99,7 @@ Qlearn <- function(data, formula, treatment, mod_type, ...) {
 # results functions -------------------------------------------------------
 
 
-indPlot <- function(data) {
-  ex_ID <- sample(data$ID, 1)
-  
+indPlot <- function(data, ex_ID) {
   tox_mass_plot <- ggplot(
     data = filter(data, ID == ex_ID)
   ) +
@@ -122,7 +120,7 @@ indPlot <- function(data) {
   list(grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1), ex_ID)
 }
 
-maxPlots <- function(Q, mon = 5) {
+maxPlots <- function(Q, ex_ID, mon = 5) {
   dat <- filter(Q$data, month == mon)
   nested_df <-
     max_df(dat,
@@ -131,16 +129,15 @@ maxPlots <- function(Q, mon = 5) {
            mod_type = Q$mod_type,
            nested = T)
   
-  id <- sample(1:1000, 1)
   onePlot <-
-    ggplot(filter(nested_df, ID == id), aes(x = dose, y = preds)) +
+    ggplot(filter(nested_df, ID == ex_ID), aes(x = dose, y = preds)) +
     geom_point()
   
   ids <- sample(1:1000, 50)
   manyPlot <- ggplot(data = filter(nested_df, ID %in% ids)) +
     geom_line(mapping = aes(x = dose, y = preds, group = ID))
   
-  list(onePlot, manyPlot, id, ids)
+  list(onePlot, manyPlot, ex_ID, ids)
 }
 
 plots_tab <- function(dat_test_long) {

@@ -323,9 +323,9 @@ plots_tab <- function(dat_test_long) {
 
 
 ```{r}
-best_possible <- function(dat_long) {
-  dat <- dat_long %>% filter(month == 0) %>% mutate(month = as.numeric(month))
-  d <- maxMonth(dat)
+best_possible <- function(dat_long, int) {
+  dat <- dat_long %>% filter(month == 0)
+  d <- maxMonth(dat, int = int)
   out <- d
   for (i in 1:6) {
     d <- d %>% mutate(month = i) %>%
@@ -335,7 +335,7 @@ best_possible <- function(dat_long) {
              toxicity = W_next,
              dose,
              pdied,
-             reward) %>% maxMonth()
+             reward) %>% maxMonth(int = int)
     out <- bind_rows(out, d)
   }
   out

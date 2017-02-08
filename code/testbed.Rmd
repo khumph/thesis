@@ -2,19 +2,22 @@
 title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original"))`'
 output: html_document
 params:
-  noise: F
-  int: F
+  noise: !r F
+  int: !r F
 ---
 
 ```{r, eval=FALSE, include=FALSE}
 rm(list = ls())
-int <- F
+int <- T
 noise <- F
 ```
 
-```{r setup}
+```{r}
 int <- params$int
 noise <- params$noise
+```
+
+```{r setup}
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
 p_load(tidyverse, caret, gridExtra, stringr)
@@ -50,7 +53,8 @@ if (int) {
 
 ```{r}
 set.seed(20170207)
-indPlot(dat_long)
+ex_ID <- sample(dat_long$ID, 1)
+indPlot(dat_long, ex_ID)
 ```
 
 # RCS
@@ -67,7 +71,7 @@ Q <- Q_rcs
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q)
+maxPlots(Q, ex_ID)
 ```
 
 ```{r}
@@ -91,7 +95,7 @@ Q <- Q_glmnet
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q)
+maxPlots(Q, ex_ID)
 ```
 
 
@@ -126,7 +130,7 @@ Q <- Q_ert
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q)
+maxPlots(Q, ex_ID)
 ```
 
 ```{r}
@@ -134,7 +138,7 @@ set.seed(20170128)
 sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
-# MARS 
+# MARS
 ```{r}
 set.seed(20170128)
 Q_mars <- Qlearn(
@@ -151,12 +155,10 @@ Q <- Q_mars
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q)
+maxPlots(Q, ex_ID)
 ```
 
 ```{r}
 set.seed(20170128)
 sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
-
-
