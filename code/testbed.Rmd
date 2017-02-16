@@ -8,7 +8,7 @@ params:
 
 ```{r, eval=FALSE, include=FALSE}
 rm(list = ls())
-int <- T
+int <- F
 noise <- F
 ```
 
@@ -20,12 +20,15 @@ noise <- params$noise
 ```{r setup}
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
-p_load(tidyverse, caret, gridExtra, stringr)
+p_load(tidyverse, rms, caret, gridExtra, stringr)
+source("sim-functs.R")
+source("sim.R")
+source("q-functs.R")
+source("sim-test.R")
+source("results-functs.R")
 ```
 
 ```{r sim}
-source("sim.R")
-source("q-functs.R")
 set.seed(20161116)
 dat_long <- sim(int = int, noise = noise)
 ```
@@ -56,6 +59,33 @@ set.seed(20170207)
 ex_ID <- sample(dat_long$ID, 1)
 indPlot(dat_long, ex_ID)
 ```
+
+# lm
+```{r ert-qlearn}
+Q_lm <- Qlearn(
+  data = dat_long,
+  formula = form_int,
+  treatment = "dose",
+  mod_type = "caret",
+  method = 'lm',
+  na.action = na.omit
+)
+Q <- Q_lm
+```
+
+```{r}
+set.seed(20170206)
+maxPlots(Q, ex_ID)
+```
+
+```{r}
+set.seed(20170128)
+d2 <- sim_test(Q, int = int, noise = noise)
+
+d2 %>% filter(group == "optim")
+d2 %>% plots_tab()
+```
+
 
 # RCS
 ```{r}
@@ -105,14 +135,37 @@ sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
 
+# rpart
+```{r ert-qlearn}
+Q_rpart <- Qlearn(
+  data = dat_long,
+  formula = form,
+  treatment = "dose",
+  mod_type = "caret",
+  method = 'rpart1SE',
+  na.action = na.omit
+)
+Q <- Q_rpart
+```
+
+```{r}
+set.seed(20170206)
+maxPlots(Q, ex_ID)
+```
+
+```{r}
+set.seed(20170128)
+sim_test(Q, int = int, noise = noise) %>% plots_tab()
+```
+
+
 # ERT
 ```{r ert-qlearn}
 # Tuning parameters:
 #   mtry (# Randomly Selected Predictors) - also K ?
 #   numRandomCuts (# Random Cuts) - K in CRT paper ?
 
-grid <- expand.grid(mtry = 3,
-                    numRandomCuts = 1)
+# grid <- expand.grid(mtry = 3, numRandomCuts = 1)
 
 Q_ert <- Qlearn(
   data = dat_long,
@@ -121,10 +174,11 @@ Q_ert <- Qlearn(
   mod_type = "caret",
   method = 'extraTrees',
   na.action = na.omit,
-  tuneGrid = grid,
-  ntree = 50, # G in CRT paper
+  ntree = 50,
+  # G in CRT paper
   nodesize = 2 # nmin in CRT paper
 )
+
 Q <- Q_ert
 ```
 
@@ -148,7 +202,7 @@ Q_mars <- Qlearn(
   mod_type = "caret",
   na.action = na.omit,
   method = 'gcvEarth',
-  tuneGrid = expand.grid(degree = 3)
+  tuneGrid = expand.grid(degree = 2)
 )
 Q <- Q_mars
 ```

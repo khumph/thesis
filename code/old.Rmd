@@ -34,6 +34,26 @@ R3 <- function(M_next, M) {
 }
 ```
 
+```{r}
+best_possible <- function(dat_long, int) {
+  dat <- dat_long %>% filter(month == 0)
+  d <- maxMonth(dat, int = int)
+  out <- d
+  for (i in 1:6) {
+    d <- d %>% mutate(month = i) %>%
+      select(ID,
+             month,
+             tumor_mass = M_next,
+             toxicity = W_next,
+             dose,
+             pdied,
+             reward) %>% maxMonth(int = int)
+    out <- bind_rows(out, d)
+  }
+  out
+}
+```
+
 # sim-int
 
 ```{r}
@@ -322,25 +342,7 @@ plots_tab <- function(dat_test_long) {
 
 
 
-```{r}
-best_possible <- function(dat_long, int) {
-  dat <- dat_long %>% filter(month == 0)
-  d <- maxMonth(dat, int = int)
-  out <- d
-  for (i in 1:6) {
-    d <- d %>% mutate(month = i) %>%
-      select(ID,
-             month,
-             tumor_mass = M_next,
-             toxicity = W_next,
-             dose,
-             pdied,
-             reward) %>% maxMonth(int = int)
-    out <- bind_rows(out, d)
-  }
-  out
-}
-```
+
 
 # sim-noise
 
