@@ -1,9 +1,13 @@
 # sim ---------------------------------------------------------------------
 
-simMonth <- function(dat, int) {
+simMonth <- function(dat, int, noise) {
   if (int) {
     dat <- dat %>%
-      mutate(M_next = ifelse(!dead, updateMint(tumor_mass, toxicity, dose, X), NA))
+      mutate(M_next = ifelse(!dead, updateM(tumor_mass, toxicity, dose, X = X), NA))
+  } else if (noise) {
+    dat <- dat %>%
+      mutate(M_next = ifelse(!dead, updateM(tumor_mass, toxicity, dose,
+                                            V = c(V1, V2, V3, V4, V5, V6, V7, V8, V9, V10)), NA))
   } else {
     dat <- dat %>%
       mutate(M_next = ifelse(!dead, updateM(tumor_mass, toxicity, dose), NA))
@@ -13,16 +17,10 @@ simMonth <- function(dat, int) {
     d_next = runif(nrow(.), min = 0, max = 1),
     dead = ifelse(dead,
                   T,
-                  ifelse(rbinom(
-                    nrow(.), 1, pDeath(M_next, W_next)
-                  ) == 1, T, F)),
-    reward = reward(
-      M_next = M_next,
-      M = tumor_mass,
-      W = toxicity,
-      W_next = W_next,
-      dead
-    )
+                  ifelse(rbinom(nrow(.), 1, pDeath(M_next, W_next)) == 1,
+                         T, F)),
+    reward = reward(M_next = M_next, M = tumor_mass,
+                    W = toxicity, W_next = W_next, dead)
   )
 }
 
@@ -40,15 +38,15 @@ sim <- function(N = 1000, Ttot = 6, int = F, noise = F) {
       mutate(X = runif(N, min = 0, max = 1))
   } else if (noise) {
     dat <- dat %>%
-      bind_cols(replicate(10, runif(N, min = 0, max = 1)) %>% as.data.frame())
+      bind_cols(replicate(100, runif(N, min = -0.2, max = 0.3)) %>% as.data.frame())
   }
-  d <- simMonth(dat, int = int)
+  d <- simMonth(dat, int = int, noise = noise)
   out <- d
   for (i in 1:(Ttot - 1)) {
     d <- d %>% mutate(month = i,
                       tumor_mass = M_next,
                       toxicity = W_next,
-                      dose = d_next) %>% simMonth(int = int)
+                      dose = d_next) %>% simMonth(int = int, noise = noise)
     out <- bind_rows(out, d)
   }
   d <- d %>% mutate(month = Ttot,

@@ -9,7 +9,7 @@ params:
 ```{r, eval=FALSE, include=FALSE}
 rm(list = ls())
 int <- F
-noise <- F
+noise <- T
 ```
 
 ```{r}
@@ -34,23 +34,18 @@ dat_long <- sim(int = int, noise = noise)
 ```
 
 ```{r}
-if (int) {
-  form <- Q_hat ~ tumor_mass + dose + toxicity + X
-  form_int <- Q_hat ~ tumor_mass + dose + toxicity + X + dose * tumor_mass +
-    dose * toxicity + dose * X
-} else if (noise) {
-  form <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 +
-    V6 + V7 + V8 + V9 + V10
-  form_int <- Q_hat ~ tumor_mass + dose + toxicity + V1 + V2 + V3 + V4 + V5 +
-    V6 + V7 + V8 + V9 + V10 +
-    dose * tumor_mass + dose * toxicity + dose * V1 + dose * V2 + dose * V3 +
-    dose * V4 + dose * V5 + dose * V6 + dose * V7 + dose * V8 + dose * V9 +
-    dose * V10
-} else {
-  form <- Q_hat ~ tumor_mass + dose + toxicity
-  form_int <- Q_hat ~ tumor_mass + dose + toxicity + dose * tumor_mass +
-    dose * toxicity
-}
+nms <- dat_long %>% select(-ID, -month, -dead, -M_next, -W_next, -d_next, -reward, -best) %>% names()
+response <- "Q_hat"
+treatment <- "dose"
+pred_nms <- nms[!(nms %in% response)]
+form_base <- paste(response,
+                   "~",
+                   paste0(pred_nms, collapse = " + "))
+ints <- paste0(pred_nms[!(pred_nms %in% treatment)], ":", treatment)
+ints <- paste(ints, collapse = " + ")
+formula <- paste(c(form_base, ints), collapse = " + ")
+form <- as.formula(form_base)
+form_int <- as.formula(formula)
 ```
 
 
@@ -80,10 +75,7 @@ maxPlots(Q, ex_ID)
 
 ```{r}
 set.seed(20170128)
-d2 <- sim_test(Q, int = int, noise = noise)
-
-d2 %>% filter(group == "optim")
-d2 %>% plots_tab()
+sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
 
@@ -142,7 +134,7 @@ Q_rpart <- Qlearn(
   formula = form,
   treatment = "dose",
   mod_type = "caret",
-  method = 'rpart1SE',
+  method = 'rpart',
   na.action = na.omit
 )
 Q <- Q_rpart
@@ -165,7 +157,7 @@ sim_test(Q, int = int, noise = noise) %>% plots_tab()
 #   mtry (# Randomly Selected Predictors) - also K ?
 #   numRandomCuts (# Random Cuts) - K in CRT paper ?
 
-# grid <- expand.grid(mtry = 3, numRandomCuts = 1)
+grid <- expand.grid(mtry = 3, numRandomCuts = 1)
 
 Q_ert <- Qlearn(
   data = dat_long,
@@ -174,6 +166,7 @@ Q_ert <- Qlearn(
   mod_type = "caret",
   method = 'extraTrees',
   na.action = na.omit,
+  tuneGrid = grid,
   ntree = 50,
   # G in CRT paper
   nodesize = 2 # nmin in CRT paper

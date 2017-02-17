@@ -6,7 +6,7 @@ maxMonth <- function(dat, len = 101, int) {
     unnest()
   if (int) {
     dat <- dat %>%
-      mutate(M_next = updateMint(tumor_mass, toxicity, dose, X))
+      mutate(M_next = updateM(tumor_mass, toxicity, dose, X = X))
   } else {
     dat <- dat %>%
       mutate(M_next = updateM(tumor_mass, toxicity, dose))
@@ -27,7 +27,7 @@ maxMonth <- function(dat, len = 101, int) {
     best = ifelse(
       tumor_mass > 0,
       # (nnet::which.is.max(max) - 1) / 100,
-      quantile(best, probs = 0, na.rm = T, type = 3, names = F),
+      quantile(best, probs = 1, na.rm = T, type = 3, names = F),
       min(best, na.rm = T)
     )
   ) %>% filter(near(dose, best))
@@ -49,7 +49,7 @@ simMonthT <- function(dat, Q, int) {
   if (int) {
     dat <- dat %>%
       mutate(
-        M_next = ifelse(!dead, updateMint(tumor_mass, toxicity, dose, X), NA)
+        M_next = ifelse(!dead, updateM(tumor_mass, toxicity, dose, X = X), NA)
       )
   } else {
     dat <- dat %>%
@@ -85,7 +85,7 @@ sim_test <- function(Q, npergroup = 200, ngroups = 12, Ttot = 6,
     dat <- dat %>%
       mutate(X = X)
   } else if (noise) {
-    V <- replicate(10, runif(npergroup, min = 0, max = 1))
+    V <- replicate(100, runif(npergroup, min = -0.5, max = 1))
     dat <- dat %>% bind_cols(V %>% as.data.frame())
   }
   

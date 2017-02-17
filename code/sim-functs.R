@@ -1,22 +1,16 @@
 # simulation functions ----------------------------------------------------
 
 # function for how toxicity changes
-updateW <- function(M, W, D, a1 = 0.1, b1 = 1.1, d1 = 0.5) {
+updateW <- function(M, W, D, a1 = 0.1, b1 = 1.2, d1 = 0.5) {
   W_next <- a1 * M + b1 * (D - d1) + W
   ifelse(W_next > 0, W_next, 0)
 }
 
 # function for updating tumor mass
-updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5) {
+updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5,
+                    X = 0, V = 0, a3 = 1e-4) {
   M_next <- ifelse(M > 0,
-                   (a2 * W - b2 * (D - d2)) + M,
-                   0)
-  ifelse(M_next > 0, M_next, 0)
-}
-
-updateMint <- function(M, W, D, X, a2 = 0.15, b2 = 1.2, d2 = 0.5) {
-  M_next <- ifelse(M > 0,
-                   (a2 * W - b2 * (D * ifelse(X > 0.5, 2, 1) - d2)) + M,
+                   (a2 * W - b2 * (D * ifelse(X > 0.5, 2, 1) - d2)) + M + sum(a3 * V),
                    0)
   ifelse(M_next > 0, M_next, 0)
 }
