@@ -1,6 +1,5 @@
 library(pacman)
 p_load(stringr)
-setwd('~/Google Drive/active/thesis/code/')
 
 renderDocument <- function(int, noise) {
   rmarkdown::render("testbed.Rmd", params = list(int = int, noise = noise),
@@ -13,5 +12,4 @@ renderDocument <- function(int, noise) {
 renderDocument(int = F, noise = F)
 renderDocument(int = T, noise = F)
 renderDocument(int = F, noise = T)
-
 

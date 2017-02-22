@@ -2,7 +2,7 @@
 title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original"))`'
 output: html_document
 params:
-  noise: !r F
+  noise: !r T
   int: !r F
 ---
 
@@ -21,10 +21,10 @@ noise <- params$noise
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
 p_load(tidyverse, rms, caret, gridExtra, stringr)
-source("sim-functs.R")
-source("sim.R")
+source("surv-sim-functs.R")
+source("surv-sim.R")
 source("q-functs.R")
-source("sim-test.R")
+source("surv-sim-test.R")
 source("results-functs.R")
 ```
 
@@ -34,8 +34,8 @@ dat_long <- sim(int = int, noise = noise)
 ```
 
 ```{r}
-nms <- dat_long %>% select(-ID, -month, -dead, -M_next, -W_next, -d_next, -reward, -best) %>% names()
-response <- "Q_hat"
+nms <- dat_long %>% select(-ID, -month, -dead, -M_next, -W_next, -d_next, -reward, -best, -surv_time) %>% names()
+response <- "Qhat"
 treatment <- "dose"
 pred_nms <- nms[!(nms %in% response)]
 form_base <- paste(response,
@@ -56,14 +56,13 @@ indPlot(dat_long, ex_ID)
 ```
 
 # lm
-```{r ert-qlearn}
+```{r}
 Q_lm <- Qlearn(
   data = dat_long,
   formula = form_int,
   treatment = "dose",
   mod_type = "caret",
-  method = 'lm',
-  na.action = na.omit
+  method = 'lm'
 )
 Q <- Q_lm
 ```
@@ -79,27 +78,27 @@ sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
 
-# RCS
-```{r}
-set.seed(20170128)
-Q_rcs <- Qlearn(
-  data = dat_long,
-  formula = form,
-  treatment = "dose",
-  mod_type = "rcs"
-)
-Q <- Q_rcs
-```
+<!-- # RCS -->
+<!-- ```{r} -->
+<!-- set.seed(20170128) -->
+<!-- Q_rcs <- Qlearn( -->
+<!--   data = dat_long, -->
+<!--   formula = form, -->
+<!--   treatment = "dose", -->
+<!--   mod_type = "rcs" -->
+<!-- ) -->
+<!-- Q <- Q_rcs -->
+<!-- ``` -->
 
-```{r}
-set.seed(20170206)
-maxPlots(Q, ex_ID)
-```
+<!-- ```{r} -->
+<!-- set.seed(20170206) -->
+<!-- maxPlots(Q, ex_ID) -->
+<!-- ``` -->
 
-```{r}
-set.seed(20170128)
-sim_test(Q, int = int, noise = noise) %>% plots_tab()
-```
+<!-- ```{r} -->
+<!-- set.seed(20170128) -->
+<!-- sim_test(Q, int = int, noise = noise) %>% plots_tab() -->
+<!-- ``` -->
 
 # GLMNET
 ```{r}
@@ -109,7 +108,6 @@ Q_glmnet <- Qlearn(
   formula = form_int,
   treatment = "dose",
   mod_type = "caret",
-  na.action = na.omit,
   method = "glmnet"
 )
 Q <- Q_glmnet
@@ -120,7 +118,6 @@ set.seed(20170206)
 maxPlots(Q, ex_ID)
 ```
 
-
 ```{r}
 set.seed(20170128)
 sim_test(Q, int = int, noise = noise) %>% plots_tab()
@@ -128,14 +125,13 @@ sim_test(Q, int = int, noise = noise) %>% plots_tab()
 
 
 # rpart
-```{r ert-qlearn}
+```{r}
 Q_rpart <- Qlearn(
   data = dat_long,
   formula = form,
   treatment = "dose",
   mod_type = "caret",
-  method = 'rpart',
-  na.action = na.omit
+  method = 'rpart'
 )
 Q <- Q_rpart
 ```
@@ -151,39 +147,38 @@ sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
 
-# ERT
-```{r ert-qlearn}
-# Tuning parameters:
-#   mtry (# Randomly Selected Predictors) - also K ?
-#   numRandomCuts (# Random Cuts) - K in CRT paper ?
+<!-- # ERT -->
+<!-- ```{r} -->
+<!-- # Tuning parameters: -->
+<!-- #   mtry (# Randomly Selected Predictors) - also K ? -->
+<!-- #   numRandomCuts (# Random Cuts) - K in CRT paper ? -->
 
-grid <- expand.grid(mtry = 3, numRandomCuts = 1)
+<!-- # grid <- expand.grid(mtry = 3, numRandomCuts = 1) -->
 
-Q_ert <- Qlearn(
-  data = dat_long,
-  formula = form,
-  treatment = "dose",
-  mod_type = "caret",
-  method = 'extraTrees',
-  na.action = na.omit,
-  tuneGrid = grid,
-  ntree = 50,
-  # G in CRT paper
-  nodesize = 2 # nmin in CRT paper
-)
+<!-- Q_ert <- Qlearn( -->
+<!--   data = dat_long, -->
+<!--   formula = form, -->
+<!--   treatment = "dose", -->
+<!--   mod_type = "caret", -->
+<!--   method = 'extraTrees', -->
+<!--   # tuneGrid = grid, -->
+<!--   ntree = 50, -->
+<!--   # G in CRT paper -->
+<!--   nodesize = 2 # nmin in CRT paper -->
+<!-- ) -->
 
-Q <- Q_ert
-```
+<!-- Q <- Q_ert -->
+<!-- ``` -->
 
-```{r}
-set.seed(20170206)
-maxPlots(Q, ex_ID)
-```
+<!-- ```{r} -->
+<!-- set.seed(20170206) -->
+<!-- maxPlots(Q, ex_ID) -->
+<!-- ``` -->
 
-```{r}
-set.seed(20170128)
-sim_test(Q, int = int, noise = noise) %>% plots_tab()
-```
+<!-- ```{r} -->
+<!-- set.seed(20170128) -->
+<!-- sim_test(Q, int = int, noise = noise) %>% plots_tab() -->
+<!-- ``` -->
 
 # MARS
 ```{r}
@@ -193,7 +188,6 @@ Q_mars <- Qlearn(
   formula = form,
   treatment = "dose",
   mod_type = "caret",
-  na.action = na.omit,
   method = 'gcvEarth',
   tuneGrid = expand.grid(degree = 2)
 )

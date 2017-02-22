@@ -28,9 +28,9 @@ makeForm <- function(formula, treatment, mod_type = "rcs") {
 }
 
 max_df <- function(data, model, form, mod_type, 
-                   x = seq(0, 1, by = 0.01), nested = F) {
+                   x = seq(0, 1, by = 0.05), nested = F) {
   dat <- data %>%
-    filter(!is.na(tumor_mass)) %>% 
+    filter(!is.na(reward)) %>% 
     mutate(dose = map(1:nrow(.), ~ x)) %>%
     unnest() %>%
     mutate(preds = predict(model, .)) %>%
@@ -46,7 +46,7 @@ max_df <- function(data, model, form, mod_type,
     dat
   } else {
     dat %>% filter(near(best, dose)) %>%
-      bind_rows(filter(data, is.na(tumor_mass)))
+      bind_rows(filter(data, is.na(reward))) %>% arrange(ID)
   }
 }
 
@@ -63,12 +63,14 @@ one_step_Q <- function(form, data, mod_type, ...) {
   if (mod_type == "caret") {
     model <- train(form$formula,
                    data,
+                   na.action = na.omit,
                    ...)
   }
   
   new_dat <- max_df(data, model, form, mod_type = mod_type)
   
   list(
+    new_dat = new_dat,
     model = model,
     max = new_dat$max,
     best = new_dat$best
@@ -79,16 +81,21 @@ Qlearn <- function(data, formula, treatment, mod_type, ...) {
   form <- makeForm(formula, treatment, mod_type)
   
   mod_list <- list()
-  for (i in 4:0) {
-    Q1 <- one_step_Q(form, filter(data, month == i + 1), mod_type, ...)
-    mod_list[[i + 2]] <- Q1$model
-    data[data$month == i, ]$Q_hat <- data[data$month == i, ]$reward + Q1$max
-    data[data$month == (i + 1), ]$best <- Q1$best
+  for (i in 5:1) {
+    Q1 <- one_step_Q(form, filter(data, month == i), mod_type, ...)
+    mod_list[[i + 1]] <- Q1$model
+    data <- data %>% mutate(
+      Qhat = ifelse(month == i - 1,
+                    reward + ifelse(!is.na(Q1$max), Q1$max, 0),
+                    Qhat),
+      best = ifelse(month == i, Q1$best, best)
+    )
   }
-  
-  Q1 <- one_step_Q(form, filter(data, month == 0), mod_type, ...)
+  Q0 <- one_step_Q(form, filter(data, month == 0), mod_type, ...)
   mod_list[[1]] <- Q1$model
-  data[data$month == i,]$best <- Q1$best
+  data <- data %>% mutate(
+    best = ifelse(month == 0, Q0$best, best)
+  )
   
   list(
     data = data,

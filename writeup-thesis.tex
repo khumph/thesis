@@ -53,17 +53,45 @@
 Patients often show significant differences in their responses to treatment. [\textbf{provide some examples}] Significant gains in public health can be made from identifying subgroups and the corresponding treatments which are most effective for them, rather than relying on identification of only the most effective treatment overall.
 
 % What is personalized medicine?
-This is the idea of personalized medicine (also called precision medicine, stratified medicine, or P4 medicine), which is the commonsensical notion that the best treatment for a given patient depends upon that patients' characteristics \textbf{[cite]}. The term is most often used today to describe a process where biomarkers, perhaps whether breast cancer cells are HER2-positive, are used to determine the best treatment, and when to use it \textbf{[defn-paper]}.
+This is the idea of personalized medicine (also called precision medicine, stratified medicine, or P4 medicine), which is the commonsensical notion that the best treatment for a given patient depends upon that patients' characteristics \textbf{[cite]}. The term is most often used today to describe a process where biomarkers, perhaps whether breast cancer cells are HER2-positive, are used to determine the best treatment for a particular individual, and when to use it. \textbf{[defn-paper]}.
 % When/where did personalized medicine start?
-However, the general ideas go back at least as far as Hippocrates \textbf{[cite]}, and are implemented in principle whenever a physician tries to determine whether the cause of an infection is bacterial or viral, in order to make a treatment decision.
+However, the general ideas go back at least as far as Hippocrates \textbf{[cite]}, and are implemented in principle whenever a physician tries to inform a treatment decision by determining whether the cause of an infection is bacterial or viral.
 
-% What are some methods that have been used in the past to find personalized treatment regimes?}
+% What are some methods that have been used in the past to find personalized treatment regimes?
 
 
-
+:
 \begin{itemize}
-  \item \textbf{standard trt * subgroup interaction testing}
+  \item traditional methods: ad hoc subgroup analyses, or searching for treatment by subgroups interactions \\
+    \textbf{Problem}: Curse of dimensionality, multiple comparisons
+  \item novel algorithms for detecting covariate-treatment interactions: interaction trees \\
+  easy to interpret, final trees don't connect with any objective function - hard to determine optimal treatment for patients
+  
+  Su, X., Tsai, C.-L., Wang, H., Nickerson, D. M., and Li, B. (2009), “Subgroup analysis via recursive partitioning,” Journal of Machine Learning Research, 10, 141–158.
+  
+  Lipkovich, I., Dmitrienko, A., Denne, J., and Enas, G. (2011), “Subgroup identification based on differential effect searchA recursive partitioning method for establishing response to treatment in patient subpopulations,” Statistics in Medicine, 30, 2601–2621.
+  
+  \item two-step methods: first step: estimate differential treatment effect of each ind by score function, then use scores as response in second step - (Cai et al., 2011; Zhao et al., 2013; Foster et al., 2011; Faries et al., 2013) \\
+  need to impose parametric models that may be misspecified, hard to interpret
+  
+  Cai, T., Tian, L., Wong, P. H., and Wei, L. (2011), “Analysis of randomized comparative clinical trial data for personalized treatment selections,” Biostatistics, 12, 270–282.
+  
+  Zhao, L., Tian, L., Cai, T., Claggett, B., and Wei, L.-J. (2013), “Effectively selecting a target population for a future comparative study,” Journal of the American Statistical Association, 108, 527–539.
+  
+  Foster, J. C., Taylor, J. M., and Ruberg, S. J. (2011), “Subgroup identification from randomized clinical trial data,” Statistics in Medicine, 30, 2867–2880.
+  
+  Faries, D. E., Chen, Y., Lipkovich, I., Zagar, A., Liu, X., and Obenchain, R. L. (2013), “Local control for identifying subgroups of interest in observational research: Persistence of treatment for major depressive disorder,” International Journal of Methods in Psychiatric Research, 22, 185–194.
+  
+  \item maximize value function
+  
+  Qian, M. and Murphy, S. A. (2011), “Performance guarantees for individualized treatment rules,” Annals of Statistics, 39, 1180.
+  
+  Zhao, Y., Zeng, D., Rush, A. J., and Kosorok, M. R. (2012), “Estimating individualized treatment rules using outcome weighted learning,” Journal of the American Statistical Association, 107, 1106–1118.
+  
+  Zhang, B., Tsiatis, A. A., Davidian, M., Zhang, M., and Laber, E. (2012), “Estimating optimal treatment regimes from a classification perspective,” Stat, 1, 103–114.
 \end{itemize}
+
+All limited to single step?
 
 % What are some challenges to implementing/discovering personalized treatments?}
 
@@ -71,7 +99,10 @@ Lots of possible subgroups, complexity of disease
 
 % Dynamic Treatment regimes
 
-To formalize our idea of personalized medicine mentioned above, we can think of a personalized treatment as a decision rule that provides the best treatment given a patients' characteristics: their \emph{state}. A \emph{dynamic treatment regime} is a generalization of this idea to sequencial decisions where the aspects of a person's state can vary over time and optimal treatments are chosen at each time point based off of those changing (dynamic) states (dynamic treatment regimes are also known as adaptive treatment strategies \textbf{[cite]} or treatment policies \textbf{cite}). Dynamic treatment regimes lend themselves well to situations where a patient has to be treated over multiple occasions, where treatments can be adjusted based off of the changing state of the patient.
+To formalize our idea of personalized medicine mentioned above, we can think of a personalized treatment as a decision rule, or a \emph{treatment regime} (or individualize treatment rule), that provides the best treatment given a patients' characteristics, or their \emph{state}.
+
+Since for many diseases, patients often receive different stages of treatments over time, it is useful to generalize a single stage treatment regime into
+a \emph{dynamic treatment regime}, which is a generalization of the ideas of personalized medicine to sequencial decisions where the aspects of a person's state can vary over time. A dynamic treatment regime dictates treatments at each time point based on the changing (dynamic) states for every patient (dynamic treatment regimes are also known as adaptive treatment strategies \textbf{[cite]} or treatment policies \textbf{cite}).
 
 % How can reinforcement learning be of use in determining personalized treatments?
 
@@ -113,7 +144,7 @@ The basic process of reinforcement learning involves a learning agent trying a s
 
 Q-learning is a model-free method, which means it doesn't use an explicit model of the environment or planning, to estimate optimal action-selection policies. The maximized Q-function is the same as the optimal value function:
 
-learned action-value fucntion $Q$ directly approximates $q_{*}$ the optimal action value function
+learned action-value function $Q$ directly approximates $q_{*}$ the optimal action value function
 
 \[
   V^{*}_{t} = \max_{a_{t}} Q(s_{t}, a_{t})

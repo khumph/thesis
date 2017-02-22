@@ -6,8 +6,11 @@ simMonth <- function(dat, int, noise) {
       mutate(M_next = ifelse(!dead, updateM(tumor_mass, toxicity, dose, X = X), NA))
   } else if (noise) {
     dat <- dat %>%
-      mutate(M_next = ifelse(!dead, updateM(tumor_mass, toxicity, dose,
-                                            V = c(V1, V2, V3, V4, V5, V6, V7, V8, V9, V10)), NA))
+      mutate(M_next = ifelse(!dead,
+                             updateM(tumor_mass, toxicity, dose,
+                                     V = c(V1, V2, V3, V4, V5,
+                                           V6, V7, V8, V9, V10)),
+                             NA))
   } else {
     dat <- dat %>%
       mutate(M_next = ifelse(!dead, updateM(tumor_mass, toxicity, dose), NA))
@@ -54,8 +57,7 @@ sim <- function(N = 1000, Ttot = 6, int = F, noise = F) {
                     toxicity = W_next,
                     dose = NA, dead = NA, reward = NA)
   bind_rows(out, d) %>% mutate(
-    Q_hat = ifelse(month == 6, NA,
-                   ifelse(month == 5, reward, 0)),
+    Qhat = ifelse(!is.na(reward), reward, NA),
     best = NA
   )
 }
