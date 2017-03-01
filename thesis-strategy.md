@@ -77,6 +77,10 @@ refs: Q-learning with censored data paper, follow up NSCLC paper, DTR book (refe
 - [ ] 50
 - [ ] different correlations between noise for above?
 
+#### different interaction/subgroup scenarios
+
+#### different subgroups and noise scenarios
+
 ##### time-varying noise variables
 
 #### misspecify model
@@ -92,10 +96,9 @@ _there is a perfect balance except for when either W or M is 0:_
 Attempt at modification:
 <iframe src="https://www.desmos.com/calculator/fq2m2fdqls?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameBorder=0 />
 
+- [ ] Change the params on mus on survival? generate from uniform distribution?
 
-- [ ] Change the params on mus on survivial? generate from uniform distribution?
-
-- [x] [_just remove balance, make actual max for survival_] **make sophisticated way to choose max for ties in "best"** based off of sum of tumor mass and toxicity?
+- [x] [_just remove balance, make actual max for survival_] make more sophisticated way to choose max for ties in "best" based off of sum of tumor mass and toxicity?
 
 **make a new project that should be more or less identical to paper**?
 - [ ] replicate ERT results in CRT paper
@@ -131,38 +134,3 @@ Attempt at modification:
 - [ ] How to have a single terminal utility/reward instead of sum of stages in Q learning? - DTR review says this can also be done
 - [ ] What does assuming sufficient regularity mean? - DTR review paper
 - [ ] What are nonregular asymptotics?
-
-
-***
-
-# extras
-make shiny app where you can adjust weighting, see impacts on performance?
-interactive documents
-
-### reimplement in julia
-
-### more models
-- [ ] How to get predicted values/treatment assignments from STIMA?
-- [ ] implement GAMSEL with treatment subgroup interactions
-- [ ] implement RLT with treatment subgroup interactions?
-boosted method?
-
-#### interaction identifying tree methods:
-- MOB
-- Interaction trees
-- QUINT - most promising?
-- STIMA
-
-**recursive partitioning algorithm to identify best treatment**
-1. Split on some value of some covariate
-2.then evaluate each prospective left and right node by evaluating the response at different dose ranges by comparing the response of people who happened to receive a dose in that range to everyone else's response.
-Do this for all the does ranges (e.g. 0-0.2, 0.2-0.4, 0.4-0.6, 0.6-0.8, 0.8-1)
-3. Find the dose range that has the highest response, + but also has a given number of people in node?
-4. Choose that highest response as the treatment assignment for everyone in that node
-
-### Better optimization techniques:
-computationally and realistically
-
-- Using `optim`?
-- Rcpp bisection search?
-newton raphson, fisher scoring
