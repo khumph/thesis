@@ -28,9 +28,14 @@ makeForm <- function(formula, treatment, mod_type = "rcs") {
 }
 
 max_df <- function(data, model, form, mod_type, 
-                   x = seq(0, 1, by = 0.05), nested = F) {
-  dat <- data %>%
-    filter(!is.na(reward)) %>% 
+                   x = seq(0, 1, by = 0.05), nested = F, pred = F) {
+  if (!pred) {
+    dat <- data %>%
+      filter(!is.na(reward))
+  } else {
+    dat <- data
+  }
+  dat <- dat %>% 
     mutate(dose = map(1:nrow(.), ~ x)) %>%
     unnest() %>%
     mutate(preds = predict(model, .)) %>%
@@ -44,9 +49,11 @@ max_df <- function(data, model, form, mod_type,
     )
   if (nested) {
     dat
-  } else {
+  } else if (!pred) {
     dat %>% filter(near(best, dose)) %>%
       bind_rows(filter(data, is.na(reward))) %>% arrange(ID)
+  } else {
+    dat %>% filter(near(best, dose)) %>% arrange(ID)
   }
 }
 

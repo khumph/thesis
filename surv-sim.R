@@ -2,10 +2,10 @@
 
 simMonth <- function(dat, int, noise) {
   dat <- Mnext(dat, int, noise)
+  dat <- Wnext(dat, int, noise)
   dat %>% mutate(
-    W_next = ifelse(!dead, updateW(tumor_mass, toxicity, dose), NA),
     d_next = runif(nrow(.), min = 0, max = 1),
-    surv_time = rexp(nrow(.), lambda(W_next, M_next)),
+    surv_time = rexp(nrow(.), lambda(M_next, W_next, tumor_mass, toxicity, dose)),
     dead = ifelse(dead,
                   T,
                   surv_time < 1)

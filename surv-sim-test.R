@@ -1,13 +1,13 @@
-# best possible -----------------------------------------------------------
+ # best possible -----------------------------------------------------------
 
 maxMonth <- function(dat, len = 101, int, noise) {
   dat <- dat %>% ungroup() %>% 
     mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.05 ))) %>%
     unnest()
   dat <- Mnext(dat, int, noise)
+  dat <- Wnext(dat, int, noise)
   dat <- dat %>% mutate(
-    W_next = updateW(tumor_mass, toxicity, dose),
-    lam = lambda(W_next, M_next),
+    lam = lambda(M_next, W_next, tumor_mass, toxicity, dose),
     pdeath = pexp(lam),
     surv_time = 1 / lam,
     reward = log(surv_time)
@@ -30,7 +30,8 @@ simMonthT <- function(dat, Q, int, noise) {
     data = filter(dat, group == "optim"),
     model = Q$mod_list[[dat$month[1] + 1]],
     form = Q$formula,
-    mod_type = Q$mod_type
+    mod_type = Q$mod_type,
+    pred = T
   )$best
   
   bestD <- maxMonth(filter(dat, group == "best"),
@@ -39,14 +40,13 @@ simMonthT <- function(dat, Q, int, noise) {
                        int = int, noise = noise)$dose
   
   dat <- Mnext(dat, int, noise)
-  
+  dat <- Wnext(dat, int, noise)
   dat %>%
     mutate(
-      W_next = updateW(tumor_mass, toxicity, dose),
       dose = ifelse(group == "optim", optimD,
                     ifelse(group == "best", bestD, dose)), 
       best_dose = ifelse(group == "optim", bestDopt, dose),
-      lam = lambda(W_next, M_next),
+      lam = lambda(M_next, W_next, tumor_mass, toxicity, dose),
       pdeath = pexp(lam),
       surv_time = 1 / lam,
       reward = log(surv_time)
@@ -74,7 +74,8 @@ sim_test <- function(Q, int, noise, npergroup = 200, ngroups = 12, Ttot = 6) {
       data = dat,
       model = Q$mod_list[[1]],
       form = Q$formula,
-      mod_type = Q$mod_type
+      mod_type = Q$mod_type,
+      pred = T
     )$best
   
   Dbest <- maxMonth(dat, int = int, noise = noise)$dose
@@ -115,9 +116,8 @@ sim_test <- function(Q, int, noise, npergroup = 200, ngroups = 12, Ttot = 6) {
 
 mon1 <- function(dat, int, noise) {
   dat <- Mnext(dat, int, noise)
-  dat %>% mutate(
-    W_next = ifelse(!dead, updateW(tumor_mass, toxicity, dose), NA)
-  )
+  dat <- Wnext(dat, int, noise)
+  dat
 }
 
 optDat <- function(dat, int, noise, Ttot = 6) {
