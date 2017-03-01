@@ -11,6 +11,18 @@ actually make plots based off predicted versus actual for last time point?
 second pass Q learning and A learning paper
 
 # possibilities
+## split into two projects
+### 1. an investigation into high dimensional data in a generic smart
+- several treatments, subgroups, re-randomize nonresponders
+- just one continuous outcome (e.g. weight lost)
+- easier to make misspecified models?
+_I feel like knowing what to do with high dimensional data or how to identify subgroups is less interesting in our setting because it's not a design anyone actually uses_
+
+### 2. Picking dose based on survival outcome
+- make setup more realistic (see below)
+- show that it works across different parameterizations
+then incorporate high dimensions, subgroups
+
 ## variable importance
 - [x] [_in principle done through varImp, but not yet widely implemented_]
 - [ ] identify specifically what variables are important for subgroups _do we even have subgroups in the original formulation?_
@@ -92,8 +104,6 @@ _there is a perfect balance except for when either W or M is 0:_
 
 ### unit tests for each piece
 
-### reimplement in julia
-
 # other ideas
 - [ ] See how sample size effects results?
 - [ ] average over many simulations? _Would be more accurate, but not very realistic, as in reality you only observe one trial_
@@ -124,6 +134,8 @@ _there is a perfect balance except for when either W or M is 0:_
 # extras
 make shiny app where you can adjust weighting, see impacts on performance?
 interactive documents
+
+### reimplement in julia
 
 ### more models
 - [ ] How to get predicted values/treatment assignments from STIMA?
