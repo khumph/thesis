@@ -89,6 +89,10 @@ some strange function that interacts with treatment e.g. polynomial try to show 
 _there is a perfect balance except for when either W or M is 0:_
 <iframe src="https://www.desmos.com/calculator/esw7qu2rx5?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameBorder=0 />
 
+Attempt at modification:
+<iframe src="https://www.desmos.com/calculator/fq2m2fdqls?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameBorder=0 />
+
+
 - [ ] Change the params on mus on survivial? generate from uniform distribution?
 
 - [x] [_just remove balance, make actual max for survival_] **make sophisticated way to choose max for ties in "best"** based off of sum of tumor mass and toxicity?
