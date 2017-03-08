@@ -75,8 +75,8 @@ genIntNoise <- function(dat, int, noise) {
 }
 
 lambda <- function(M, W, mu0 = -6.5, mu1 = 1, mu2 = 1) {
-  m <- ifelse(M == 0 & W == 0, 1e-3, M)
-  w <- ifelse(M == 0 & W == 0, 1e-3, W)
+  M <- ifelse(M == 0 & W == 0, 1e-3, M)
+  W <- ifelse(M == 0 & W == 0, 1e-3, W)
   m <- (M)/(M + W)
   w <- (W)/(M + W)
   g <- (m - w)^2
