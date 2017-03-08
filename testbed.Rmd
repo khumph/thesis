@@ -20,11 +20,11 @@ noise <- params$noise
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
 p_load(tidyverse, rms, caret, gridExtra, stringr)
-source("surv-sim-functs.R")
-source("surv-sim.R")
+source("sim-functs.R")
+source("sim.R")
 source("q-functs.R")
-source("surv-sim-test.R")
-source("surv-results-functs.R")
+source("sim-test.R")
+source("results-functs.R")
 ```
 
 ```{r sim}
