@@ -80,14 +80,6 @@ plots_tab <- function(dat_test_long) {
       group = group
     ))
   
-  plot_reward <- ggplot(data = dat_long_summ) +
-    geom_line(mapping = aes(
-      x = month,
-      y = mean_reward,
-      color = group,
-      group = group
-    ))
-  
   tab_deaths <- dat_long_summ %>%
     group_by(group) %>%
     summarise(mean_cumSurv = mean(mean_cumSurv)) %>%
@@ -102,6 +94,13 @@ plots_tab <- function(dat_test_long) {
     group_by(group) %>%
     summarise(mean_tot_reward = sum(mean_reward, na.rm = T)) %>%
     arrange(desc(mean_tot_reward))
+  
+  plot_reward <- ggplot(data = tab_reward) +
+    geom_bar(mapping = aes(
+      x = group,
+      y = mean_tot_reward,
+      fill = group
+    ), stat = "identity")
   
   tab_MSE <- dat_test_long %>% group_by(month) %>% 
     filter(group == "optim") %>% summarise(MSE_dose = mean((dose - best_dose)^2, na.rm = T),
