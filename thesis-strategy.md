@@ -1,3 +1,17 @@
+> Biernot and Moodie (2010) discuss methods for selecting tailoring variables in randomized settings, comparing two selection methods (reducts-- a variable selection tool from computer sciences, and the S-score criterion proposed by Gunter Zhu, & Murphy, 2011). Still, additional research effort should be directed towards developing and exploring methods for the selection of tailoring variables
+
+Biernot P, Moodie EM. A comparison of variable selection approaches for dynamic treatment regimes. The International Journal of Biostatistics. 2010; 6(1) Article 6.
+
+Gunter L, Zhu J, Murphy SA. Variable selection for qualitative interactions. Statistical Methodology. 2011; 8:42–55. [PubMed: 21179592]
+
+weight tumor mass more?
+simple rule: give max dose as long as tumor mass > 0 and toxicity < 2 give weighted average otherwise
+
+#### problems
+new survival is max at 0.5 even when tumor mass is zero
+There isn't really a much better solution than constant doses - Best doesn't do very well (probably due to balances overall)
+  - make tumor mass, toxicity functions nonlinear in dose
+
 #### goals: generalize CRT to more covariates, more models
 - [ ] add noise covariates (don't interact with treatment), method should remove them
 - [ ] add variables that interact with treatment, method should include them: be able to identify subgroups that respond better
@@ -5,21 +19,21 @@
 - [ ] reward depending on previous stage
 - [ ] apply to real data with transitions
 
+two meetings monday and thursday pretty much just status report, if I'm still working on stuff or don't have anything to go over, I'll cancel
+
 # possible tasks
 Add some additional interacting variables
 actually make plots based off predicted versus actual for last time point?
-second pass Q learning and A learning paper
 
 # possibilities
-## split into two projects
-### 1. an investigation into high dimensional data in a generic smart
+### 1. investigation into high dimensional data in a generic smart
 - several treatments, subgroups, re-randomize nonresponders
 - just one continuous outcome (e.g. weight lost)
 - easier to make misspecified models?
 _I feel like knowing what to do with high dimensional data or how to identify subgroups is less interesting in our setting because it's not a design anyone actually uses_
 
 ### 2. Picking dose based on survival outcome
-- make setup more realistic (see below)
+- [x] make setup more realistic (see below)
 - show that it works across different parameterizations
 then incorporate high dimensions, subgroups
 
@@ -63,7 +77,7 @@ _currently tuning parameters are picked via default caret tuning: 25 bootstrap s
 ## survival outcome as reward
 _probably also useful for VADT_
 - [x] log of survival time as reward - no censoring
-- [x] **[Just use survival time as reward]** - **evaluate sensitivity of proximal to distal rewards** - if proximal rewards are not entirely predictive of distal rewards: seems like same sorts of issues with surrogate outcomes can arise with picking utilities, method probably really depends on intermediate outcomes being prognostic of real outcome of interest - look at misspecification of proximal rewards? e.g. toxicity doesn't really matter at all in mortality
+- [x] [_Just use survival time as reward_] - evaluate sensitivity of proximal to distal rewards - if proximal rewards are not entirely predictive of distal rewards: seems like same sorts of issues with surrogate outcomes can arise with picking utilities, method probably really depends on intermediate outcomes being prognostic of real outcome of interest - look at misspecification of proximal rewards? e.g. toxicity doesn't really matter at all in mortality
 
 - the original way rewards defined contradicts the ideas in S&B (don't reward intermediate outcomes)
 
@@ -72,8 +86,9 @@ refs: Q-learning with censored data paper, follow up NSCLC paper, DTR book (refe
 ## More scenarios
 
 #### different noise scenarios
-- [x] 10 variables have an effect out of 100
-- [ ] 20 variables have an effect out of 100
+- [ ] 1000 variables?
+- [x] 12 variables have an effect out of 100
+- [ ] 24 variables have an effect out of 100
 - [ ] 50
 - [ ] different correlations between noise for above?
 
@@ -87,14 +102,13 @@ refs: Q-learning with censored data paper, follow up NSCLC paper, DTR book (refe
 some strange function that interacts with treatment e.g. polynomial try to show that it is robust (neural network type as in elem stat learn MARS section)
 
 ## modify transition functions to avoid perfect balance on survival
-
 - [ ] go back and figure out where doses are the same, and choose the doses that end up with best (even if tied)?
 
 _there is a perfect balance except for when either W or M is 0:_
-<iframe src="https://www.desmos.com/calculator/esw7qu2rx5?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameBorder=0 />
+https://www.desmos.com/calculator/jxkxyikv3w
 
 Attempt at modification:
-<iframe src="https://www.desmos.com/calculator/fq2m2fdqls?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameBorder=0 />
+https://www.desmos.com/calculator/syuzgh3cag
 
 - [ ] Change the params on mus on survival? generate from uniform distribution?
 
@@ -108,6 +122,7 @@ Attempt at modification:
 
 ## testing/refactoring
 - [ ] extract repeated sequences as functions
+- [ ] unit test everything
 
 ### unit tests for each piece
 

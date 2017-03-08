@@ -27,7 +27,7 @@ maxMonth <- function(dat, len = 101, int) {
     best = ifelse(
       tumor_mass > 0,
       # (nnet::which.is.max(max) - 1) / 100,
-      quantile(best, probs = 1, na.rm = T, type = 3, names = F),
+      quantile(best, probs = 0, na.rm = T, type = 3, names = F),
       min(best, na.rm = T)
     )
   ) %>% filter(near(dose, best))

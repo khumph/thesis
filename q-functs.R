@@ -33,7 +33,8 @@ max_df <- function(data, model, form, mod_type,
     dat <- data %>%
       filter(!is.na(reward))
   } else {
-    dat <- data
+    dat <- data %>% 
+      filter(!is.na(tumor_mass))
   }
   dat <- dat %>% 
     mutate(dose = map(1:nrow(.), ~ x)) %>%
@@ -44,7 +45,7 @@ max_df <- function(data, model, form, mod_type,
       max = max(preds),
       best = ifelse(near(preds, max), dose, NA),
       best = ifelse(tumor_mass > 0,
-                    quantile(best, probs = 1, na.rm = T, type = 3, names = F),
+                    quantile(best, probs = 0, na.rm = T, type = 3, names = F),
                     min(best, na.rm = T))
     )
   if (nested) {
