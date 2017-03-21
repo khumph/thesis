@@ -4,9 +4,10 @@ maxMonth <- function(dat, len = 101, int, noise) {
   dat <- dat %>% ungroup() %>% 
     mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.05))) %>%
     unnest()
-  dat <- Mnext(dat, int, noise)
+  dat <- Mnext(dat, int, noise, d2 = (5 + dat$month[1])/10)
   dat <- Wnext(dat, int, noise)
   dat <- dat %>% mutate(
+    d2 = (5 + dat$month[1])/10,
     lam = lambda(M_next, W_next),
     pdeath = pexp(lam),
     surv_time = 1 / lam,
@@ -14,11 +15,14 @@ maxMonth <- function(dat, len = 101, int, noise) {
   ) %>% group_by(ID) %>% mutate(
     bestR = max(reward),
     bestD = ifelse(near(reward, bestR), dose, NA),
-    best = ifelse(
-      tumor_mass > 0,
-      quantile(bestD, probs = 0, na.rm = T, type = 3, names = F),
-      min(bestD, na.rm = T)
-    )
+    best = quantile(bestD,
+                    probs = runif(n = 1, min = 0, max = 1),
+                    na.rm = T, type = 3, names = F)
+    # best = ifelse(
+    #   tumor_mass > 0,
+    #   quantile(bestD, probs = 0, na.rm = T, type = 3, names = F),
+    #   min(bestD, na.rm = T)
+    # )
   ) 
   dat <- dat %>% filter(near(dose, best))
 }
@@ -40,7 +44,7 @@ simMonthT <- function(dat, Q, int, noise) {
                        int = int, noise = noise)$dose
   D1on1off <- ifelse(dat$month[1] %% 2 == 1, 0, 1)
   
-  dat <- Mnext(dat, int, noise)
+  dat <- Mnext(dat, int, noise, d2 = (5 + dat$month[1])/10)
   dat <- Wnext(dat, int, noise)
   dat %>%
     mutate(
@@ -104,7 +108,7 @@ sim_test <- function(Q, int, noise, npergroup = 200, ngroups = 13, Ttot = 6) {
     )
   
   d <- simMonthT(dat, Q, int = int, noise = noise) %>% mutate(
-    reward = ifelse(dead, log(surv_time), log(1))
+    reward = ifelse(dead, log(surv_time), 0)
   )
   out <- d
   for (i in 1:(Ttot - 1)) {
@@ -112,7 +116,7 @@ sim_test <- function(Q, int, noise, npergroup = 200, ngroups = 13, Ttot = 6) {
                       tumor_mass = M_next,
                       toxicity = W_next) %>%
       simMonthT(Q, int = int, noise = noise) %>%
-      mutate(reward = ifelse(!dead, log(i + 1), log(i + 1 + surv_time)))
+      mutate(reward = ifelse(!dead, 0, log(i + 1 + surv_time)))
     out <- bind_rows(out, d)
   }
   d <- d %>% mutate(month = Ttot,
@@ -122,8 +126,10 @@ sim_test <- function(Q, int, noise, npergroup = 200, ngroups = 13, Ttot = 6) {
                     best_dose = NA,
                     reward = NA)
   bind_rows(out, d)
-  out %>% mutate(
+  out %>% group_by(ID) %>% mutate(
     reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
+    pdeath = ifelse(is.na(pdeath), 1, pdeath),
+    tot_reward = sum(reward, na.rm = T),
     Qhat = reward,
     best = NA
   )
@@ -132,21 +138,21 @@ sim_test <- function(Q, int, noise, npergroup = 200, ngroups = 13, Ttot = 6) {
 
 # following estimated optimal regime --------------------------------------
 
-mon1 <- function(dat, int, noise) {
-  dat <- Mnext(dat, int, noise)
-  dat <- Wnext(dat, int, noise)
-  dat
-}
-
-optDat <- function(dat, int, noise, Ttot = 6) {
-  m1 <- dat %>% group_by(ID) %>% filter(month == 0) %>% mon1(int, noise)
-  out <- m1
-  for (i in 2:Ttot) {
-    m1 <- m1 %>% mutate(tumor_mass = M_next,
-                        toxicity = W_next,
-                        dose = dat$best[i],
-                        month = i - 1) %>% mon1(int, noise)
-    out <- bind_rows(out, m1)
-  }
-  out
-}
+# mon1 <- function(dat, int, noise) {
+#   dat <- Mnext(dat, int, noise)
+#   dat <- Wnext(dat, int, noise)
+#   dat
+# }
+# 
+# optDat <- function(dat, int, noise, Ttot = 6) {
+#   m1 <- dat %>% group_by(ID) %>% filter(month == 0) %>% mon1(int, noise)
+#   out <- m1
+#   for (i in 2:Ttot) {
+#     m1 <- m1 %>% mutate(tumor_mass = M_next,
+#                         toxicity = W_next,
+#                         dose = dat$best[i],
+#                         month = i - 1) %>% mon1(int, noise)
+#     out <- bind_rows(out, m1)
+#   }
+#   out
+# }
