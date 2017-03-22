@@ -1,7 +1,7 @@
 # sim ---------------------------------------------------------------------
 
 simMonth <- function(dat, int, noise) {
-  dat <- Mnext(dat, int, noise, d2 = (5 + dat$month[1])/10)
+  dat <- Mnext(dat, int, noise)
   dat <- Wnext(dat, int, noise)
   dat %>% mutate(
     d_next = runif(nrow(.), min = 0, max = 1),

@@ -45,7 +45,7 @@ max_df <- function(data, model, form, mod_type,
       max = max(preds),
       best = ifelse(near(preds, max), dose, NA),
       best = quantile(best,
-                      probs = runif(n = 1, min = 0, max = 1),
+                      probs = 0,
                       na.rm = T, type = 3, names = F)
       # best = ifelse(tumor_mass > 0,
       #               quantile(best, probs = 0, na.rm = T, type = 3, names = F),

@@ -3,7 +3,7 @@ title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interactio
 output: html_document
 params:
   noise: !r F
-  int: !r T
+  int: !r F
 ---
 
 ```{r, eval=F}

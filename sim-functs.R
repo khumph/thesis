@@ -1,7 +1,7 @@
 # simulation functions ----------------------------------------------------
 
 # function for how toxicity changes
-updateW <- function(M, W, D, a1 = 0.1, b1 = 1, d1 = 0.5,
+updateW <- function(M, W, D, a1 = 0.1, b1 = 1.2, d1 = 0.5,
                     Z = 0, a3 = 1e-3) {
   W_next <- a1 * M + b1 * (D - d1) + W + sum(a3 * Z)
   ifelse(W_next > 0, W_next, 0)
@@ -24,17 +24,18 @@ Wnext <- function(dat, int, noise) {
 updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2,
                     X = 0, Z = 0, a3 = 1e-3) {
   M_next <- ifelse(M > 0,
-                   (a2 * W - b2 * (D * ifelse(X > 0.5, 2, 1) - d2)) +
+                   (a2 * W - b2 * (D  - d2)) +
                      M + sum(a3 * Z),
                    0)
   ifelse(M_next > 0, M_next, 0)
 }
 
+# , d2 = (5 + dat$month[1])/10
 Mnext <- function(dat, int, noise, d2 = 0.5) {
   if (int) {
     dat %>%
       mutate(M_next = ifelse(!dead,
-                             updateM(tumor_mass, toxicity, dose, d2 = d2, X = X),
+                             updateM(tumor_mass, toxicity, dose, d2 = X),
                              NA))
   } else if (noise) {
     dat %>%
@@ -51,7 +52,8 @@ Mnext <- function(dat, int, noise, d2 = 0.5) {
 genIntNoise <- function(dat, int, noise) {
   if (int) {
     dat %>%
-      mutate(X = runif(nrow(.), min = 0, max = 1))
+      mutate(X = runif(nrow(.), min = 0, max = 1),
+             X = ifelse(X > 0.5, 0.8, 0.5))
   } else if (noise) {
     dat %>% mutate(
       Z1  = rnorm(nrow(.), mean = 0.05, sd = 0.25),
@@ -74,11 +76,18 @@ genIntNoise <- function(dat, int, noise) {
   }
 }
 
-lambda <- function(M, W, mu0 = -6.5, mu1 = 1, mu2 = 1) {
-  g <- (1)*(M - W)^2
-  exp(mu0 + mu1 * W + mu2 * M + g)
+# defined as in NSCLC paper
+lambda <- function(M, W, mu0 = -5, mu1 = 0.9, mu2 = 1) {
+  exp(mu0 + mu1 * W + mu2 * M + 0.5 * W * M)
 }
 
-# lambda <- function(M, W, mu0 = -6.5, mu1 = 1, mu2 = 1.2) {
-#   exp(mu0 + mu1 * W + mu2 * M + M * W)
+# our new definition
+# lambda <- function(M, W, mu0 = -6.5, mu1 = 1, mu2 = 1) {
+#   g <- (1)*(M - W)^2
+#   exp(mu0 + mu1 * W + mu2 * M + g)
+# }
+
+# original definition
+# lambda <- function(M, W, mu0 = -6.5, mu1 = 1, mu2 = 1) {
+#   exp(mu0 + mu1 * W + mu2 * M)
 # }
