@@ -44,9 +44,12 @@ max_df <- function(data, model, form, mod_type,
     mutate(
       max = max(preds),
       best = ifelse(near(preds, max), dose, NA),
-      best = ifelse(tumor_mass > 0,
-                    quantile(best, probs = 0, na.rm = T, type = 3, names = F),
-                    min(best, na.rm = T))
+      best = quantile(best,
+                      probs = 0,
+                      na.rm = T, type = 3, names = F)
+      # best = ifelse(tumor_mass > 0,
+      #               quantile(best, probs = 0, na.rm = T, type = 3, names = F),
+      #               min(best, na.rm = T))
     )
   if (nested) {
     dat

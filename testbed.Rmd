@@ -15,7 +15,6 @@ int <- params$int
 noise <- params$noise
 ```
 
-
 ```{r setup}
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
@@ -134,7 +133,37 @@ sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
 
 
+# ERT
+```{r}
+# Tuning parameters:
+#   mtry (# Randomly Selected Predictors) - also K ?
+#   numRandomCuts (# Random Cuts) - K in CRT paper ?
 
+grid <- expand.grid(mtry = 3, numRandomCuts = 1)
+
+Q_ert <- Qlearn(
+  data = dat_long,
+  formula = form,
+  treatment = "dose",
+  mod_type = "caret",
+  method = 'extraTrees',
+  tuneGrid = grid,
+  ntree = 50,
+  # G in CRT paper
+  nodesize = 2 # nmin in CRT paper
+)
+Q <- Q_ert
+```
+
+```{r}
+set.seed(20170206)
+maxPlots(Q, ex_ID)
+```
+
+```{r}
+set.seed(20170128)
+sim_test(Q, int = int, noise = noise) %>% plots_tab()
+```
 
 # MARS
 ```{r}
