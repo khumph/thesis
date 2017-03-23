@@ -21,24 +21,44 @@ indPlot <- function(data, ex_ID) {
   list(grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1), ex_ID)
 }
 
-maxPlots <- function(Q, ex_ID, mon = 5) {
+maxPlots <- function(Q, ex_ID, mon = 5, int, noise) {
   dat <- filter(Q$data, month == mon)
   nested_df <-
     max_df(dat,
            Q$mod_list[[mon + 1]],
            Q$formula,
            mod_type = Q$mod_type,
-           nested = T)
+           nested = T) %>% ungroup() %>%  mutate(ID = factor(ID))
+  
+  nested_df_best <-
+    dat %>% mutate(reward = Qhat) %>% 
+    maxMonth(int, noise, nested = T) %>% ungroup() %>% 
+    mutate(ID = factor(ID))
   
   onePlot <-
-    ggplot(filter(nested_df, ID == ex_ID), aes(x = dose, y = preds)) +
-    geom_point()
+    ggplot() +
+    geom_line(data = filter(nested_df, ID == ex_ID),
+              aes(x = dose, y = preds)) +
+    geom_line(data = filter(nested_df_best, ID == ex_ID),
+               aes(x = dose, y = reward), linetype = 2) +
+    labs(
+      caption = "dotted line is true response"
+    )
   
-  ids <- sample(1:1000, 50)
+  ids <- sample(1:1000, 10)
   manyPlot <- ggplot(data = filter(nested_df, ID %in% ids)) +
-    geom_line(mapping = aes(x = dose, y = preds, group = ID))
+    geom_line(mapping = aes(x = dose, y = preds, color = ID)) +
+    geom_line(data = filter(nested_df_best, ID %in% ids),
+               aes(x = dose, y = reward, color = ID),
+               linetype = 2) +
+    labs(
+      caption = "dotted lines are true values"
+      )
   
-  list(onePlot, manyPlot, ex_ID, ids)
+  best_df <- filter(nested_df_best, ID %in% c(ids, ex_ID))
+  optim_df <- filter(nested_df, ID %in% c(ids, ex_ID))
+  
+  list(onePlot, manyPlot, ex_ID, ids, best_df, optim_df)
 }
 
 plots_tab <- function(dat_test_long) {
@@ -48,12 +68,21 @@ plots_tab <- function(dat_test_long) {
       cured = sum(tumor_mass == 0, na.rm = T) > 0
     ) %>% group_by(group, month) %>% 
     summarise(
+      mean_dose = mean(dose, na.rm = T),
       mean_tox = mean(toxicity, na.rm = T),
       mean_tumor = mean(tumor_mass, na.rm = T),
       mean_reward = mean(tot_reward, na.rm = T),
       mean_cumSurv = mean(cumSurv, na.rm = T),
       prop_cured = mean(cured, na.rm = T)
     ) %>% mutate(sum_means = mean_tox + mean_tumor)
+  
+  plot_dose <- ggplot(data = dat_long_summ) +
+    geom_line(mapping = aes(
+      x = month,
+      y = mean_dose,
+      color = group,
+      group = group
+    ))
   
   plot_tox <- ggplot(data = dat_long_summ) +
     geom_line(mapping = aes(
@@ -107,6 +136,7 @@ plots_tab <- function(dat_test_long) {
                                            MAE_dose = mean(abs(dose - best_dose), na.rm = T))
   
   list(
+    plot_dose = plot_dose,
     plot_tox = plot_tox,
     plot_tumor = plot_tumor,
     plot_sum = plot_sum,

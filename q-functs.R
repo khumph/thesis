@@ -28,7 +28,7 @@ makeForm <- function(formula, treatment, mod_type = "rcs") {
 }
 
 max_df <- function(data, model, form, mod_type, 
-                   x = seq(0, 1, by = 0.05), nested = F, pred = F) {
+                   x = seq(0, 1, by = 0.01), nested = F, pred = F) {
   if (!pred) {
     dat <- data %>%
       filter(!is.na(reward))

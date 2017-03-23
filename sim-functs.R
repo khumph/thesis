@@ -1,6 +1,5 @@
 # simulation functions ----------------------------------------------------
 
-# function for how toxicity changes
 updateW <- function(M, W, D, a1 = 0.1, b1 = 1.2, d1 = 0.5,
                     Z = 0, a3 = 1e-3) {
   W_next <- a1 * M + b1 * (D - d1) + W + sum(a3 * Z)
@@ -20,7 +19,6 @@ Wnext <- function(dat, int, noise) {
   }
 }
 
-# function for updating tumor mass
 updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2,
                     X = 0, Z = 0, a3 = 1e-3) {
   M_next <- ifelse(M > 0,
@@ -30,7 +28,7 @@ updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2,
   ifelse(M_next > 0, M_next, 0)
 }
 
-# , d2 = (5 + dat$month[1])/10
+# (5 + dat$month[1])/10
 Mnext <- function(dat, int, noise, d2 = 0.5) {
   if (int) {
     dat %>%
@@ -77,8 +75,8 @@ genIntNoise <- function(dat, int, noise) {
 }
 
 # defined as in NSCLC paper
-lambda <- function(M, W, mu0 = -5, mu1 = 0.9, mu2 = 1) {
-  exp(mu0 + mu1 * W + mu2 * M + 0.5 * W * M)
+lambda <- function(M, W, mu0 = -6.5, mu1 = 1, mu2 = 1, mu3 = 0.75) {
+  exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M)
 }
 
 # our new definition

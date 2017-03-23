@@ -1,8 +1,9 @@
 # best possible -----------------------------------------------------------
 
-maxMonth <- function(dat, int, noise) {
-  dat <- dat %>% ungroup() %>% 
-    mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.01))) %>%
+maxMonth <- function(dat, int, noise, nested = F) {
+  deads <- filter(dat, dead) %>% mutate(dose = NA)
+  dat <- filter(dat, !dead) %>% ungroup() %>% 
+    mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.005))) %>%
     unnest()
   dat <- Mnext(dat, int, noise)
   dat <- Wnext(dat, int, noise)
@@ -23,38 +24,45 @@ maxMonth <- function(dat, int, noise) {
     #   min(bestD, na.rm = T)
     # )
   ) 
-  dat <- dat %>% filter(near(dose, best))
+  if (nested) {
+    dat
+  } else {
+    dat <- dat %>% filter(near(dose, best))
+    bind_rows(dat, deads) %>% arrange(ID)
+  }
 }
 
 # test simulation -----------------------------------------------------
 
 simMonthT <- function(dat, Q, int, noise) {
-  # optimD <- max_df(
-  #   data = filter(dat, group == "optim"),
-  #   model = Q$mod_list[[dat$month[1] + 1]],
-  #   form = Q$formula,
-  #   mod_type = Q$mod_type,
-  #   pred = T
-  # )$best
-
+  optimD <- max_df(
+    data = filter(dat, !dead, group == "optim"),
+    model = Q$mod_list[[dat$month[1] + 1]],
+    form = Q$formula,
+    mod_type = Q$mod_type,
+    pred = T
+  ) %>% select(ID, dose)
+  
+  deads <- filter(dat, dead, group == "optim") %>% mutate(dose = NA)
+  optimD <- bind_rows(optimD, deads) %>% arrange(ID)
+  optimD <- optimD$dose
+  
   bestD <- maxMonth(filter(dat, group == "best"),
                     int = int, noise = noise)$dose
-  # bestDopt <- maxMonth(filter(dat, group == "optim"),
-  #                      int = int, noise = noise)$dose
-  # D1on1off <- ifelse(dat$month[1] %% 2 == 1, 0, 1)
+  bestDopt <- maxMonth(filter(dat, group == "optim"),
+                       int = int, noise = noise)$dose
+  D1on1off <- ifelse(dat$month[1] %% 2 == 1, 0, 1)
   
-  dat <- dat %>% 
+  dat <- dat %>%
     mutate(
-      dose = bestD,
-        # ifelse(!dead, bestD, NA),
-      # ifelse(group == "optim",
-      #                        optimD,
-      #                        ifelse(
-      #                          group == "best",
-      #                          ,
-      #                          ifelse(group == "1on1off",
-      #                                 D1on1off, dose))), NA),
-      best_dose = ifelse(!dead, ifelse(group == "optim", bestDopt, NA), NA)
+      dose = ifelse(group == "optim",
+                    optimD,
+                    ifelse(
+                      group == "best",
+                      bestD,
+                      ifelse(group == "1on1off",
+                             D1on1off, dose))),
+      best_dose = ifelse(group == "optim", bestDopt, NA)
     )
   dat <- Mnext(dat, int, noise)
   dat <- Wnext(dat, int, noise)

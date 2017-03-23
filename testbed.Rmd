@@ -3,7 +3,7 @@ title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interactio
 output: html_document
 params:
   noise: !r F
-  int: !r F
+  int: !r T
 ---
 
 ```{r, eval=F}
@@ -59,7 +59,7 @@ form_int <- as.formula(formula)
 
 
 ```{r}
-set.seed(20170207)
+set.seed(20170321)
 ex_ID <- sample(dat_long$ID, 1)
 indPlot(dat_long, ex_ID)
 ```
@@ -78,13 +78,36 @@ Q <- Q_lm
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q, ex_ID)
+maxPlots(Q, ex_ID, int = int, noise = noise)
 ```
 
 ```{r}
 set.seed(20170128)
 sim_test(Q, int = int, noise = noise) %>% plots_tab()
 ```
+
+<!-- # rcs -->
+<!-- ```{r} -->
+<!-- set.seed(20170128) -->
+<!-- Q_rcs <- Qlearn( -->
+<!--   data = dat_long, -->
+<!--   formula = form, -->
+<!--   treatment = "dose", -->
+<!--   mod_type = "rcs" -->
+<!-- ) -->
+<!-- Q <- Q_rcs -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- set.seed(20170206) -->
+<!-- maxPlots(Q, ex_ID, int = int, noise = noise) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- set.seed(20170128) -->
+<!-- sim_test(Q, int = int, noise = noise) %>% plots_tab() -->
+<!-- ``` -->
+
 
 # Lasso
 ```{r}
@@ -100,8 +123,7 @@ Q <- Q_lasso
 ```
 
 ```{r}
-set.seed(20170206)
-maxPlots(Q, ex_ID)
+maxPlots(Q, ex_ID, int = int, noise = noise)
 ```
 
 ```{r}
@@ -124,7 +146,39 @@ Q <- Q_rpart
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q, ex_ID)
+maxPlots(Q, ex_ID, int = int, noise = noise)
+```
+
+```{r}
+set.seed(20170128)
+sim_test(Q, int = int, noise = noise) %>% plots_tab()
+```
+
+# MARS
+```{r}
+set.seed(20170128)
+Q_mars <- Qlearn(
+  data = dat_long,
+  formula = form,
+  treatment = "dose",
+  mod_type = "caret",
+  method = 'gcvEarth',
+  tuneGrid = expand.grid(degree = 2)
+)
+Q <- Q_mars
+```
+
+```{r}
+set.seed(20170206)
+maxPlots(Q, ex_ID, int = int, noise = noise)
+```
+
+```{r}
+set.seed(20170128)
+dat <- map_df(1:10, ~ sim_test(Q, int = int, noise = noise)) %>%
+  group_by(group, ID, month) %>%
+  summarise_all(funs(mean(., na.rm = T)))
+dat %>% plots_tab() 
 ```
 
 ```{r}
@@ -157,31 +211,7 @@ Q <- Q_ert
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q, ex_ID)
-```
-
-```{r}
-set.seed(20170128)
-sim_test(Q, int = int, noise = noise) %>% plots_tab()
-```
-
-# MARS
-```{r}
-set.seed(20170128)
-Q_mars <- Qlearn(
-  data = dat_long,
-  formula = form,
-  treatment = "dose",
-  mod_type = "caret",
-  method = 'gcvEarth',
-  tuneGrid = expand.grid(degree = 2)
-)
-Q <- Q_mars
-```
-
-```{r}
-set.seed(20170206)
-maxPlots(Q, ex_ID)
+maxPlots(Q, ex_ID, int = int, noise = noise)
 ```
 
 ```{r}

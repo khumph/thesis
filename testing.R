@@ -1,8 +1,97 @@
 set.seed(1)
-meow <- sim_test(Q, int = int, noise = noise) %>% filter(group == "best")
-meow  %>% View()
+meow <- sim_test(Q, int = int, noise = noise)
+meow %>% filter(group == "optim") %>% View()
 
-ids.1 <- meow %>% filter(group == "optim") %>% select(ID) %>% flatten_dbl()
-ids1 <- meow %>% filter(group == "1on1off") %>% select(ID) %>% flatten_dbl()
-idsbest <- meow %>% filter(group == "best") %>% select(ID) %>% flatten_dbl()
-indPlot(meow, sample(idsbest, 1))
+# ids.1 <- meow %>% filter(group == "optim") %>% select(ID) %>% flatten_dbl()
+# ids1 <- meow %>% filter(group == "1on1off") %>% select(ID) %>% flatten_dbl()
+# idsbest <- meow %>% filter(group == "best") %>% select(ID) %>% flatten_dbl()
+# indPlot(meow, sample(idsbest, 1))
+
+# 
+# dat <- filter(meow, month == 0, ID %in% c(2001:2010, 2201:2210, 2401:2410))
+# 
+# 
+# d <- simMonthT(dat, Q, int = int, noise = noise) %>% mutate(
+#   reward = ifelse(dead, log(surv_time), 0)
+# )
+# out <- d
+# for (i in 1:(Ttot - 1)) {
+#   d <- d %>% mutate(month = i,
+#                     tumor_mass = M_next,
+#                     toxicity = W_next) %>%
+#     simMonthT(Q, int = int, noise = noise) %>%
+#     mutate(reward = ifelse(!dead, 0, log(i + 1 + surv_time)))
+#   out <- bind_rows(out, d)
+# }
+# out <- out %>% group_by(ID) %>% mutate(
+#   reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
+#   pdeath = ifelse(is.na(pdeath), 1, pdeath),
+#   tot_reward = sum(reward, na.rm = T),
+#   Qhat = reward,
+#   best = NA
+# ) %>% arrange(ID)
+
+# npergroup = 200
+# ngroups = 13
+# Ttot = 6
+# set.seed(1)
+# M0 <- runif(npergroup, min = 0, max = 2)
+# W0 <- runif(npergroup, min = 0, max = 2)
+# 
+# dat <- tibble(
+#   ID = 1:npergroup,
+#   month = rep(0, npergroup),
+#   tumor_mass = M0,
+#   toxicity = W0,
+#   dead = rep(F, npergroup)
+# )
+# 
+# dat <- genIntNoise(dat, int, noise)
+# 
+# D1 <- rep(seq(from = 0.1, to = 1, by = 0.1), each = npergroup)
+# 
+# D0 <-
+#   max_df(
+#     data = dat,
+#     model = Q$mod_list[[1]],
+#     form = Q$formula,
+#     mod_type = Q$mod_type,
+#     pred = T
+#   )$best
+# 
+# Dbest <- maxMonth(dat, int = int, noise = noise)$dose
+# 
+# D1on1off <- rep(1, npergroup)
+# 
+# groups <- c(
+#   seq(from = 0.1, to = 1, by = 0.1) %>% as.character(),
+#   "best",
+#   "optim", "1on1off")
+# 
+# dat <- dat[rep(seq_len(nrow(dat)), ngroups), ] %>% 
+#   mutate(
+#     ID = rep(1:(npergroup * ngroups)),
+#     group = rep(groups, each = npergroup),
+#     dose = c(D1, Dbest, D0, D1on1off),
+#     best_dose = ifelse(group == "optim", Dbest, NA)
+#   )
+# 
+# d <- simMonthT(dat, Q, int = int, noise = noise) %>% mutate(
+#   reward = ifelse(dead, log(surv_time), 0)
+# )
+# out <- d
+# for (i in 1:(Ttot - 1)) {
+#   d <- d %>% mutate(month = i,
+#                     tumor_mass = M_next,
+#                     toxicity = W_next) %>%
+#     simMonthT(Q, int = int, noise = noise) %>%
+#     mutate(reward = ifelse(!dead, 0, log(i + 1 + surv_time)))
+#   out <- bind_rows(out, d)
+# }
+# out %>% group_by(ID) %>% mutate(
+#   reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
+#   pdeath = ifelse(is.na(pdeath), 1, pdeath),
+#   tot_reward = sum(reward, na.rm = T),
+#   Qhat = reward,
+#   best = NA
+# ) %>% arrange(ID) %>% ungroup()
