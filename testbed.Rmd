@@ -6,6 +6,8 @@ params:
   int: !r T
 ---
 
+`r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction = half of people more sensitive to drug (toxicity increases 50% higher than usual with dose), half of people's tumor's reduce 50% more with dose", "Original"))`
+
 ```{r, eval=F}
 rm(list = ls())
 ```
@@ -56,7 +58,6 @@ formula <- paste(c(form_base, ints), collapse = " + ")
 form <- as.formula(form_base)
 form_int <- as.formula(formula)
 ```
-
 
 ```{r}
 set.seed(20170321)
@@ -173,7 +174,7 @@ set.seed(20170206)
 maxPlots(Q, ex_ID, int = int, noise = noise)
 ```
 
-```{r}
+```{r, eval = F}
 set.seed(20170128)
 dat <- map_df(1:10, ~ sim_test(Q, int = int, noise = noise)) %>%
   group_by(group, ID, month) %>%
@@ -193,7 +194,12 @@ sim_test(Q, int = int, noise = noise) %>% plots_tab()
 #   mtry (# Randomly Selected Predictors) - also K ?
 #   numRandomCuts (# Random Cuts) - K in CRT paper ?
 
-grid <- expand.grid(mtry = 3, numRandomCuts = 1)
+if (int) {
+  mtry = 5
+} else {
+  mtry = 3
+}
+grid <- expand.grid(mtry = mtry, numRandomCuts = 1)
 
 Q_ert <- Qlearn(
   data = dat_long,

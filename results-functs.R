@@ -1,22 +1,14 @@
 # results functions -------------------------------------------------------
 
 indPlot <- function(data, ex_ID) {
-  tox_mass_plot <- ggplot(
-    data = filter(data, ID == ex_ID)
-  ) +
-    geom_line(
-      mapping = aes(x = month, y = toxicity, group = ID), color = "green"
-    ) +
-    geom_line(
-      mapping = aes(x = month, y = tumor_mass, group = ID) 
-    )
+  tox_mass_plot <- ggplot(data = filter(data, ID == ex_ID)) +
+    geom_line(mapping = aes(x = month, y = toxicity, group = ID),
+              color = "green") +
+    geom_line(mapping = aes(x = month, y = tumor_mass, group = ID))
   
-  dose_plot <- ggplot(
-    data = filter(data, ID == ex_ID)
-  ) +
-    geom_line(
-      mapping = aes(x = month, y = dose, group = ID), color = "red"
-    ) + ylim(0, 1)
+  dose_plot <- ggplot(data = filter(data, ID == ex_ID)) +
+    geom_line(mapping = aes(x = month, y = dose, group = ID),
+              color = "red") + ylim(0, 1)
   
   list(grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1), ex_ID)
 }

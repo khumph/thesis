@@ -32,6 +32,30 @@ maxMonth <- function(dat, int, noise, nested = F) {
   }
 }
 
+# bp
+
+max_best <- function(data, int, noise) {
+  for (i in 5:1) {
+    Q1 <- maxMonth(filter(data, month == i), int = int, noise = noise)
+    data <- data %>% mutate(
+      reward = ifelse(month == i - 1,
+                      reward + ifelse(!is.na(Q1$dose), Q1$reward, 0),
+                      0),
+      best = ifelse(month == i, Q1$best, best),
+      dose = ifelse(month == i, Q1$dose, dose),
+      pdeath = ifelse(month == i, Q1$pdeath, pdeath),
+      toxicity = ifelse(month == i, Q1$toxicity, toxicity),
+      tumor_mass = ifelse(month == i, Q1$tumor_mass, tumor_mass)
+    )
+  }
+  Q0 <- maxMonth(filter(data, month == 0), int = int, noise = noise)
+  data <- data %>% mutate(
+    best = ifelse(month == 0, Q0$best, best)
+  )
+  data
+}
+
+
 # test simulation -----------------------------------------------------
 
 simMonthT <- function(dat, Q, int, noise) {
