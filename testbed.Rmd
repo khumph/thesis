@@ -3,7 +3,7 @@ title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interactio
 output: html_document
 params:
   noise: !r F
-  int: !r T
+  int: !r F
 ---
 
 `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction = half of people more sensitive to drug (toxicity increases 50% higher than usual with dose), half of people's tumor's reduce 50% more with dose", "Original"))`
@@ -15,6 +15,7 @@ rm(list = ls())
 ```{r}
 int <- params$int
 noise <- params$noise
+noise_pred <- F
 ```
 
 ```{r setup}
@@ -30,7 +31,7 @@ source("results-functs.R")
 
 ```{r sim}
 set.seed(20161116)
-dat_long <- sim(int = int, noise = noise)
+dat_long <- sim(int = int, noise = noise, noise_pred = noise_pred)
 ```
 
 ```{r formula}
@@ -79,12 +80,12 @@ Q <- Q_lm
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q, ex_ID, int = int, noise = noise)
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r}
 set.seed(20170128)
-sim_test(Q, int = int, noise = noise) %>% plots_tab()
+sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
 ```
 
 <!-- # rcs -->
@@ -101,12 +102,12 @@ sim_test(Q, int = int, noise = noise) %>% plots_tab()
 
 <!-- ```{r} -->
 <!-- set.seed(20170206) -->
-<!-- maxPlots(Q, ex_ID, int = int, noise = noise) -->
+<!-- maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred) -->
 <!-- ``` -->
 
 <!-- ```{r} -->
 <!-- set.seed(20170128) -->
-<!-- sim_test(Q, int = int, noise = noise) %>% plots_tab() -->
+<!-- sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab() -->
 <!-- ``` -->
 
 
@@ -124,12 +125,12 @@ Q <- Q_lasso
 ```
 
 ```{r}
-maxPlots(Q, ex_ID, int = int, noise = noise)
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r}
 set.seed(20170128)
-sim_test(Q, int = int, noise = noise) %>% plots_tab()
+sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
 ```
 
 
@@ -147,12 +148,12 @@ Q <- Q_rpart
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q, ex_ID, int = int, noise = noise)
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r}
 set.seed(20170128)
-sim_test(Q, int = int, noise = noise) %>% plots_tab()
+sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
 ```
 
 # MARS
@@ -171,12 +172,12 @@ Q <- Q_mars
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q, ex_ID, int = int, noise = noise)
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r, eval = F}
 set.seed(20170128)
-dat <- map_df(1:10, ~ sim_test(Q, int = int, noise = noise)) %>%
+dat <- map_df(1:10, ~ sim_test(Q, int = int, noise = noise, noise_pred = noise_pred)) %>%
   group_by(group, ID, month) %>%
   summarise_all(funs(mean(., na.rm = T)))
 dat %>% plots_tab() 
@@ -184,7 +185,7 @@ dat %>% plots_tab()
 
 ```{r}
 set.seed(20170128)
-sim_test(Q, int = int, noise = noise) %>% plots_tab()
+sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
 ```
 
 
@@ -217,10 +218,10 @@ Q <- Q_ert
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q, ex_ID, int = int, noise = noise)
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r}
 set.seed(20170128)
-sim_test(Q, int = int, noise = noise) %>% plots_tab()
+sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
 ```

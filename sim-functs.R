@@ -1,55 +1,61 @@
 # simulation functions ----------------------------------------------------
 
 updateW <- function(M, W, D, a1 = 0.1, b1, d1 = 0.5,
-                    Z = 0, a3 = 1e-3) {
-  W_next <- a1 * M + b1 * (D - d1) + W + sum(a3 * Z)
+                    Z = 0, a3 = 1e-3, truth) {
+  truth <- rep(truth, length(M))
+  W_next <-
+    a1 * M + b1 * (D - d1) + W + sum(a3 * Z) + ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
   ifelse(W_next > 0, W_next, 0)
 }
 
-Wnext <- function(dat, int, noise, b1 = 1.2) {
+Wnext <- function(dat, int, noise_pred, b1 = 1.2, truth = F) {
   if (int) {
     dat %>%
       mutate(W_next = ifelse(!dead,
-                             updateW(tumor_mass, toxicity, dose, b1 = ifelse(X1 > 0.5, 1.5, 1)),
+                             updateW(tumor_mass, toxicity, dose,
+                                     b1 = ifelse(X1 > 0.5, 1.5, 1), truth = truth),
                              NA))
-  } else if (noise) {
+  } else if (noise_pred) {
     dat %>%
       mutate(W_next = ifelse(!dead,
                              updateW(tumor_mass, toxicity, dose, b1 = b1,
-                                     Z = c(Z7, Z8, Z9, Z10, Z11, Z12)),
+                                     Z = c(Z7, Z8, Z9, Z10, Z11, Z12), truth = truth),
                              NA))
   } else {
     dat %>%
-      mutate(W_next = ifelse(!dead, updateW(tumor_mass, toxicity, dose, b1 = b1), NA))
+      mutate(W_next = ifelse(!dead, updateW(tumor_mass, toxicity, dose,
+                                            b1 = b1, truth = truth), NA))
   }
 }
 
 updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, d2 = 0.5,
-                    X = 0, Z = 0, a3 = 1e-3) {
+                    X = 0, Z = 0, a3 = 1e-3, truth) {
+  truth <- rep(truth, length(M))
   M_next <- ifelse(M > 0,
                    (a2 * W - b2 * (D  - d2)) +
-                     M + sum(a3 * Z),
+                     M + sum(a3 * Z) + ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
                    0)
   ifelse(M_next > 0, M_next, 0)
 }
 
 # (5 + dat$month[1])/10
-Mnext <- function(dat, int, noise, b2 = 1.2) {
+Mnext <- function(dat, int, noise_pred, b2 = 1.2, truth = F) {
   if (int) {
     dat %>%
       mutate(M_next = ifelse(!dead,
                              updateM(tumor_mass, toxicity, dose, 
-                                     b2 = ifelse(X2 > 0.5, 1.5, 1)),
+                                     b2 = ifelse(X2 > 0.5, 1.5, 1), truth = truth),
                              NA))
-  } else if (noise) {
+  } else if (noise_pred) {
     dat %>%
       mutate(M_next = ifelse(!dead,
                              updateM(tumor_mass, toxicity, dose, b2 = b2,
-                                     Z = c(Z1, Z2, Z3, Z4, Z5, Z6)),
+                                     Z = c(Z1, Z2, Z3, Z4, Z5, Z6), truth = truth),
                              NA))
   } else {
     dat %>%
-      mutate(M_next = ifelse(!dead, updateM(tumor_mass, toxicity, dose, b2 = b2), NA))
+      mutate(M_next = ifelse(!dead, updateM(tumor_mass, toxicity, dose, b2 = b2,
+                                            truth = truth), NA))
   }
 }
 
@@ -83,7 +89,7 @@ genIntNoise <- function(dat, int, noise) {
 }
 
 # defined as in NSCLC paper
-lambda <- function(M, W, mu0 = -6.5, mu1 = 0.8, mu2 = 1, mu3 = 0.75) {
+lambda <- function(M, W, mu0 = -10, mu1 = 1.75, mu2 = 2, mu3 = 2) {
   exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M)
 }
 
@@ -94,6 +100,6 @@ lambda <- function(M, W, mu0 = -6.5, mu1 = 0.8, mu2 = 1, mu3 = 0.75) {
 # }
 
 # original definition
-# lambda <- function(M, W, mu0 = -6.5, mu1 = 1, mu2 = 1) {
+# lambda <- function(M, W, mu0 = -6.5, mu1 = 0.9, mu2 = 1) {
 #   exp(mu0 + mu1 * W + mu2 * M)
 # }

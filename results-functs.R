@@ -13,7 +13,7 @@ indPlot <- function(data, ex_ID) {
   list(grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1), ex_ID)
 }
 
-maxPlots <- function(Q, ex_ID, mon = 5, int, noise) {
+maxPlots <- function(Q, ex_ID, mon = 5, int, noise_pred) {
   dat <- filter(Q$data, month == mon)
   nested_df <-
     max_df(dat,
@@ -24,7 +24,7 @@ maxPlots <- function(Q, ex_ID, mon = 5, int, noise) {
   
   nested_df_best <-
     dat %>% mutate(reward = Qhat) %>% 
-    maxMonth(int, noise, nested = T) %>% ungroup() %>% 
+    maxMonth(int, noise_pred, nested = T) %>% ungroup() %>% 
     mutate(ID = factor(ID))
   
   onePlot <-
@@ -54,6 +54,7 @@ maxPlots <- function(Q, ex_ID, mon = 5, int, noise) {
 }
 
 plots_tab <- function(dat_test_long) {
+  
   dat_long_summ <- dat_test_long %>% group_by(ID) %>%
     mutate(
       cumSurv = prod(1 - pdeath[1:6]),

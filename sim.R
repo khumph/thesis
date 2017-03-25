@@ -1,8 +1,8 @@
 # sim ---------------------------------------------------------------------
 
-simMonth <- function(dat, int, noise) {
-  dat <- Mnext(dat, int, noise)
-  dat <- Wnext(dat, int, noise)
+simMonth <- function(dat, int, noise_pred) {
+  dat <- Mnext(dat, int, noise_pred)
+  dat <- Wnext(dat, int, noise_pred)
   dat %>% mutate(
     d_next = runif(nrow(.), min = 0, max = 1),
     surv_time = rexp(nrow(.), lambda(M_next, W_next)),
@@ -12,7 +12,7 @@ simMonth <- function(dat, int, noise) {
   )
 }
 
-sim <- function(N = 1000, Ttot = 6, int = F, noise = F) {
+sim <- function(N = 1000, Ttot = 6, int = F, noise = F, noise_pred = F) {
   dat <- tibble(
     ID = 1:N,
     month = rep(0, N),
@@ -24,7 +24,7 @@ sim <- function(N = 1000, Ttot = 6, int = F, noise = F) {
   
   dat <- genIntNoise(dat, int, noise)
   
-  d <- simMonth(dat, int = int, noise = noise) %>% mutate(
+  d <- simMonth(dat, int = int, noise_pred = noise_pred) %>% mutate(
     reward = ifelse(dead, log(surv_time), log(1))
   )
   out <- d
@@ -33,7 +33,7 @@ sim <- function(N = 1000, Ttot = 6, int = F, noise = F) {
                       tumor_mass = M_next,
                       toxicity = W_next,
                       dose = d_next) %>%
-      simMonth(int = int, noise = noise) %>%
+      simMonth(int = int, noise_pred = noise_pred) %>%
       mutate(reward = ifelse(!dead, log(i + 1), log(i + 1 + surv_time)))
     out <- bind_rows(out, d)
   }
