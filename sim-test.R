@@ -13,11 +13,10 @@ maxMonth <- function(dat, int, noise_pred, nested = F) {
     surv_time = 1 / lam,
     reward = log(surv_time)
   ) %>% group_by(ID) %>% mutate(
-    probs = runif(1, 0, 1),
     bestR = max(reward),
-    bestD = ifelse(abs(reward - bestR) < 0.1, dose, NA),
+    bestD = ifelse(abs(reward - bestR) < 0.01, dose, NA),
     best = quantile(bestD,
-                    probs = probs,
+                    probs = 1,
                     na.rm = T, type = 3, names = F)
     # best = ifelse(
     #   tumor_mass > 0,
