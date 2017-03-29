@@ -3,9 +3,10 @@
 simMonth <- function(dat, int, noise_pred) {
   dat <- Mnext(dat, int, noise_pred)
   dat <- Wnext(dat, int, noise_pred)
+  dat <- lamNext(dat, int, noise_pred)
   dat %>% mutate(
     d_next = runif(nrow(.), min = 0, max = 1),
-    surv_time = rexp(nrow(.), lambda(M_next, W_next)),
+    surv_time = rexp(nrow(.), lam),
     dead = ifelse(dead,
                   T,
                   surv_time < 1)

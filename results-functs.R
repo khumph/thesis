@@ -13,48 +13,51 @@ indPlot <- function(data, ex_ID) {
   list(grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1), ex_ID)
 }
 
-maxPlots <- function(Q, ex_ID, mon = 5, int, noise_pred) {
+maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred) {
   dat <- filter(Q$data, month == mon)
-  nested_df <-
-    max_df(dat,
-           Q$mod_list[[mon + 1]],
-           Q$formula,
-           mod_type = Q$mod_type,
-           nested = T) %>% ungroup() %>%  mutate(ID = factor(ID))
+  nested_df <- max_df(
+    data = dat,
+    model = Q$mod_list[[mon + 1]],
+    form = Q$formula,
+    mod_type = Q$mod_type,
+    nested = T
+  ) %>% ungroup()
   
   nested_df_best <-
     dat %>% mutate(reward = Qhat) %>% 
-    maxMonth(int, noise_pred, nested = T) %>% ungroup() %>% 
-    mutate(ID = factor(ID))
+    maxMonth(int, noise_pred, nested = T)
+  
+  d0 <- dat %>% filter(!is.na(M_next)) %>% distinct(ID) %>% flatten_dbl()
+  d1 <- nested_df %>% distinct(ID) %>% flatten_dbl()
+  d2 <- nested_df_best %>% distinct(ID) %>% flatten_dbl()
+  
+  ids <- nested_df %>% distinct(ID) %>% sample_n(n) %>% flatten_dbl()
+  df <- filter(nested_df, ID %in% ids) %>% mutate(ID = factor(ID))
+  df_best <- filter(nested_df_best, ID %in% ids) %>% mutate(ID = factor(ID))
   
   onePlot <-
     ggplot() +
     geom_line(data = filter(nested_df, ID == ex_ID),
               aes(x = dose, y = preds)) +
     geom_line(data = filter(nested_df_best, ID == ex_ID),
-               aes(x = dose, y = reward), linetype = 2) +
-    labs(
-      caption = "dotted line is true response"
-    )
+              aes(x = dose, y = reward),
+              linetype = 2) +
+    labs(caption = "dotted line is true response")
   
-  ids <- sample(1:1000, 10)
-  manyPlot <- ggplot(data = filter(nested_df, ID %in% ids)) +
+  
+  manyPlot <- ggplot(data = df) +
     geom_line(mapping = aes(x = dose, y = preds, color = ID)) +
-    geom_line(data = filter(nested_df_best, ID %in% ids),
-               aes(x = dose, y = reward, color = ID),
-               linetype = 2) +
-    labs(
-      caption = "dotted lines are true values"
-      )
+    geom_line(
+      data = df_best,
+      aes(x = dose, y = reward, color = ID),
+      linetype = 2
+    ) +
+    labs(caption = "dotted lines are true values")
   
-  best_df <- filter(nested_df_best, ID %in% c(ids, ex_ID))
-  optim_df <- filter(nested_df, ID %in% c(ids, ex_ID))
-  
-  list(onePlot, manyPlot, ex_ID, ids, best_df, optim_df)
+  list(onePlot, manyPlot, ex_ID, ids, df_best, df)
 }
 
 plots_tab <- function(dat_test_long) {
-  
   dat_long_summ <- dat_test_long %>% group_by(ID) %>%
     mutate(
       cumSurv = prod(1 - pdeath[1:6]),

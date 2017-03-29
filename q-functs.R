@@ -29,35 +29,36 @@ makeForm <- function(formula, treatment, mod_type = "rcs") {
 
 max_df <- function(data, model, form, mod_type, 
                    x = seq(0, 1, by = 0.01), nested = F, pred = F) {
-  if (!pred) {
-    dat <- data %>%
-      filter(!is.na(reward))
+  data <- ungroup(data)
+  if (pred) {
+    dat <- data
   } else {
-    dat <- data %>% 
-      filter(!is.na(tumor_mass))
+    dat <- data %>% filter(!is.na(M_next))
   }
   dat <- dat %>% 
     mutate(dose = map(1:nrow(.), ~ x)) %>%
     unnest() %>%
-    mutate(preds = predict(model, .)) %>%
-    group_by(ID) %>%
-    mutate(
-      max = max(preds),
-      best = ifelse(abs(preds - max) < 0.01, dose, NA),
-      best = quantile(best,
-                      probs = 1,
-                      na.rm = T, type = 3, names = F)
-      # best = ifelse(tumor_mass > 0,
-      #               quantile(best, probs = 0, na.rm = T, type = 3, names = F),
-      #               min(best, na.rm = T))
-    )
+    mutate(preds = predict(model, .)) 
+  if (!nested) {
+    dat <- dat %>% group_by(ID) %>%
+      mutate(
+        max = max(preds),
+        best = ifelse(abs(preds - max) < 0.05, dose, NA),
+        best = quantile(best, probs = 1, na.rm = T, type = 3, names = F)
+        # best = ifelse(tumor_mass > 0,
+        #               quantile(best, probs = 1, na.rm = T, type = 3, names = F),
+        #               quantile(best, probs = 0, na.rm = T, type = 3, names = F))
+      )
+  }
   if (nested) {
-    dat
+    dat %>% ungroup()
   } else if (!pred) {
     dat %>% filter(near(best, dose)) %>%
-      bind_rows(filter(data, is.na(reward))) %>% arrange(ID)
+      bind_rows(filter(data, is.na(M_next))) %>%
+      arrange(ID) %>% ungroup()
   } else {
-    dat %>% filter(near(best, dose)) %>% arrange(ID)
+    dat %>% filter(near(best, dose)) %>%
+      arrange(ID) %>% ungroup()
   }
 }
 
@@ -81,7 +82,7 @@ one_step_Q <- function(form, data, mod_type, ...) {
   new_dat <- max_df(data, model, form, mod_type = mod_type)
   
   list(
-    new_dat = new_dat,
+    data = new_dat,
     model = model,
     max = new_dat$max,
     best = new_dat$best
@@ -102,10 +103,10 @@ Qlearn <- function(data, formula, treatment, mod_type, boot = F, ...) {
       best = ifelse(month == i, Q1$best, best)
     )
   }
-  Q0 <- one_step_Q(form, filter(data, month == 0), mod_type, ...)
+  Q1 <- one_step_Q(form, filter(data, month == 0), mod_type, ...)
   mod_list[[1]] <- Q1$model
   data <- data %>% mutate(
-    best = ifelse(month == 0, Q0$best, best)
+    best = ifelse(month == 0, Q1$best, best)
   )
   
   list(
