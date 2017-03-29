@@ -3,6 +3,16 @@ title: "R Notebook"
 output: html_document
 ---
 
+```{r setup}
+knitr::opts_chunk$set(warning = F, message = F)
+library(pacman)
+p_load(tidyverse, rms, caret, gridExtra, stringr)
+source("sim-functs.R")
+source("sim.R")
+source("q-functs.R")
+source("sim-test.R")
+source("results-functs.R")
+```
 
 same starting conditions for all
 ```{r}
@@ -59,12 +69,17 @@ Wnext(testd, int, noise_pred, truth = T)
 
 actual starting conditions
 ```{r}
-N = 1000
+int = T
+noise = F
+noise_pred = F
+
+set.seed(1)
+N = 100
 dat <- tibble(
   ID = 1:N,
   month = rep(0, N),
-  tumor_mass = runif(N, min = 0.05, max = 0.05),
-  toxicity = runif(N, min = 2, max = 2),
+  tumor_mass = runif(N, min = 0, max = 2),
+  toxicity = runif(N, min = 0, max = 2),
   dose = runif(N, min = 0, max = 1),
   dead = rep(F, N)
 )
@@ -73,10 +88,10 @@ dat <- genIntNoise(dat, int, noise)
 
 dat <- Mnext(dat, int, noise_pred, truth = F)
 dat <- Wnext(dat, int, noise_pred, truth = F)
-dat <- dat %>% mutate(
+datN <- lamNext(dat, int, noise_pred)
+datN <- datN %>% mutate(
   d_next = runif(nrow(.), min = 0, max = 1),
   surv_time = rexp(nrow(.), lambda(M_next, W_next)),
-  lam = lambda(M_next, W_next),
   pdeath = pexp(lam),
   expected_surv = 1/lam,
   dead = ifelse(dead,
@@ -84,19 +99,56 @@ dat <- dat %>% mutate(
                 surv_time < 1),
   M_cat = cut(tumor_mass, breaks = 2),
   W_cat = cut(toxicity, breaks = 2)
-)
+) %>% select(-starts_with("V"))
 
-ggplot(dat) +
-  geom_point(aes(x = dose, y = log(surv_time), color = M_cat, shape = W_cat)) +
-  geom_smooth(aes(x = dose, y = log(surv_time), color = M_cat, linetype = W_cat), method = "loess") +
-  geom_point(aes(x = dose, y = log(expected_surv), color = M_cat, shape = W_cat), color = "green") +
-  geom_smooth(aes(x = dose, y = log(expected_surv), color = M_cat, linetype = W_cat), color = "red", method = "loess")
+dat <- lamNext(dat, int, noise_pred = F)
+dat <- dat %>% mutate(
+  d_next = runif(nrow(.), min = 0, max = 1),
+  surv_time = rexp(nrow(.), lambda(M_next, W_next)),
+  pdeath = pexp(lam),
+  expected_surv = 1/lam,
+  dead = ifelse(dead,
+                T,
+                surv_time < 1),
+  M_cat = cut(tumor_mass, breaks = 2),
+  W_cat = cut(toxicity, breaks = 2)
+) %>% select(-starts_with("V"))
 
+ggplot() +
+  geom_point(data = dat, aes(x = dose, y = log(expected_surv)), color = "green") +
+  geom_smooth(dat = dat, aes(x = dose, y = log(expected_surv)), color = "red", method = "loess") +
+    geom_point(data = datN, aes(x = dose, y = log(expected_surv)), color = "blue") +
+  geom_smooth(dat = datN, aes(x = dose, y = log(expected_surv)), color = "purple", method = "loess")
+```
+
+
+```{r}
+datN %>% select(starts_with("Z")) %>%
+  mutate(
+    x = sum(Z1, Z6),
+    meow = 1e-2 * (Z1 + Z2 + Z3 + Z4 + Z5 + Z6 + Z7 + Z8 + Z9 + Z10))
+```
+
+
+```{r}
+if (int) {
+  ggplot(dat, aes(x = dose, y = log(surv_time))) +
+  # geom_point() +
+  # geom_smooth(method = "loess") +
+  geom_point(aes(x = dose, y = log(expected_surv), color = X2 > 0.5, shape = X1 > 0.5)) +
+  geom_smooth(aes(x = dose, y = log(expected_surv)), method = "loess")
+
+ggplot(dat, aes(x = dose, y = M_next, color = X2 > 0.5)) + geom_point() +
+  geom_smooth(method = "loess")
+
+ggplot(dat, aes(x = dose, y = W_next, color = X1 > 0.5)) + geom_point() +
+  geom_smooth(method = "loess")
+}
 
 ggplot(dat, aes(x = dose, y = log(surv_time))) +
-  geom_point() +
-  geom_smooth(method = "loess") +
-  geom_point(aes(x = dose, y = log(expected_surv)), color = "green") +
+  # geom_point() +
+  # geom_smooth(method = "loess") +
+  geom_point(aes(x = dose, y = log(expected_surv))) +
   geom_smooth(aes(x = dose, y = log(expected_surv)), method = "loess")
 
 ggplot(dat, aes(x = dose, y = M_next)) + geom_point() +

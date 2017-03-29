@@ -3,14 +3,18 @@ noise_pred
 noise
 int
 meow <- sim_test(Q, int = int, noise = noise, noise_pred = noise_pred)
-meow %>% plots_tab()
+dat <- meow %>% filter(group == "optim")
 
-max_best(dat_long, int = int, noise_pred = noise_pred) %>% View()
+dat[1, ] 
 
-best <- meow %>% filter(group == "best")
-# best1 <- meow %>% filter(group == "best", month == 0)
-# # maxMonth(best1, int, noise_pred, nested = F) %>% View()
-maxbest <- max_best(best, int, noise_pred) 
+maxMonth(dat, int = int, noise_pred = noise_pred, nested = T) %>% View()
+# 
+# max_best(dat_long, int = int, noise_pred = noise_pred) %>% View()
+# 
+# best <- meow %>% filter(group == "best")
+# # best1 <- meow %>% filter(group == "best", month == 0)
+# # # maxMonth(best1, int, noise_pred, nested = F) %>% View()
+# maxbest <- max_best(best, int, noise_pred) 
 # best %>% filter(!is.na(dose)) 
 # maxbest %>% filter(!is.na(dose))
 
@@ -113,3 +117,24 @@ maxbest <- max_best(best, int, noise_pred)
 # b1 <- filter(out, group == "best")
 # 
 # b <- max_best(filter(out, group == "best"), int = F, noise = F)
+
+
+# data <- dat %>% mutate(Qhat = expected_surv)
+# 
+# form1 <- makeForm(form, "dose", mod_type = "caret")
+# 
+# d <- sample_frac(data, size = 1, replace = T)
+# Q1 <- one_step_Q(form1, d,
+#                  formula = form,
+#                  mod_type = "caret",
+#                  method = 'gcvEarth',
+#                  tuneGrid = expand.grid(degree = 2))
+# out <- bind_cols(Q1$data$ID, best = Q1$best)
+# 
+# boot <- function(data, i, mod_type, ...) {
+#   
+# }
+# 
+# if (boot) {
+#   
+# }

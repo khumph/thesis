@@ -1,0 +1,362 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+rm(list = ls())
+```
+
+```{r}
+int <- F
+noise <- F
+noise_pred <- F
+```
+
+```{r setup}
+knitr::opts_chunk$set(warning = F, message = F)
+library(pacman)
+p_load(tidyverse, rms, caret, gridExtra, stringr)
+source("sim-functs.R")
+source("sim.R")
+source("q-functs.R")
+source("sim-test.R")
+source("results-functs.R")
+```
+
+```{r sim}
+set.seed(20161116)
+dat_long <- sim(int = int, noise = noise, noise_pred = noise_pred)
+dat_long <- dat_long %>% select(-starts_with("Z"))
+```
+
+```{r formula}
+if (int) {
+  nms <-
+    dat_long %>% select(tumor_mass, toxicity, dose, Qhat, starts_with("X")) %>% names()
+} else if (noise) {
+  nms <-
+    dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
+                        # starts_with("Z"),
+                        starts_with("V")) %>% names()
+} else {
+  nms <-
+    dat_long %>% select(tumor_mass, toxicity, dose, Qhat) %>% names()
+}
+response <- "Qhat"
+treatment <- "dose"
+pred_nms <- nms[!(nms %in% response)]
+form_base <- paste(response,
+                   "~",
+                   paste0(pred_nms, collapse = " + "))
+ints <- paste0(pred_nms[!(pred_nms %in% treatment)], ":", treatment)
+ints <- paste(ints, collapse = " + ")
+formula <- paste(c(form_base, ints), collapse = " + ")
+form <- as.formula(form_base)
+form_int <- as.formula(formula)
+```
+
+# Lasso
+```{r}
+set.seed(20170128)
+Q_lasso <- Qlearn(
+  data = dat_long,
+  formula = form_int,
+  treatment = "dose",
+  mod_type = "caret",
+  method = "lasso"
+)
+Q <- Q_lasso
+```
+
+```{r}
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
+```
+
+```{r}
+set.seed(20170128)
+sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
+```
+
+
+
+# rpart
+```{r, eval=FALSE, include=FALSE}
+grid <- expand.grid(cp = 1e-3)
+
+Q_rpart <- Qlearn(
+  data = dat_long,
+  formula = form,
+  treatment = "dose",
+  tuneGrid = grid,
+  mod_type = "caret",
+  method = 'rpart',
+  minbucket = 2
+)
+Q <- Q_rpart
+
+# mod1 <- train(
+#   form = form,
+#   data = dat_long %>% filter(month == 0),
+#   na.action = na.omit,
+#   # tuneGrid = grid,
+#   method = 'rpart1SE',
+#   minbucket = 2
+#   )
+# 
+# mod1 <- train(
+#   form = form,
+#   data = dat_long %>% filter(month == 0),
+#   na.action = na.omit,
+#   # tuneGrid = grid,
+#   method = '',
+#   minbucket = 2
+#   )
+# 
+# mod1
+```
+
+
+```{r, eval=FALSE, include=FALSE}
+dat <- dat_long %>% filter(month == 0)
+
+grid <- expand.grid(cp = 10^(seq(-4, -3, 1)))
+
+mod1 <- train(
+  form = form,
+  data = dat_long %>% filter(month == 0),
+  na.action = na.omit,
+  # tuneGrid = grid,
+  method = 'rpart1SE',
+  minbucket = 2
+)
+
+mod1$finalModel$cptable
+mod1$finalModel %>% plot()
+prp(mod1$finalModel)
+
+library(rpart.plot)
+
+if (noise) {
+  grid <- expand.grid(mtry = seq(from = 0, to = 20, by = 10))
+  splitvars <- c("dose", "tumor_mass", "toxicity")
+} else if (int) {
+  grid <- expand.grid(mtry = seq(from = 0, to = 2, by = 1))
+  splitvars <- c("dose", "tumor_mass", "toxicity")
+} else {
+  grid <- expand.grid(mtry = 2)
+  splitvars <- c("dose")
+}
+
+modrf <- train(
+  form = form,
+  data = dat,
+  na.action = na.omit,
+  # tuneGrid = grid,
+  method = 'ranger',
+  tuneGrid = grid,
+  min.node.size = 2,
+  importance = "impurity",
+  num.trees = 100,
+  always.split.variables = splitvars
+  )
+```
+
+```{r, eval=FALSE, include=FALSE}
+dat <- dat_long %>% filter(month == 5, !is.nan(Qhat)) %>%
+  select(Qhat, dose, tumor_mass, toxicity)
+
+p_load(stima)
+mod_stima <- stima(
+  dat,
+  maxsplit = 20,
+  model = "regtrunk",
+  vfold = 10,
+  CV = 1,
+  Save = T,
+  control = NULL,
+  printoutput = TRUE
+)
+
+mod_stima %>% plot()
+```
+
+
+# redefine Qlearn
+```{r, eval=FALSE, include=FALSE}
+formula <- form
+treatment <- "dose"
+mod_type <- "caret"
+form <- makeForm(formula, treatment, mod_type)
+
+grid <- expand.grid(mtry = 2)
+splitvars <- c("dose")
+
+i = 0
+dat <- rerun(
+  2, filter(dat_long, month == i) %>% sample_frac(replace = T)
+)
+
+boots = 2
+data <- dat_long
+```
+
+```{r, eval = F}
+Qs <- map(
+  dat,
+  ~ bootQ(
+    form,
+    .,
+    mod_type = "caret",
+    method = 'ranger',
+    tuneGrid = grid,
+    min.node.size = 100,
+    importance = "impurity",
+    num.trees = 1,
+    always.split.variables = splitvars
+  )
+)
+
+Q1 <- one_step_Q(form,
+    dat_long %>% filter(month == 0),
+    mod_type = "caret",
+    method = 'ranger',
+    tuneGrid = grid,
+    min.node.size = 100,
+    importance = "impurity",
+    num.trees = 1,
+    always.split.variables = splitvars
+)
+```
+
+```{r}
+bootQ <- function(form, data, mod_type, ...) {
+  Q1 <- one_step_Q(form, data, mod_type, ...)
+  list(
+    data = Q1$data,
+    model = Q1$model
+  )
+}
+
+boot1step <- function(form, data, mod_type, boots, ...) {
+  dat <- c(data, rerun(boots, data %>% sample_frac(replace = T)))
+  Qs <- map(dat, ~ bootQ(form, ., mod_type = mod_type, ...))
+  dat <- map_df(1:boots, ~ Qs[[.]]$data)
+  doses <- dat %>% group_by(ID) %>% summarise(
+    max = quantile(reward, probs = 0.5, na.rm = T, type = 7, names = F),
+    avgD = quantile(dose, probs = 0.5, na.rm = T, type = 7, names = F),
+    lwrD = quantile(dose, probs = 0.025, na.rm = T, type = 7, names = F),
+    uprD = quantile(dose, probs = 0.975, na.rm = T, type = 7, names = F)
+  )
+  models <- map(
+    1:boots,
+    ~ Qs[[.]]$model
+  )
+  list(
+    data = dat,
+    doses = doses,
+    best = doses$avgD,
+    lwrD = doses$lwrD,
+    uprD = doses$uprD,
+    max = doses$max,
+    model = models
+  )
+}
+
+Qlearn <- function(data, formula, treatment, mod_type, boots = 1, ...) {
+  form <- makeForm(formula, treatment, mod_type)
+  if (boots > 1) {
+    data <- data %>% mutate(
+      lwrD = NA,
+      uprD = NA
+    )
+  }
+  
+  mod_list <- list()
+  for (i in 5:1) {
+    dat <- data %>% filter(month == i)
+    if (boots > 1) {
+      Q1 <- boot1step(form, dat, mod_type, boots, ...)
+      data <- data %>% mutate(best = ifelse(month == 0, Q1$best, best),
+                              lwrD = ifelse(month == 0, Q1$lwrD, lwrD),
+                              uprD = ifelse(month == 0, Q1$uprD, uprD))
+    } else {
+      Q1 <- one_step_Q(form, dat, mod_type, ...)
+      data <- data %>% mutate(
+      Qhat = ifelse(month == i - 1,
+                    reward + ifelse(!is.na(Q1$max), Q1$max, 0),
+                    Qhat),
+      best = ifelse(month == i, Q1$best, best)
+      )
+    }
+    mod_list[[i + 1]] <- Q1$model
+  }
+  dat0 <- data %>% filter(month == 0)
+  if (boots > 1) {
+    Q1 <- boot1step(form, dat0, mod_type, boots, ...)
+    data <- data %>% mutate(best = ifelse(month == 0, Q1$best, best),
+                            lwrD = ifelse(month == 0, Q1$lwrD, lwrD),
+                            uprD = ifelse(month == 0, Q1$uprD, uprD))
+  } else {
+    Q1 <- one_step_Q(form, dat0, mod_type, ...)
+    data <- data %>% mutate(best = ifelse(month == 0, Q1$best, best))
+  }
+  mod_list[[1]] <- Q1$model
+  list(
+    data = data,
+    mod_list = mod_list,
+    boots = boots,
+    formula = form,
+    mod_type = mod_type
+  )
+}
+
+optimD <- function(Q, dat, month, nested = F) {
+  if (!nested) {
+    map_df(1:Q$boots,
+         ~ max_df(
+           data = dat,
+           model = Q$mod_list[[month + 1]][[.]],
+           form = Q$formula,
+           mod_type = Q$mod_type,
+           pred = T
+         )) %>% group_by(ID) %>% summarise(
+           lwrD = quantile(dose, probs = 0.025, na.rm = T, type = 7, names = F),
+           dose = quantile(dose, probs = 0.5, na.rm = T, type = 7, names = F),
+           uprD = quantile(dose, probs = 0.975, na.rm = T, type = 7, names = F)
+         )
+  } else {
+    max_df(
+      data = dat,
+      model = Q$mod_list[[month + 1]][[1]],
+      form = Q$formula,
+      mod_type = Q$mod_type,
+      pred = T,
+      nested = nested
+    )
+  }
+}
+```
+
+```{r}
+Q_rcs <- Qlearn(
+  data = dat_long,
+  formula = form,
+  treatment = "dose",
+  mod_type = "rcs",
+  boots = 1
+)
+
+Q <- Q_rcs
+```
+
+```{r}
+ex_ID <- 5
+set.seed(20170206)
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
+```
+
+```{r}
+set.seed(20170128)
+sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
+```

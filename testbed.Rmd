@@ -18,6 +18,8 @@ noise <- params$noise
 noise_pred <- F
 ```
 
+`r ifelse (noise & !noise_pred, "No predicitive noise", "Predictive noise") `
+
 ```{r setup}
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
@@ -66,89 +68,52 @@ ex_ID <- sample(dat_long$ID, 1)
 indPlot(dat_long, ex_ID)
 ```
 
-# lm
+# rcs
 ```{r}
-Q_lm <- Qlearn(
+if (!noise) {
+  set.seed(20170128)
+  Q_rcs <- Qlearn(
   data = dat_long,
-  formula = form_int,
+  formula = form,
   treatment = "dose",
-  mod_type = "caret",
-  method = 'lm'
-)
-Q <- Q_lm
+  mod_type = "rcs"
+  )
+  Q <- Q_rcs
+}
 ```
 
 ```{r}
-set.seed(20170206)
-maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
+if (!noise) {
+  maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
+}
 ```
 
 ```{r}
-set.seed(20170128)
-sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
-```
-
-<!-- # rcs -->
-<!-- ```{r} -->
-<!-- set.seed(20170128) -->
-<!-- Q_rcs <- Qlearn( -->
-<!--   data = dat_long, -->
-<!--   formula = form, -->
-<!--   treatment = "dose", -->
-<!--   mod_type = "rcs" -->
-<!-- ) -->
-<!-- Q <- Q_rcs -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- set.seed(20170206) -->
-<!-- maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred) -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- set.seed(20170128) -->
-<!-- sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab() -->
-<!-- ``` -->
-
-
-# Lasso
-```{r}
-set.seed(20170128)
-Q_lasso <- Qlearn(
-  data = dat_long,
-  formula = form_int,
-  treatment = "dose",
-  mod_type = "caret",
-  method = "lasso"
-)
-Q <- Q_lasso
-```
-
-```{r}
-maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
-```
-
-```{r}
-set.seed(20170128)
-sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
+if (!noise) {
+  set.seed(20170128)
+  sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
+}
 ```
 
 
 # rpart
 ```{r}
+grid <- expand.grid(cp = 10^(seq(-4, -3, 1)))
 Q_rpart <- Qlearn(
   data = dat_long,
   formula = form,
   treatment = "dose",
   mod_type = "caret",
-  method = 'rpart'
+  tuneGrid = grid,
+  method = 'rpart',
+  minbucket = 2
 )
 Q <- Q_rpart
 ```
 
 ```{r}
 set.seed(20170206)
-maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred, mon = 1)
 ```
 
 ```{r}
@@ -170,11 +135,6 @@ Q_mars <- Qlearn(
 Q <- Q_mars
 ```
 
-```{r}
-set.seed(20170206)
-maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
-```
-
 ```{r, eval = F}
 set.seed(20170128)
 dat <- map_df(1:10, ~ sim_test(Q, int = int, noise = noise, noise_pred = noise_pred)) %>%
@@ -189,31 +149,33 @@ sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
 ```
 
 
-# ERT
+# rf
 ```{r}
-# Tuning parameters:
-#   mtry (# Randomly Selected Predictors) - also K ?
-#   numRandomCuts (# Random Cuts) - K in CRT paper ?
-
-if (int) {
-  mtry = 5
+if (noise) {
+  grid <- expand.grid(mtry = seq(from = 0, to = 10, by = 5))
+  splitvars <- c("dose", "tumor_mass", "toxicity")
+} else if (int) {
+  grid <- expand.grid(mtry = seq(from = 0, to = 2, by = 1))
+  splitvars <- c("dose", "tumor_mass", "toxicity")
 } else {
-  mtry = 3
+  grid <- expand.grid(mtry = 2)
+  splitvars <- c("dose")
 }
-grid <- expand.grid(mtry = mtry, numRandomCuts = 1)
 
-Q_ert <- Qlearn(
+Q_rf <- Qlearn(
   data = dat_long,
   formula = form,
   treatment = "dose",
   mod_type = "caret",
-  method = 'extraTrees',
+  method = 'ranger',
   tuneGrid = grid,
-  ntree = 50,
-  # G in CRT paper
-  nodesize = 2 # nmin in CRT paper
+  min.node.size = 2,
+  importance = "impurity",
+  num.trees = 100,
+  always.split.variables = splitvars
 )
-Q <- Q_ert
+
+Q <- Q_rf
 ```
 
 ```{r}
