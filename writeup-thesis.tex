@@ -37,7 +37,7 @@
 %  TITLE SECTION
 %--------------------------------------------------------------------------
 
-\title{\normalfont \Large Thesis Title}
+\title{\normalfont \Large Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data}
 
 \author{\normalsize \sl Kyle Humphrey}
 
@@ -252,13 +252,53 @@ For every participant $i = 1, \ldots, n$ at each stage $k = 1, \ldots, K$
 
 % section q_learning (end)
 
-\section{rpart} % (fold)
+\section{Regression Trees} % (fold)
 \label{sec:rpart}
+
+A decision tree in computer science is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statment is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node).
+
+For example, a simple regression tree could be constructed with the following rules:
+\begin{verbatim}
+if Covariate A <= 2 then
+|   if Covariate B >= 34.2 then Outcome = 6
+|   else Outcome = 4.9
+else Outcome = 2.2
+\end{verbatim}
+
+Example adapted from \cite{kuhn}
+
+Our overarching goal in tree construction is to create nodes as homogeneous in the outcome as possible. To achieve this we must determine
+
+\begin{enumerate}
+  \item What covariate to use to define a split and what value of the covariate to split on
+  \item When to stop splitting (tree \texttt{depth} or complexity)
+  \item How to assign an outcome to each terminal node
+\end{enumerate}
+
+We use the the classification and regression tree (CART) approach of \cite{CART}. We begin with all of the data (the \emph{root node}) and evaluate the sum of squared errors that result from splitting each unique value of each covariate:
+
+\[
+  SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2 
+\] 
+
+Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ and $\bar{y}_{R}$ is the average outcome in the right node, $\text{node}_{R}$. We then choose the split that minimizes the sum of squares. Then the process is repeated for both of the resulting left and right nodes. This feature of recursive splitting, or partitioning, of the data is why this method is also known as \emph{recursive partitioning}. Typically we continue splitting in this manner until the number of observations in a node falls below a threshold (e.g. 20 observations).
+
+
+
+
+% More formally the regression tree building procedure is
+
+
+
 
 % section rpart (end)
 
-\section{MARS} % (fold)
+\section{Multivariate adaptive regression splines} % (fold)
 \label{sec:mars}
+
+MARS creates surrogate features insetad of original predictors
+
+two contrasted versions of a predictor to enter model
 
 % section mars (end)
 
@@ -267,24 +307,23 @@ For every participant $i = 1, \ldots, n$ at each stage $k = 1, \ldots, K$
 
 % section random_forest (end)
 
-\section{boosted trees} % (fold)
-\label{sec:boosted_trees}
-
-% section boosted_trees (end)
-
-\section{other modelling methods} % (fold)
-\label{sec:other_modelling_methods}
-
-% section other_modelling_methods (end)
-
 \section{Simulation}
 
 \subsection{Patient Model} % (fold)
 \label{sub:vpm}
 
-To generate training data, I began by simulating 1000 patients, each receiving six months of treatment. Each patient had a random starting tumor mass and patient health, both generated from uniform distributions between 0 and 2. The initial treatment dose was selected from a uniform distribution between 0.5 and 1 (so that everyone entered the trial receiving some treatment). Subsequent doses were selected from a uniform distribution between 0 and 1 at the beginning of each month.
+To generate training data, I began by simulating 1000 patients, each receiving six months of treatment, the doses of which were changed at the beginning of each month. Each patient had a random starting tumor mass and patient health, both generated from uniform distributions between 0 and 2. Each month's treatment dose was selected from a uniform distribution between 0 and 1.
 
-Patient health change was modelled as a function of tumor mass and dosage of treatment, with doses above 0.5 decreasing health and doses below 0.5 allowing health to increase due to less toxic effects from the treatment.
+The goals of the patient model were to capture:
+
+\begin{enumerate}
+  \item treatment kills tumor cells but increases toxicity (decreases quality of life)
+  \item 
+  \item growth of tumor in absence of treatment
+  \item reduction of toxicity in absence of treatment
+\end{enumerate}growth of tumor in absence of treatment 2. 
+
+Patient quality of life was  change was modelled as a function of tumor mass and dosage of treatment, with doses above 0.5 decreasing health and doses below 0.5 allowing health to increase due to less toxic effects from the treatment.
 
 \[
 \Delta W = - 0.1 M_{t-1} - 1.2 (D_{t-1} - 0.5)
