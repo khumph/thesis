@@ -161,7 +161,7 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, ngroups = 13, T
     reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
     # reward = -M_next,
     pdeath = ifelse(is.na(pdeath), 1, pdeath),
-    tot_reward = sum(reward, na.rm = T),
+    tot_reward = sum(reward[1:6], na.rm = T),
     Qhat = reward,
     best = NA
   ) %>% arrange(ID) %>% ungroup()
