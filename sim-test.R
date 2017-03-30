@@ -15,7 +15,8 @@ maxMonth <- function(dat, int, noise_pred, nested = F, pred = F) {
   dat <- dat %>% mutate(
     pdeath = pexp(lam),
     surv_time = 1 / lam,
-    reward = log(surv_time)
+    # reward = log(surv_time),
+    reward = -M_next
   )
   if (!nested) {
     dat <- dat %>% group_by(ID) %>% mutate(
@@ -94,10 +95,8 @@ simMonthT <- function(dat, Q, int, noise_pred, pred = F) {
   dat %>%
     mutate(
       pdeath = pexp(lam),
-      surv_time = 1 / lam,
-      dead = ifelse(dead,
-                    T,
-                    surv_time < 1)
+      surv_time = 1 / lam #,
+      # dead = ifelse(dead, T, surv_time < 1)
     )
 }
 
@@ -146,23 +145,26 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, ngroups = 13, T
     )
   
   d <- simMonthT(dat, Q, int = int, noise_pred = noise_pred, pred = T) %>%
-    mutate(reward = ifelse(dead, log(surv_time), 0))
+    # mutate(reward = ifelse(dead, log(surv_time), 0))
+    mutate(reward = -M_next)
   out <- d
   for (i in 1:(Ttot - 1)) {
     d <- d %>% mutate(month = i,
                       tumor_mass = M_next,
                       toxicity = W_next) %>%
       simMonthT(Q, int = int, noise_pred = noise_pred) %>%
-      mutate(reward = ifelse(!dead, 0, log(i + 1 + surv_time)))
+      # mutate(reward = ifelse(!dead, 0, log(i + 1 + surv_time))),
+      mutate(reward = -M_next)
     out <- bind_rows(out, d)
   }
   out %>% group_by(ID) %>% mutate(
-    reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
+    # reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
+    reward = -M_next,
     pdeath = ifelse(is.na(pdeath), 1, pdeath),
     tot_reward = sum(reward, na.rm = T),
     Qhat = reward,
     best = NA
-  ) %>% arrange(ID)
+  ) %>% arrange(ID) %>% ungroup()
 }
 
 

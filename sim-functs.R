@@ -3,7 +3,7 @@
 updateW <- function(M, W, D, a1 = 0.1, b1 = 1.2, c1, d1 = 0.5, truth) {
   truth <- rep(truth, length(M))
   W_next <-
-    a1 * M + b1 * (c1 * D  - d1) + W + ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
+    a1 * M + b1 * (c1 * D  - d1) + W #+ ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
   ifelse(W_next > 0, W_next, 0)
 }
 
@@ -33,7 +33,7 @@ updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, c2, d2 = 0.5,
   truth <- rep(truth, length(M))
   M_next <- ifelse(M > 0,
                    (a2 * W - b2 * (c2 * D  - d2)) +
-                     M + sum(a3 * Z) + ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
+                     M + sum(a3 * Z), #+ ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
                    0)
   ifelse(M_next > 0, M_next, 0)
 }

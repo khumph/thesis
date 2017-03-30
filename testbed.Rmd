@@ -1,5 +1,5 @@
 ---
-title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original"))`'
+title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original"))` negative of tumor mass is only reward'
 output: html_document
 params:
   noise: !r F
@@ -18,7 +18,7 @@ noise <- params$noise
 noise_pred <- F
 ```
 
-`r ifelse (noise & !noise_pred, "No predicitive noise", "Predictive noise") `
+`r ifelse (noise & !noise_pred, "No predicitive noise", "")`
 
 ```{r setup}
 knitr::opts_chunk$set(warning = F, message = F)
@@ -112,8 +112,7 @@ Q <- Q_rpart
 ```
 
 ```{r}
-set.seed(20170206)
-maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred, mon = 1)
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r}
@@ -133,6 +132,10 @@ Q_mars <- Qlearn(
   tuneGrid = expand.grid(degree = 2)
 )
 Q <- Q_mars
+```
+
+```{r}
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r, eval = F}
@@ -179,7 +182,7 @@ Q <- Q_rf
 ```
 
 ```{r}
-set.seed(20170206)
+set.seed(20170329)
 maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 

@@ -13,7 +13,7 @@ indPlot <- function(data, ex_ID) {
   list(grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1), ex_ID)
 }
 
-maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred) {
+maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred, seed = 1) {
   dat <- filter(Q$data, month == mon)
   nested_df <- max_df(
     data = dat,
@@ -27,10 +27,7 @@ maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred) {
     dat %>% mutate(reward = Qhat) %>% 
     maxMonth(int, noise_pred, nested = T)
   
-  d0 <- dat %>% filter(!is.na(M_next)) %>% distinct(ID) %>% flatten_dbl()
-  d1 <- nested_df %>% distinct(ID) %>% flatten_dbl()
-  d2 <- nested_df_best %>% distinct(ID) %>% flatten_dbl()
-  
+  set.seed(seed)
   ids <- nested_df %>% distinct(ID) %>% sample_n(n) %>% flatten_dbl()
   df <- filter(nested_df, ID %in% ids) %>% mutate(ID = factor(ID))
   df_best <- filter(nested_df_best, ID %in% ids) %>% mutate(ID = factor(ID))
@@ -119,13 +116,13 @@ plots_tab <- function(dat_test_long) {
     summarise(mean_tot_reward = mean(mean_reward, na.rm = T)) %>%
     arrange(desc(mean_tot_reward))
   
-  plot_reward <- ggplot(data = tab_reward) +
-    geom_bar(mapping = aes(
+  plot_reward <- ggplot(data = dat_test_long) +
+    geom_boxplot(mapping = aes(
       x = group,
-      y = exp(mean_tot_reward),
-      fill = group
-    ), stat = "identity") + 
-    labs(y = "average months of survival")
+      y = tot_reward,
+      color = group
+    ), notch = T) + 
+    labs(y = "average log months of survival")
   
   tab_MSE <- dat_test_long %>% group_by(month) %>% 
     filter(group == "optim") %>% summarise(MSE_dose = mean((dose - best_dose)^2, na.rm = T),
