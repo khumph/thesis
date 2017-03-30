@@ -1,5 +1,5 @@
 ---
-title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original"))` negative of tumor mass is only reward'
+title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original"))`'
 output: html_document
 params:
   noise: !r F
@@ -143,7 +143,7 @@ set.seed(20170128)
 dat <- map_df(1:10, ~ sim_test(Q, int = int, noise = noise, noise_pred = noise_pred)) %>%
   group_by(group, ID, month) %>%
   summarise_all(funs(mean(., na.rm = T)))
-dat %>% plots_tab() 
+dat %>% plots_tab()
 ```
 
 ```{r}
@@ -182,7 +182,6 @@ Q <- Q_rf
 ```
 
 ```{r}
-set.seed(20170329)
 maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
