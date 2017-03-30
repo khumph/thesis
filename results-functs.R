@@ -113,16 +113,26 @@ plots_tab <- function(dat_test_long) {
   
   tab_reward <- dat_test_long %>%
     group_by(group) %>%
-    summarise(median_tot_reward = median(tot_reward, na.rm = T)) %>%
+    summarise(median_tot_reward = median(tot_reward, na.rm = T),
+              mean_reward = mean(tot_reward)) %>%
     arrange(desc(median_tot_reward))
   
-  plot_reward <- ggplot(data = dat_test_long) +
+  dat_reward_plot <- dat_test_long %>% ungroup() %>% 
+    group_by(group) %>% mutate(mean_reward = mean(tot_reward))
+  
+  plot_reward <- ggplot(data = dat_reward_plot) +
     geom_boxplot(mapping = aes(
       x = group,
       y = tot_reward,
       color = group
-    ), notch = T) + 
-    labs(y = "log months of survival")
+    ), notch = T) +
+    geom_point(aes(
+      x = group,
+      y = mean_reward,
+      color = group
+    ), shape = 5) +
+    labs(y = "log months of survival",
+         caption = "diamonds represent mean survival times for each group")
   
   tab_MSE <- dat_test_long %>% group_by(month) %>% 
     filter(group == "optim") %>% summarise(MSE_dose = mean((dose - best_dose)^2, na.rm = T),
