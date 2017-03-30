@@ -312,7 +312,7 @@ two contrasted versions of a predictor to enter model
 \subsection{Patient Model} % (fold)
 \label{sub:vpm}
 
-To generate training data, I began by simulating 1000 patients, each receiving six months of treatment, the doses of which were changed at the beginning of each month. Each patient had a random starting tumor mass and patient health, both generated from uniform distributions between 0 and 2. Each month's treatment dose was selected from a uniform distribution between 0 and 1.
+
 
 The goals of the patient model were to capture:
 
@@ -323,115 +323,155 @@ The goals of the patient model were to capture:
   \item reduction of toxicity in absence of treatment
 \end{enumerate}growth of tumor in absence of treatment 2. 
 
-Patient quality of life was  change was modelled as a function of tumor mass and dosage of treatment, with doses above 0.5 decreasing health and doses below 0.5 allowing health to increase due to less toxic effects from the treatment.
+\subsubsection{Transition functions} % (fold)
+\label{ssub:transition_functions}
+
+
+
+Change in patient quality of life was modelled as a function of tumor mass and dosage of treatment, with doses above 0.5 decreasing quality of life and doses below 0.5 allowing health to increase due to fewer toxic effects from treatment:
 
 \[
-\Delta W = - 0.1 M_{t-1} - 1.2 (D_{t-1} - 0.5)
+W_{t*} = 0.1 M_{t-1} + 1.2 (D_{t-1} - 0.5) + W_{t - 1}
 \]
-
-Where $\dot{H}_{t}$ is the change in patient health from month $t-1$ to month $t$, 
-$M_{t-1}$ is the tumor mass the previous month, and 
-$D_{t-1}$ is the dose of treatment for the previous month
-
-Tumor mass change was modelled as a function of patient health and dosage, with doses above 0.5 decreasing tumor mass and doses below 0.5 allowing it to increase:
-
 \[
-\dot{M}_{t} = [- 0.15 H_{t-1} - 1.2 (D_{t-1} - 0.5)] I_{\{M_{t-1} > 0\}}(M_{t-1})
+W_{t} = \begin{cases}
+  W_{t*} &\text{if } W_{t*} > 0 \\
+  0 &\text{if } W_{t*} \leq 0
+\end{cases}
 \]
 
-Where $\dot{M}_{t}$ is the change in tumor mass from one month to another,
-$H_{t-1}$ is the health from the previous month,
+Where $W_{t}$ is the negative of the patient quality of life (toxicity) at month $t$, which is bounded at 0 (no toxic effects from treatment),
 $M_{t-1}$ is the tumor mass the previous month,
-$D_{t-1}$ is the dose for the previous month,
-$I_{\{M_{t-1} > 0\}}(M)$ indicates that if a person is cured (previous tumor mass = 0), then tumors do not recur.
+$D_{t-1}$ is the dose of treatment for the previous month, and
+$W_{t}$ is the negative of the patient quality of life (toxicity) at the previous month.
+
+Tumor mass change was modelled as a function of patient health and dosage, with doses above 0.5 decreasing tumor mass and doses below 0.5 causing tumor mass to increase:
+
+\[
+M_{t*} = [0.15 W_{t-1} - 1.2 (D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+\]
+\[
+M_{t} = \begin{cases}
+  M_{t*} &\text{if } M_{t*} > 0 \\
+  0 &\text{if } M_{t*} \leq 0
+\end{cases}
+\]
+
+Where $M_{t}$ is the tumor mass at month $t$, which is bounded at 0 since mass is strictly positive,
+$W_{t-1}$ is patient toxicity at month $t - 1$,
+$M_{t-1}$ is the tumor mass at month $t - 1$,
+$D_{t-1}$ is the dose assigned at month $t - 1$, and
+$I(M_{t-1} > 0)$ indicates that if a person is cured (previous tumor mass = 0), then tumors do not recur.
+
+% subsubsection transition_functions (end)
+
+\subsubsection{Survival model} % (fold)
+\label{ssub:survival_model}
+
+Survival times (in months) were generated from an exponential distribution with a rate parameter modeled as a function of the tumor mass and toxicity at time $t$:
+\[
+  \lambda_{t}(M_{t}, W_{t}) = \exp(-7 + W_{t} + 1.2 M_{t} + W_{t} M_{t}).
+\]
+This formulation indicates that we take tumor mass to be more important in survival than toxicity. The interaction between tumor mass and toxicity reflects the belief that higher levels of both tumor mass and toxicity lead to a greater reduction in survival than either alone.
+
+% subsubsection survival_model (end)
 
 % subsection vpm (end)
 
 
-\subsection{rewards} % (fold)
+\subsubsection{rewards} % (fold)
 \label{sub:}
 
-The reward was defined as the sum of three parts: 
-
-\[
-R_{t} = R_{t, 1} + R_{t, 2} + R_{t, 3}
-\]
-
-First, a large negative reward of -60 was given if the patient died, since a primary endpoint is typically overall survival:
-
-\[
-R_{t, 1}(M_{t-1}, H_{t-1}, D_{t-1}) = 
-\begin{cases}
-  -60 & \text{patient died} \\
-  0 & \text{otherwise}
-\end{cases}
-\]
-
-Second, a small negative reward of -5 was given for an decrease in patient health above 0.5 and a small positive reward of 5 if patient health increased by more than 0.5:
-
-\[
-R_{t, 2}(M_{t-1}, H_{t-1}, D_{t-1}) =  
-\begin{cases}
-  5 & \dot{H} > 0.5 \\
-  0 & -0.5 \leq \dot{H} \leq 0.5 \\
-  -5 & \dot{H} < -0.5
-\end{cases}
-\]
-
-Third, similar to the rewards for toxicity, a small negative reward of -5 was given for an increase in tumor mass above 0.5, no reward if the tumor mass did not increase or decrease by more than 0.5, a small positive reward of 5 if the tumor mass decreased by more than 0.5, and a moderate positive reward of 15 was given if the patient was cured (the resulting tumor mass was less than or equal to zero):
-
-\[
-R_{t, 3}(M_{t-1}, H_{t-1}, D_{t-1}) = 
-\begin{cases}
-  -5 & \dot{M} > 0.5 \\
-  0 & -0.5 \leq \dot{M} \leq 0.5 \\
-  5 & \dot{M} < -0.5 \\
-  15 & \dot{M} + M \leq 0
-\end{cases}
-\]
+Rewards were defined as the log of the observed survival time.
 
 % subsection  (end)
-
-\subsection{death} % (fold)
-\label{sub:death}
-
-\[
-\lambda(t) = -7 + H_{t} + M_{t}
-\]
-
-\[
-\Delta F(t) = e^{-\lambda}
-\]
-
-\[
-p = 1 - \Delta F
-\]
-
-\[
-\text{patient died} \sim B(p)
-\]
-
-% subsection death (end)
-
-
 
 \section{simulation} % (fold)
 \label{sec:simulation}
 
+To generate training data, I began by simulating 1000 patients, each receiving six months of treatment, the doses of which were chosen from a uniform distribution over 0 and 1 at the beginning of each month:
+
 \[
-\hat{Q}_{t} = R_{t} + \max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
+  D_{t} \overset{iid}{\sim} \text{Unif}(0, 1)
 \]
 
+Each patient's initial tumor mass and toxicity were generated independently from uniform distributions between 0 and 2.
 
+\[
+  W_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
+\]
+\[
+  M_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
+\]
+
+At each month, the next month's tumor mass and toxicity were computed in response to dose for each patient as described above. The rate parameter for the survival distribution was updated for each patient from these next month's tumor masses and toxicities. Survival times were then randomly sampled from the relevant exponential distribution. If this survival time was less than 1 (i.e. the patient would not survive another month) the patient was said to have died before the next month, and the reward received from this patient was computed as the log of the total number of months the patient had survived (including the fraction of a month before their death). 
+
+
+
+% \[
+% \hat{Q}_{t} = R_{t} + \max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
+% \]
 
 % section simulation (end)
 
-
-
-
-
-
-
-
-
 \end{document}
+
+% \[
+% R_{t} = R_{t, 1} + R_{t, 2} + R_{t, 3}
+% \]
+%
+% First, a large negative reward of -60 was given if the patient died, since a primary endpoint is typically overall survival:
+%
+% \[
+% R_{t, 1}(M_{t-1}, H_{t-1}, D_{t-1}) =
+% \begin{cases}
+%   -60 & \text{patient died} \\
+%   0 & \text{otherwise}
+% \end{cases}
+% \]
+%
+% Second, a small negative reward of -5 was given for an decrease in patient health above 0.5 and a small positive reward of 5 if patient health increased by more than 0.5:
+%
+% \[
+% R_{t, 2}(M_{t-1}, H_{t-1}, D_{t-1}) =
+% \begin{cases}
+%   5 & \dot{H} > 0.5 \\
+%   0 & -0.5 \leq \dot{H} \leq 0.5 \\
+%   -5 & \dot{H} < -0.5
+% \end{cases}
+% \]
+%
+% Third, similar to the rewards for toxicity, a small negative reward of -5 was given for an increase in tumor mass above 0.5, no reward if the tumor mass did not increase or decrease by more than 0.5, a small positive reward of 5 if the tumor mass decreased by more than 0.5, and a moderate positive reward of 15 was given if the patient was cured (the resulting tumor mass was less than or equal to zero):
+%
+% \[
+% R_{t, 3}(M_{t-1}, H_{t-1}, D_{t-1}) =
+% \begin{cases}
+%   -5 & \dot{M} > 0.5 \\
+%   0 & -0.5 \leq \dot{M} \leq 0.5 \\
+%   5 & \dot{M} < -0.5 \\
+%   15 & \dot{M} + M \leq 0
+% \end{cases}
+% \]
+%
+% 
+%
+% \subsection{death} % (fold)
+% \label{sub:death}
+%
+% \[
+% \lambda(t) = -7 + H_{t} + M_{t}
+% \]
+%
+% \[
+% \Delta F(t) = e^{-\lambda}
+% \]
+%
+% \[
+% p = 1 - \Delta F
+% \]
+%
+% \[
+% \text{patient died} \sim B(p)
+% \]
+%
+% % subsection death (end)
