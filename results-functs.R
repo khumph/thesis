@@ -61,10 +61,10 @@ plots_tab <- function(dat_test_long) {
       cured = sum(tumor_mass == 0, na.rm = T) > 0
     ) %>% group_by(group, month) %>% 
     summarise(
-      mean_dose = mean(dose, na.rm = T),
+      median_dose = median(dose, na.rm = T),
       mean_tox = mean(toxicity, na.rm = T),
       mean_tumor = mean(tumor_mass, na.rm = T),
-      mean_reward = mean(tot_reward, na.rm = T),
+      median_reward = median(tot_reward, na.rm = T),
       mean_cumSurv = mean(cumSurv, na.rm = T),
       prop_cured = mean(cured, na.rm = T)
     ) %>% mutate(sum_means = mean_tox + mean_tumor)
@@ -72,7 +72,7 @@ plots_tab <- function(dat_test_long) {
   plot_dose <- ggplot(data = dat_long_summ) +
     geom_line(mapping = aes(
       x = month,
-      y = mean_dose,
+      y = median_dose,
       color = group,
       group = group
     ))
@@ -111,10 +111,10 @@ plots_tab <- function(dat_test_long) {
     summarise(mean_prop_cured = mean(prop_cured)) %>%
     arrange(desc(mean_prop_cured))
   
-  tab_reward <- dat_long_summ %>%
+  tab_reward <- dat_test_long %>%
     group_by(group) %>%
-    summarise(mean_tot_reward = mean(mean_reward, na.rm = T)) %>%
-    arrange(desc(mean_tot_reward))
+    summarise(median_tot_reward = median(tot_reward, na.rm = T)) %>%
+    arrange(desc(median_tot_reward))
   
   plot_reward <- ggplot(data = dat_test_long) +
     geom_boxplot(mapping = aes(
@@ -122,7 +122,7 @@ plots_tab <- function(dat_test_long) {
       y = tot_reward,
       color = group
     ), notch = T) + 
-    labs(y = "average log months of survival")
+    labs(y = "log months of survival")
   
   tab_MSE <- dat_test_long %>% group_by(month) %>% 
     filter(group == "optim") %>% summarise(MSE_dose = mean((dose - best_dose)^2, na.rm = T),
