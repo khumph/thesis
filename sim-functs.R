@@ -86,28 +86,40 @@ genIntNoise <- function(dat, int, noise) {
 }
 
 
+# lamNext <- function(dat, int, noise_pred) {
+#   if (noise_pred) {
+#     dat %>% mutate(lam = lambda(M_next, W_next,
+#                                 Z = Z1 + Z2 + Z3 + Z4 + Z5 + Z6 + Z7 + Z8 + Z9 + Z10))
+#   } else {
+#     dat %>% mutate(lam = lambda(M_next, W_next))
+#   }
+# }
+# # defined as in NSCLC paper
+# lambda <- function(M, W, mu0 = -7, mu1 = 1, mu2 = 1.2, mu3 = 1, a3 = 0.05, Z = 0) {
+#   exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M + a3 * Z)
+# }
+
+
 lamNext <- function(dat, int, noise_pred) {
   if (noise_pred) {
-    dat %>% mutate(lam = lambda(M_next, W_next,
+    dat %>% mutate(lam = lambda(M_next, W_next, tumor_mass, toxicity, dose,
                                 Z = Z1 + Z2 + Z3 + Z4 + Z5 + Z6 + Z7 + Z8 + Z9 + Z10))
   } else {
-    dat %>% mutate(lam = lambda(M_next, W_next))
+    dat %>% mutate(lam = lambda(M_next, W_next, tumor_mass, toxicity, dose))
   }
 }
-# defined as in NSCLC paper
-lambda <- function(M, W,  mu0 = -7, mu1 = 1, mu2 = 1.2, mu3 = 1, a3 = 0.05, Z = 0) {
-  exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M + a3 * Z)
+
+# new definition
+lambda <- function(M_next, W_next, M, W, dose,
+                   mu0 = -5, mu1 = 1, mu2 = 1.2, a3 = 0.05, Z = 0) {
+  dw <- (-0.1 * M - W) / 1.2 + 0.5
+  dm <- (0.15 * W + M) / 1.2 + 0.5
+  # dm <- ifelse(M > 0, dm, dw)
+  exp(mu0 - mu1 * exp(-(dose - dw)^2) -
+    mu2 * exp(-(dose - dm)^2) + mu2 * M_next + mu1 * W_next)
 }
 
-# our new definition
-# lambda <- function(M_next, W_next, M, W, dose, mu0 = -6.5, mu1 = 1, mu2 = 1) {
-#   dw <- (-0.1 * M - W) / 1.2 + 0.5
-#   dm <- (-0.15 * W + M) / 1.2 + 0.5
-#   mu0 + 3 * mu1 * exp(-(dose - dw)^2) +
-#     3 * mu2 * exp(-(dose - dm)^2) - M_next - W_next
-#   g <- (1)*(M - W)^2
-#   exp(mu0 + mu1 * W + mu2 * M + g)
-# }
+
 
 # original definition
 # lambda <- function(M, W, mu0 = -6.5, mu1 = 0.9, mu2 = 1) {
