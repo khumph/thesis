@@ -312,16 +312,17 @@ two contrasted versions of a predictor to enter model
 \subsection{Patient Model} % (fold)
 \label{sub:vpm}
 
-
+Largely inspired by \cite{paper}
 
 The goals of the patient model were to capture:
 
 \begin{enumerate}
   \item treatment kills tumor cells but increases toxicity (decreases quality of life)
-  \item 
   \item growth of tumor in absence of treatment
   \item reduction of toxicity in absence of treatment
-\end{enumerate}growth of tumor in absence of treatment 2. 
+  \item Better quality of life or general health reduces the growth rate of tumor cells (and vice versa)
+  \item Tumors decrease quality of life, and larger tumors cause larger decreases
+\end{enumerate} 
 
 \subsubsection{Transition functions} % (fold)
 \label{ssub:transition_functions}
@@ -389,7 +390,10 @@ Rewards were defined as the log of the observed survival time.
 \section{simulation} % (fold)
 \label{sec:simulation}
 
-To generate training data, I began by simulating 1000 patients, each receiving at total of six months of treatment, the doses of which were chosen from a uniform distribution over 0 and 1 at the beginning of each month:
+\subsection{Basic setup} % (fold)
+\label{sub:basic_setup}
+
+To generate training data, I began by simulating 1000 patients, each receiving at total of six months of treatment ($t = 0, 1, \ldots, 5$), the doses of which were chosen from a uniform distribution over 0 and 1 at the beginning of each month:
 \[
   D_{t} \overset{iid}{\sim} \text{Unif}(0, 1), \quad t = 0, 1, \ldots, 5
 \]
@@ -403,18 +407,83 @@ Each patient's initial tumor mass, $M_{0}$ and negative of quality of life (toxi
   M_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
 \]
 
-At each month $t$, the next month's tumor mass, $M_{t + 1}$, and toxicity, $W_{t + 1}$, were computed in response to dose at month $t$, $D_{t}$, for each patient as described above. The rate parameter for the survival distribution, $\lambda_{t+1}(M_{t + 1}, W_{t + 1})$ was updated for each patient from these next month's tumor masses and toxicities. Survival times (from month $t$ onwards if treatment ceased at month $t$), $S_{t}$ were then randomly sampled from the relevant exponential distribution. If this survival time was less than 1 (i.e. the patient would not survive another month) the patient was said to have died before the next month, and the reward received was computed as the log of the total number of months the patient had survived (including the fraction of a month before their death). At the final month (when no further treatment would be administered) the survival time was simulated as just described and the log of the simulated survival time plus the number of months the patient already survived was taken as the reward.
+At each month $t$, the next month's tumor mass, $M_{t + 1}$, and toxicity, $W_{t + 1}$, were computed in response to dose at month $t$, $D_{t}$, for each patient as described above. The rate parameter for the survival distribution, $\lambda_{t+1}(M_{t + 1}, W_{t + 1})$, was updated for each patient from these next month's tumor masses and toxicities. Survival times, $S_{t}$ were then randomly sampled from the exponential distribution with the just computed rate parameter:
+\[
+  S_{t} \sim \text{Exp}(\exp(-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1}))
+\]
 
+If $S_{t} \leq 1$ (i.e. the patient would not survive past another month), the patient was said to have died before the next month, and the reward received was computed as the log of the total number of months the patient had survived (including the fraction of a month before their death). At the final month $t = 5$, the rewards were computed as $\log(S_{5} + 5)$, the log of the simulated survival time after the final treatment plus the the number of months already elapsed. 
 \[
   R_{t + 1} = \begin{cases}
-    \log(S_{t} + \sum_{i = 0}^{t - 1} t) & \text{if } S_{t} \leq 1 \text{ or } t = 5 \\
+    \log(S_{t} + \sum_{i = 0}^{t} i) & \text{if } S_{t} \leq 1 \text{ or } t = 5 \\
     0 & \text{otherwise}
   \end{cases}
 \]
 
+% subsection basic_setup (end)
+
+
+\subsection{Subgroups/Interaction} % (fold)
+\label{sub:subgroups_interaction}
+
+In addition to the basic scenario just described, two additional baseline covariates, $X_{1}$ and $X_{2}$ were simulated from uniform distributions over 0, 1:
 \[
-  S_{t} \sim \text{Exp}(\exp(-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1}))
+  X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1) 
 \]
+Using the values of these covariates, four approximately equally sized subgroups were constructed:
+\begin{enumerate}
+  \item $X_{1} < 0.5$ \& $X_{2} < 0.5$: patients simulated identically to those in the basic scenario.
+  \item $X_{1} > 0.5$ \& $X_{2} < 0.5$: these patients are 50\% more sensitive to the effects of the drug:
+   \[
+   W'_{t*} = 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1}
+   \]
+   \item $X_{1} < 0.5$ \& $X_{2} > 0.5$: the treatment is 50\% more effective for these patients:
+\[
+M'_{t*} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+\]
+   \item $X_{1} < 0.5$ \& $X_{2} > 0.5$: the drug is 50\% more effective for these patients, but they are also 50\% more sensitive to its effects:
+   \[
+   W'_{t*} = 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1}
+   \]
+   \[
+   M'_{t*} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+   \]
+\end{enumerate}
+
+% subsection subgroups_interaction (end)
+
+\subsubsection{Noise variables} % (fold)
+\label{ssub:noise_variables}
+
+The basic scenario was also repeated in the presence of 100 noise variables:
+$Z = (Z_{1}, \ldots, Z_{10})$, and $V = (V_{1}, \ldots, V_{90})$ and had distributions as follows:
+\[
+  Z_{1}, \ldots, Z_{5} \overset{iid}{\sim} N(1, 1)
+\]
+\[
+  Z_{6}, \ldots, Z_{10} \overset{iid}{\sim} N(-1, 1)
+\]
+\[
+  V_{1}, \ldots, V_{90} \overset{iid}{\sim} N(0, 1)
+\]
+That is, $Z_{1}, \ldots, Z_{5}$ were sampled independently from a normal distribution with mean 1 and standard deviation 1, $Z_{6}, \ldots, Z_{10}$ were sampled independently from a normal distribution with mean -1 and standard deviation 1, and $V_{1}, \ldots, V_{90}$ were sampled independently from a standard normal distribution.
+
+In the first case (pure noise), the above variables were made available to the models, but had no effect on $W_{t}, M_{t}$, or $S_{t}$.
+
+In the second case (predictive noise), the $Z$ variables had a small influence on the rate parameter in the survival distribution:
+\[
+  \lambda'_{t}(M_{t+1}, W_{t+1}) = \exp(-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1}) + 0.05 \sum_{i = 1}^{10} Z_{i}.
+\]
+but did not change the optimal dose, as this modification only shifts the expected survival up or down and does not change the maximum over a range of possible doses.
+
+% subsubsection noise_variables (end)
+
+\subsubsection{Both interaction and noise} % (fold)
+\label{ssub:subsubsection_name}
+
+The interaction and noise scenarios were also combined together, to create the same subgroups as defined above in the presence of pure noise, and the presence of predictive noise.
+
+% subsubsection subsubsection_name (end)
 
 
 
