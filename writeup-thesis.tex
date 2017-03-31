@@ -370,7 +370,7 @@ $I(M_{t-1} > 0)$ indicates that if a person is cured (previous tumor mass = 0), 
 
 Survival times (in months) were generated from an exponential distribution with a rate parameter modeled as a function of the tumor mass and toxicity at time $t$:
 \[
-  \lambda_{t}(M_{t}, W_{t}) = \exp(-7 + W_{t} + 1.2 M_{t} + W_{t} M_{t}).
+  \lambda_{t}(M_{t+1}, W_{t+1}) = \exp(-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1}).
 \]
 This formulation indicates that we take tumor mass to be more important in survival than toxicity. The interaction between tumor mass and toxicity reflects the belief that higher levels of both tumor mass and toxicity lead to a greater reduction in survival than either alone.
 
@@ -389,13 +389,12 @@ Rewards were defined as the log of the observed survival time.
 \section{simulation} % (fold)
 \label{sec:simulation}
 
-To generate training data, I began by simulating 1000 patients, each receiving six months of treatment, the doses of which were chosen from a uniform distribution over 0 and 1 at the beginning of each month:
-
+To generate training data, I began by simulating 1000 patients, each receiving at total of six months of treatment, the doses of which were chosen from a uniform distribution over 0 and 1 at the beginning of each month:
 \[
-  D_{t} \overset{iid}{\sim} \text{Unif}(0, 1)
+  D_{t} \overset{iid}{\sim} \text{Unif}(0, 1), \quad t = 0, 1, \ldots, 5
 \]
 
-Each patient's initial tumor mass and toxicity were generated independently from uniform distributions between 0 and 2.
+Each patient's initial tumor mass, $M_{0}$ and negative of quality of life (toxicity), $W_{0}$ were generated independently from uniform distributions between 0 and 2:
 
 \[
   W_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
@@ -404,7 +403,18 @@ Each patient's initial tumor mass and toxicity were generated independently from
   M_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
 \]
 
-At each month, the next month's tumor mass and toxicity were computed in response to dose for each patient as described above. The rate parameter for the survival distribution was updated for each patient from these next month's tumor masses and toxicities. Survival times were then randomly sampled from the relevant exponential distribution. If this survival time was less than 1 (i.e. the patient would not survive another month) the patient was said to have died before the next month, and the reward received from this patient was computed as the log of the total number of months the patient had survived (including the fraction of a month before their death). 
+At each month $t$, the next month's tumor mass, $M_{t + 1}$, and toxicity, $W_{t + 1}$, were computed in response to dose at month $t$, $D_{t}$, for each patient as described above. The rate parameter for the survival distribution, $\lambda_{t+1}(M_{t + 1}, W_{t + 1})$ was updated for each patient from these next month's tumor masses and toxicities. Survival times (from month $t$ onwards if treatment ceased at month $t$), $S_{t}$ were then randomly sampled from the relevant exponential distribution. If this survival time was less than 1 (i.e. the patient would not survive another month) the patient was said to have died before the next month, and the reward received was computed as the log of the total number of months the patient had survived (including the fraction of a month before their death). At the final month (when no further treatment would be administered) the survival time was simulated as just described and the log of the simulated survival time plus the number of months the patient already survived was taken as the reward.
+
+\[
+  R_{t + 1} = \begin{cases}
+    \log(S_{t} + \sum_{i = 0}^{t - 1} t) & \text{if } S_{t} \leq 1 \text{ or } t = 5 \\
+    0 & \text{otherwise}
+  \end{cases}
+\]
+
+\[
+  S_{t} \sim \text{Exp}(\exp(-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1}))
+\]
 
 
 
