@@ -56,6 +56,12 @@ form <- as.formula(form_base)
 form_int <- as.formula(formula)
 ```
 
+
+```{r}
+meow <- sim_test(Q = list(fart = Q_mars), int = int, noise = noise, noise_pred = noise_pred)
+```
+
+
 # Lasso
 ```{r}
 set.seed(20170128)

@@ -3,12 +3,61 @@ noise_pred
 noise
 int
 meow <- sim_test(Q, int = int, noise = noise, noise_pred = noise_pred)
-dat <- meow %>% filter(group == "optim")
+# dat <- meow %>% filter(group == "optim")
+# dat1 <- meow %>% filter(group == "1")
+# dat2 <- meow %>% filter(group == "best")
 
-dat[1, ] 
+d <- tibble(
+  x = c(1, 2, 3, NA, NA)
+)
 
-maxMonth(dat, int = int, noise_pred = noise_pred, nested = T) %>% View()
+d %>% mutate(
+  y = sum(x, na.rm = T)
+)
+
+(d <- meow %>% filter(ID == 18) %>% select(ID, surv_time))
+
+d %>% group_by(ID) %>% mutate(
+  sum(surv_time[1], na.rm = T)
+)
+
+sum(d$surv_time, na.rm = T)
+
+
 # 
+# dat <- meow %>% filter(group == "optim" | group == "best") %>%
+#   mutate(month = factor(month)) %>% 
+#   group_by(group, month) %>%
+#   mutate(median_dose = median(dose, na.rm = T)) %>% ungroup()
+# 
+# 
+# meow <- meow %>% ungroup() %>% 
+#   group_by(group) %>% mutate(mean_reward = mean(tot_reward))
+# 
+# ggplot(data = meow) +
+#   # coord_trans(y = "log") +
+#   # geom_boxplot(mapping = aes(
+#   #   x = group,
+#   #   y = tot_reward,
+#   #   color = group
+#   # ), notch = T) +
+#   geom_point(aes(
+#     x = group,
+#     y = mean_reward,
+#     color = group
+#   ), shape = 5) +
+#   labs(y = "log months of survival") 
+
+# setdiff(dat2 %>% select(ID, dose),
+#         dat1 %>% select(ID, dose))
+# 
+# 
+# , dat1)
+# 
+# dat[1, ] 
+# 
+# maxMonth(dat, int = int, noise_pred = noise_pred, nested = T) %>% View()
+
 # max_best(dat_long, int = int, noise_pred = noise_pred) %>% View()
 # 
 # best <- meow %>% filter(group == "best")

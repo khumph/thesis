@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Transition and Survival visualizations"
 output: html_document
 ---
 
@@ -16,6 +16,9 @@ source("results-functs.R")
 
 same starting conditions for all
 ```{r}
+int = T
+noise = F
+noise_pred = F
 N = 1000
 dat <- tibble(
   ID = 1:N,
@@ -32,8 +35,8 @@ dat <- Mnext(dat, int, noise_pred)
 dat <- Wnext(dat, int, noise_pred)
 dat <- dat %>% mutate(
   d_next = runif(nrow(.), min = 0, max = 1),
-  surv_time = rexp(nrow(.), lambda(M_next, W_next)),
-  expected_surv = 1/lambda(M_next, W_next),
+  surv_time = rexp(nrow(.), lambda(M_next, W_next, tumor_mass, toxicity, dose, c1 = 1.5, c2 = 1.5)),
+  expected_surv = 1/lambda(M_next, W_next, tumor_mass, toxicity, dose, c1 = 1.5, c2 = 1.5),
   dead = ifelse(dead,
                 T,
                 surv_time < 1)

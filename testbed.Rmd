@@ -1,12 +1,15 @@
 ---
 title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original"))`'
-output: html_document
+output: html_notebook
 params:
-  noise: !r F
-  int: !r F
+  noise: !r T
+  int: !r T
 ---
 
+NEW reward definition (with gaussian curves over doses which zero out M or W)
+
 `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction = half of people more sensitive to drug (toxicity increases 50% higher than usual with dose), half of people's tumor's reduce 50% more with dose", "Original"))`
+
 
 ```{r, eval=F}
 rm(list = ls())
@@ -37,17 +40,20 @@ dat_long <- sim(int = int, noise = noise, noise_pred = noise_pred)
 ```
 
 ```{r formula}
-if (int) {
-  nms <-
-    dat_long %>% select(tumor_mass, toxicity, dose, Qhat, starts_with("X")) %>% names()
-} else if (noise) {
-  nms <-
-    dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
+if (int & !noise) {
+  nms <- dat_long %>%
+    select(tumor_mass, toxicity, dose, Qhat, starts_with("X")) %>% names()
+} else if (noise & !int) {
+  nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
                         starts_with("Z"),
                         starts_with("V")) %>% names()
+} else if (noise & int) {
+  nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
+                             starts_with("X"),
+                             starts_with("Z"),
+                             starts_with("V")) %>% names()
 } else {
-  nms <-
-    dat_long %>% select(tumor_mass, toxicity, dose, Qhat) %>% names()
+  nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat) %>% names()
 }
 response <- "Qhat"
 treatment <- "dose"
@@ -88,14 +94,6 @@ if (!noise) {
 }
 ```
 
-```{r}
-if (!noise) {
-  set.seed(20170128)
-  sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
-}
-```
-
-
 # rpart
 ```{r}
 grid <- expand.grid(cp = 10^(seq(-4, -3, 1)))
@@ -115,11 +113,6 @@ Q <- Q_rpart
 maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
-```{r}
-set.seed(20170128)
-sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
-```
-
 # MARS
 ```{r}
 set.seed(20170128)
@@ -129,6 +122,7 @@ Q_mars <- Qlearn(
   treatment = "dose",
   mod_type = "caret",
   method = 'gcvEarth',
+  trControl = trainControl(method = "none"),
   tuneGrid = expand.grid(degree = 2)
 )
 Q <- Q_mars
@@ -146,23 +140,19 @@ dat <- map_df(1:10, ~ sim_test(Q, int = int, noise = noise, noise_pred = noise_p
 dat %>% plots_tab()
 ```
 
-```{r}
-set.seed(20170128)
-sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
-```
-
 
 # rf
 ```{r}
 if (noise) {
-  grid <- expand.grid(mtry = seq(from = 0, to = 10, by = 5))
-  splitvars <- c("dose", "tumor_mass", "toxicity")
-} else if (int) {
-  grid <- expand.grid(mtry = seq(from = 0, to = 2, by = 1))
-  splitvars <- c("dose", "tumor_mass", "toxicity")
+  grid <- expand.grid(mtry = 10)
+  # splitvars <- c("dose")
+  # tc <- trainControl(method = "none")
+# } else if (int) {
+#   grid <- expand.grid(mtry = 1)
+#   splitvars <- c("dose")
+#   tc <- trainControl(method = "none")
 } else {
-  grid <- expand.grid(mtry = 2)
-  splitvars <- c("dose")
+  grid <- expand.grid(mtry = 1)
 }
 
 Q_rf <- Qlearn(
@@ -172,10 +162,11 @@ Q_rf <- Qlearn(
   mod_type = "caret",
   method = 'ranger',
   tuneGrid = grid,
+  trControl = trainControl(method = "none"),
   min.node.size = 2,
   importance = "impurity",
-  num.trees = 100,
-  always.split.variables = splitvars
+  num.trees = 500,
+  always.split.variables = c("dose")
 )
 
 Q <- Q_rf
@@ -186,6 +177,12 @@ maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r}
+if (noise) {
+  Q_list = list(rpart = Q_rpart, mars = Q_mars, rf = Q_rf)
+} else {
+  Q_list = list(rcs = Q_rcs, Q_rpart, mars = Q_mars, rf = Q_rf)
+}
+
 set.seed(20170128)
-sim_test(Q, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
+sim_test(Q = Q_list, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
 ```

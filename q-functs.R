@@ -43,8 +43,8 @@ max_df <- function(data, model, form, mod_type,
     dat <- dat %>% group_by(ID) %>%
       mutate(
         max = max(preds),
-        best = ifelse(abs(preds - max) < 0.05, dose, NA),
-        best = quantile(best, probs = 1, na.rm = T, type = 3, names = F)
+        best = ifelse(near(preds, max), dose, NA),
+        best = quantile(best, probs = 0, na.rm = T, type = 3, names = F)
         # best = ifelse(tumor_mass > 0,
         #               quantile(best, probs = 1, na.rm = T, type = 3, names = F),
         #               quantile(best, probs = 0, na.rm = T, type = 3, names = F))

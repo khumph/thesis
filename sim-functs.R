@@ -46,15 +46,16 @@ Mnext <- function(dat, int, noise_pred, truth = F) {
 
 genIntNoise <- function(dat, int, noise) {
   if (int) {
-    dat %>%
+    dat <- dat %>%
       mutate(
         X1 = runif(nrow(.), min = 0, max = 1),
         X2 = runif(nrow(.), min = 0, max = 1),
         c1 = ifelse(X1 > 0.5, 1.5, 1),
         c2 = ifelse(X2 > 0.5, 1.5, 1)
       )
-  } else if (noise) {
-    dat %>%
+  }
+  if (noise) {
+    dat <- dat %>%
       mutate(
         Z1  = rnorm(nrow(.), mean = 1),
         Z2  = rnorm(nrow(.), mean = 1),
@@ -69,12 +70,14 @@ genIntNoise <- function(dat, int, noise) {
       ) %>% 
       bind_cols(
         replicate(90, rnorm(nrow(.))) %>% as.data.frame())
-  } else {
-    dat %>% mutate(
+  }
+  if (!int) {
+    dat <- dat %>% mutate(
       c1 = 1,
       c2 = 1
     )
   }
+  dat
 }
 
 
