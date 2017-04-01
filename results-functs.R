@@ -15,34 +15,26 @@ indPlot <- function(data, ex_ID) {
 
 maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred, seed = 1) {
   dat <- filter(Q$data, month == mon)
-  nested_df <- max_df(
+  set.seed(seed)
+  ids <- dat %>% filter(!is.na(M_next)) %>%
+    distinct(ID) %>% sample_n(n) %>% flatten_dbl()
+  dat <- dat %>% filter(ID %in% ids)
+  
+  df <- max_df(
     data = dat,
     model = Q$mod_list[[mon + 1]],
     form = Q$formula,
     mod_type = Q$mod_type,
     nested = T
-  ) %>% ungroup()
+  ) %>% ungroup() %>%
+    mutate(ID = factor(ID))
   
-  nested_df_best <-
+  df_best <-
     dat %>% mutate(reward = Qhat) %>% 
-    maxMonth(int, noise_pred, nested = T)
+    maxMonth(int, noise_pred, nested = T) %>%
+    mutate(ID = factor(ID))
   
-  set.seed(seed)
-  ids <- nested_df %>% distinct(ID) %>% sample_n(n) %>% flatten_dbl()
-  df <- filter(nested_df, ID %in% ids) %>% mutate(ID = factor(ID))
-  df_best <- filter(nested_df_best, ID %in% ids) %>% mutate(ID = factor(ID))
-  
-  onePlot <-
-    ggplot() +
-    geom_line(data = filter(nested_df, ID == ex_ID),
-              aes(x = dose, y = preds)) +
-    geom_line(data = filter(nested_df_best, ID == ex_ID),
-              aes(x = dose, y = reward),
-              linetype = 2) +
-    labs(caption = "dotted line is true response")
-  
-  
-  manyPlot <- ggplot(data = df) +
+  ggplot(data = df) +
     geom_line(mapping = aes(x = dose, y = preds, color = ID)) +
     geom_line(
       data = df_best,
@@ -50,8 +42,6 @@ maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred, seed = 1) {
       linetype = 2
     ) +
     labs(caption = "dotted lines are true values")
-  
-  list(onePlot, manyPlot, ex_ID, ids, df_best, df)
 }
 
 plots_tab <- function(dat_test_long) {
