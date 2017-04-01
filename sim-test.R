@@ -3,8 +3,8 @@
 maxMonth <- function(dat, int, noise_pred, nested = F, pred = F) {
   dat <- ungroup(dat)
   if (!pred) {
-    dat <- filter(dat, !is.na(M_next))
     deads <- filter(dat, is.na(M_next)) %>% mutate(dose = NA)
+    dat <- filter(dat, !is.na(M_next))
   }
   dat <- dat %>% 
     mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.005))) %>%
@@ -21,8 +21,8 @@ maxMonth <- function(dat, int, noise_pred, nested = F, pred = F) {
   if (!nested) {
     dat <- dat %>% group_by(ID) %>% mutate(
       bestR = max(reward),
-      bestD = ifelse(abs(reward - bestR) < 0.05, dose, NA),
-      best = quantile(bestD, probs = 1, na.rm = T, type = 3, names = F)
+      bestD = ifelse(near(reward, bestR), dose, NA),
+      best = quantile(bestD, probs = 0, na.rm = T, type = 3, names = F)
       # best = ifelse(tumor_mass > 0,
       #               quantile(bestD, probs = 1, na.rm = T, type = 3, names = F),
       #               quantile(bestD, probs = 0, na.rm = T, type = 3, names = F))
@@ -61,34 +61,43 @@ max_best <- function(data, int, noise_pred) {
 # test simulation -----------------------------------------------------
 
 simMonthT <- function(dat, Q, int, noise_pred, pred = F) {
-  if (!pred) {
-    dat_opt <- filter(dat, !is.na(M_next), group == "optim") 
-  } else {
-    dat_opt <- filter(dat, group == "optim") 
-  }
-  optimD <- max_df(
-    data = dat_opt,
-    model = Q$mod_list[[dat$month[1] + 1]],
-    form = Q$formula,
-    mod_type = Q$mod_type,
-    pred = pred
-  )
-  
-  bestDopt <- maxMonth(optimD, int = int, noise_pred = noise_pred, pred = pred)$dose
-  optimD <- optimD %>% mutate(best_dose = bestDopt)
-  
-  if (!pred) {
-    deads <- filter(dat, is.na(M_next), group == "optim") %>% mutate(dose = NA)
-    optimD <- bind_rows(optimD, deads) %>% arrange(ID)
-  }
+  out <- dat %>% filter(group != "best",
+                        !str_detect(group, paste(names(Q), collapse = "|"))) %>%
+    mutate(dose = ifelse(group == "1on1off",
+                         ifelse(dat$month[1] %% 2 == 1, 0, 1),
+                         dose))
   
   bestD <- maxMonth(filter(dat, group == "best"),
                     int = int, noise_pred = noise_pred, pred = pred)
-  dat <- dat %>% filter(group != "best", group != "optim") %>%
-    mutate(dose = ifelse(group == "1on1off",
-                         ifelse(dat$month[1] %% 2 == 1, 0, 1),
-                         dose)) %>%
-    bind_rows(optimD, bestD) %>% arrange(ID)
+  
+  out <- bind_rows(out, bestD)
+
+  for (i in seq_along(Q)) {
+    if (!pred) {
+      dat_opt <- filter(dat, !is.na(M_next), str_detect(group, names(Q)[i])) 
+    } else {
+      dat_opt <- filter(dat, str_detect(group, names(Q)[i])) 
+    }
+    
+    optimD <- max_df(
+      data = dat_opt,
+      model = Q[[i]]$mod_list[[dat$month[1] + 1]],
+      form = Q[[i]]$formula,
+      mod_type = Q[[i]]$mod_type,
+      pred = pred
+    )
+    bestDopt <- maxMonth(optimD, int = int, noise_pred = noise_pred, pred = pred)$dose
+    optimD <- optimD %>% mutate(best_dose = bestDopt)
+    
+    if (!pred) {
+      deads <- filter(dat, is.na(M_next), str_detect(group, names(Q)[i])) %>%
+        mutate(dose = NA)
+      optimD <- bind_rows(optimD, deads) %>% arrange(ID)
+    }
+    
+    out <- out %>% bind_rows(optimD) %>% arrange(ID)
+  }
+  dat <- out 
   dat <- Mnext(dat, int, noise_pred)
   dat <- Wnext(dat, int, noise_pred)
   dat <- lamNext(dat, int, noise_pred)
@@ -100,7 +109,8 @@ simMonthT <- function(dat, Q, int, noise_pred, pred = F) {
     )
 }
 
-sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, ngroups = 13, Ttot = 6) {
+sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6) {
+  ngroups <- 12 + length(Q)
   M0 <- runif(npergroup, min = 0, max = 2)
   W0 <- runif(npergroup, min = 0, max = 2)
   
@@ -116,32 +126,16 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, ngroups = 13, T
   
   D1 <- rep(seq(from = 0.1, to = 1, by = 0.1), each = npergroup)
   
-  # D0 <-
-  #   max_df(
-  #     data = dat,
-  #     model = Q$mod_list[[1]],
-  #     form = Q$formula,
-  #     mod_type = Q$mod_type,
-  #     pred = T
-  #   )$best
-  
-  # Dbest <- maxMonth(dat, int = int, noise_pred = noise_pred, pred = T)$dose
-  # 
-  # D1on1off <- rep(1, npergroup)
-  
-  groups <- c(
-    seq(from = 0.1, to = 1, by = 0.1) %>% as.character(),
+  groups <- c(seq(from = 0.1, to = 1, by = 0.1) %>% as.character(),
     "best",
-    "optim", "1on1off")
+    names(Q), "1on1off")
   
   dat <- dat[rep(seq_len(nrow(dat)), ngroups), ] %>% 
     mutate(
       ID = rep(1:(npergroup * ngroups)),
       group = rep(groups, each = npergroup),
-      # dose = c(D1, Dbest, D0, D1on1off),
       dose = c(D1, rep(NA, npergroup * (ngroups - 10))),
       best_dose = NA
-      # best_dose = ifelse(group == "optim", Dbest, NA)
     )
   
   d <- simMonthT(dat, Q, int = int, noise_pred = noise_pred, pred = T) %>%
