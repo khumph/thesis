@@ -238,9 +238,9 @@ The full recursive form is then
 
 The optimal treatment at each stage is then the treatment which maximizes the corresponding stage's Q-function:
 
-\[
+\begin{equation}
   a^{opt}_{ik} = \argmax_{a_{ik}} Q_{k}(\bm{a}_{ik}, \bm{h}_{ik})
-\]
+\end{equation}
 
 For every participant $i = 1, \ldots, n$ at each stage $k = 1, \ldots, K$
 
@@ -252,8 +252,10 @@ For every participant $i = 1, \ldots, n$ at each stage $k = 1, \ldots, K$
 
 % section q_learning (end)
 
-\section{Regression Trees} % (fold)
+\section{Classification and Regression Trees (CART)} % (fold)
 \label{sec:rpart}
+
+Since in reinforcement learning, the rewards are continuous we consider only regression tree version of the CART procedure.
 
 A decision tree in computer science is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statment is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node).
 
@@ -277,9 +279,9 @@ Our overarching goal in tree construction is to create nodes as homogeneous in t
 
 We use the the classification and regression tree (CART) approach of \cite{CART}. We begin with all of the data (the \emph{root node}) and evaluate the sum of squared errors that result from splitting each unique value of each covariate:
 
-\[
+\begin{equation}
   SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2 
-\] 
+\end{equation} 
 
 Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ and $\bar{y}_{R}$ is the average outcome in the right node, $\text{node}_{R}$. We then choose the split that minimizes the sum of squares. Then the process is repeated for both of the resulting left and right nodes. This feature of recursive splitting, or partitioning, of the data is why this method is also known as \emph{recursive partitioning}. Typically we continue splitting in this manner until the number of observations in a node falls below a threshold (e.g. 20 observations).
 
@@ -296,9 +298,97 @@ Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ a
 \section{Multivariate adaptive regression splines} % (fold)
 \label{sec:mars}
 
-MARS creates surrogate features insetad of original predictors
+Multivariate adaptive regression splines, or MARS (Friedman 1991) can be viewed as a generalization of forward stepwise selection regression methods that incorporates variable selection and automatic modelling of interactions. MARS accomplishes this through modelling covariates as piecewise linear basis functions and their products.
+These piecewise linear basis functions are of the form 
+%
+\begin{equation} \label{eq:bases}
+  (x - t)_{+} \text{ and } (t - x)_{+}
+\end{equation} where
+%
+\begin{equation}
+  (Z)_{+} = \max(Z, 0) = \begin{cases}
+  Z, & \text{if } Z > 0 \\
+  0, & \text{otherwise}
+  \end{cases}
+\end{equation}
+The set in equtation \ref{eq:bases} sometimes called a \emph{reflected pair} because the values they take on are symmetric (mirrored) across $t$. Each function in the pair is called a \emph{hinge} function, and can alternatively be denoted $h(x - t)$ and $h(t - x)$ respectively. $t$ is called a $knot$ (where the two hinges join).
 
-two contrasted versions of a predictor to enter model
+\subsection{Forward pass} % (fold)
+\label{sub:forward_pass}
+
+As in forward stepwise linear regression methods we begin with only a constant:
+\begin{equation}
+  f(X) = \beta_{0}
+\end{equation}
+Then, we consider adding a pair of piecewise linear functions made by splitting some covariate $X_{j}$ at a knot placed at one of the observed values of $X_{j}$, $x_{ij}$:
+\begin{equation}
+\beta_{1} (X_{j} - t)_{+} + \beta_{2}(t - X_{j})_{+}, \ i = 1, 2, \ldots, n; \ j = 1, 2, \ldots, p.
+\end{equation}
+To determine which predictor split at which knot to add, each of the $j$ predictors, split at each observed value $x_{ij}$ is evaluated in turn by adding each pair to the model and calculating the training error (e.g. the root-mean-square error--RMSE). The covariate and split point that cause the greatest reduction in error are added to the model.
+
+Henceforth we consider the addition of a pair piecewise linear functions with general form
+\begin{equation} \label{eq:gen-pairs-add}
+  \beta_{M + 1} h_{\ell}(X) \cdot (X_{j} - t)_{+} + \beta_{M + 2} h_{\ell}(X) \cdot (t - X_{j})_{+}, \ h_{\ell}(X) \in \mathcal{M}, \ t \in \{x_{ij}\}.
+\end{equation}
+Where $\mathcal{M}$ is the set of hinge functions already in the model. Note that this equation also holds for the first step, in which case $h_{\ell}(X) = h_{0}(X) = 1$. As before, we add the pair that causes the greatest reduction in training error. To simplify the set of models considered, we may provide limit the degree, or order of interactions we are interested in considering. For example with degree = 1, we only consider an additive model (all $h_{\ell}(X) = h_{0}(X) = 1$), with degree = 2, we consider a maximum of two-way interactions, and so on.
+Pairs are added until a user-defined limit on the number of terms in the model is reached, or the reduction in training error is smaller than some predefined threshold.
+
+The resulting MARS regression function is of the form
+\begin{equation}
+  f(X) = \beta_{0} + \sum_{m = 1}^{M} \beta_{m} h_{m}(X),
+\end{equation}
+where $M$ is the number of terms in the model, and $h_{m}(X)$ is a hinge function like one of those in equation \ref{eq:bases} or a product of such functions.
+
+% subsection forward_pass (end)
+
+\subsection{Backward pass} % (fold)
+\label{sub:backward_pass}
+
+Usually, the function produced by the forward procedure is too large and overfits the data, so we use a pruning (backward deletion) procedure. For each term $h_{m}(X)$ in the model, we estimate how much the error would increase by removing it. Once we've removed one term, we repeat the procedure and delete another term. At each stage of this procedure we obtain $\hat{f}_{\lambda}(X)$, the best model of size $\lambda$ (best model with $\lambda$ terms). Note that we do not proceed backwards along the path through which the covariates were added (indeed we add pairs of hinge functions on at a time, but remove them one by one). 
+
+To determine the optimal number of terms, $\lambda$, we can use a resampling technique (e.g. cross validation) but for computationally efficiency, we use generalized cross validation (GCV).
+
+% subsection backward_pass (end)
+
+\subsection{Generalized cross validation} % (fold)
+\label{sub:generalized_cross_validation}
+
+Generalized cross validation is a computational shortcut for linear regression models, which produces an error that approximates the leave-one-out cross-validated error. For MARS, the generalized cross-validation criterion is defined as
+\begin{equation}
+  GCV(\lambda) = 
+    \frac{
+      \sum_{i = 1}^{N}(y_{i} - \hat{f}_{\lambda}(x_{i}))^2
+    }{
+      (1 - M(\lambda)/N)^2
+    }
+\end{equation}
+where $M(\lambda)$ is the effective number of parameters in the model, accounting for both the actual parameters and parameters used in selecting knot positions. Simulations and mathematical results suggest that $M(\lambda)$ should be set to $r + 3K$, the number of terms plus three times the number of knots, or to $r + 2K$ when the model is restricted to be additive (degree = 1).
+
+% subsection generalized_cross_validation (end)
+
+\subsection{Relationship to CART} % (fold)
+\label{sub:relationship_to_cart}
+
+MARS can also be viewed as a modification of CART to improve performance in the regression setting.
+
+% subsection relationship_to_cart (end)
+
+\subsection{Advantages of MARS} % (fold)
+\label{sub:advantages_of_mars}
+
+MARS has many of the same advantages as CART
+
+Requires very little pre-processing of data
+
+Models are interpretable
+
+Performs variable selection and models interactions automatically
+
+% subsection advantages_of_mars (end)
+
+
+
+
 
 % section mars (end)
 
@@ -331,15 +421,15 @@ The goals of the patient model were to capture:
 
 Change in patient quality of life was modelled as a function of tumor mass and dosage of treatment, with doses above 0.5 decreasing quality of life and doses below 0.5 allowing health to increase due to fewer toxic effects from treatment:
 
-\[
+\begin{equation}
 W_{t*} = 0.1 M_{t-1} + 1.2 (D_{t-1} - 0.5) + W_{t - 1}
-\]
-\[
+\end{equation}
+\begin{equation}
 W_{t} = \begin{cases}
   W_{t*} &\text{if } W_{t*} > 0 \\
   0 &\text{if } W_{t*} \leq 0
 \end{cases}
-\]
+\end{equation}
 
 Where $W_{t}$ is the negative of the patient quality of life (toxicity) at month $t$, which is bounded at 0 (no toxic effects from treatment),
 $M_{t-1}$ is the tumor mass the previous month,
@@ -348,15 +438,15 @@ $W_{t}$ is the negative of the patient quality of life (toxicity) at the previou
 
 Tumor mass change was modelled as a function of patient health and dosage, with doses above 0.5 decreasing tumor mass and doses below 0.5 causing tumor mass to increase:
 
-\[
+\begin{equation}
 M_{t*} = [0.15 W_{t-1} - 1.2 (D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
-\]
-\[
+\end{equation}
+\begin{equation}
 M_{t} = \begin{cases}
   M_{t*} &\text{if } M_{t*} > 0 \\
   0 &\text{if } M_{t*} \leq 0
 \end{cases}
-\]
+\end{equation}
 
 Where $M_{t}$ is the tumor mass at month $t$, which is bounded at 0 since mass is strictly positive,
 $W_{t-1}$ is patient toxicity at month $t - 1$,
@@ -370,9 +460,9 @@ $I(M_{t-1} > 0)$ indicates that if a person is cured (previous tumor mass = 0), 
 \label{ssub:survival_model}
 
 Survival times (in months) were generated from an exponential distribution with a rate parameter modeled as a function of the tumor mass and toxicity at time $t$:
-\[
+\begin{equation}
   \lambda_{t}(M_{t+1}, W_{t+1}) = \exp(-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1}).
-\]
+\end{equation}
 This formulation indicates that we take tumor mass to be more important in survival than toxicity. The interaction between tumor mass and toxicity reflects the belief that higher levels of both tumor mass and toxicity lead to a greater reduction in survival than either alone.
 
 % subsubsection survival_model (end)
@@ -394,31 +484,31 @@ Rewards were defined as the log of the observed survival time.
 \label{sub:basic_setup}
 
 To generate training data, I began by simulating 1000 patients, each receiving at total of six months of treatment ($t = 0, 1, \ldots, 5$), the doses of which were chosen from a uniform distribution over 0 and 1 at the beginning of each month:
-\[
+\begin{equation}
   D_{t} \overset{iid}{\sim} \text{Unif}(0, 1), \quad t = 0, 1, \ldots, 5
-\]
+\end{equation}
 
 Each patient's initial tumor mass, $M_{0}$ and negative of quality of life (toxicity), $W_{0}$ were generated independently from uniform distributions between 0 and 2:
 
-\[
+\begin{equation}
   W_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
-\]
-\[
+\end{equation}
+\begin{equation}
   M_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
-\]
+\end{equation}
 
 At each month $t$, the next month's tumor mass, $M_{t + 1}$, and toxicity, $W_{t + 1}$, were computed in response to dose at month $t$, $D_{t}$, for each patient as described above. The rate parameter for the survival distribution, $\lambda_{t+1}(M_{t + 1}, W_{t + 1})$, was updated for each patient from these next month's tumor masses and toxicities. Survival times, $S_{t}$ were then randomly sampled from the exponential distribution with the just computed rate parameter:
-\[
+\begin{equation}
   S_{t} \sim \text{Exp}(\exp(-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1}))
-\]
+\end{equation}
 
 If $S_{t} \leq 1$ (i.e. the patient would not survive past another month), the patient was said to have died before the next month, and the reward received was computed as the log of the total number of months the patient had survived (including the fraction of a month before their death). At the final month $t = 5$, the rewards were computed as $\log(S_{5} + 5)$, the log of the simulated survival time after the final treatment plus the the number of months already elapsed. 
-\[
+\begin{equation}
   R_{t + 1} = \begin{cases}
     \log(S_{t} + \sum_{i = 0}^{t} i) & \text{if } S_{t} \leq 1 \text{ or } t = 5 \\
     0 & \text{otherwise}
   \end{cases}
-\]
+\end{equation}
 
 % subsection basic_setup (end)
 
@@ -427,27 +517,27 @@ If $S_{t} \leq 1$ (i.e. the patient would not survive past another month), the p
 \label{sub:subgroups_interaction}
 
 In addition to the basic scenario just described, two additional baseline covariates, $X_{1}$ and $X_{2}$ were simulated from uniform distributions over 0, 1:
-\[
+\begin{equation}
   X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1) 
-\]
+\end{equation}
 Using the values of these covariates, four approximately equally sized subgroups were constructed:
 \begin{enumerate}
   \item $X_{1} < 0.5$ \& $X_{2} < 0.5$: patients simulated identically to those in the basic scenario.
   \item $X_{1} > 0.5$ \& $X_{2} < 0.5$: these patients are 50\% more sensitive to the effects of the drug:
-   \[
+   \begin{equation}
    W'_{t*} = 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1}
-   \]
+   \end{equation}
    \item $X_{1} < 0.5$ \& $X_{2} > 0.5$: the treatment is 50\% more effective for these patients:
-\[
+\begin{equation}
 M'_{t*} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
-\]
+\end{equation}
    \item $X_{1} < 0.5$ \& $X_{2} > 0.5$: the drug is 50\% more effective for these patients, but they are also 50\% more sensitive to its effects:
-   \[
+   \begin{equation}
    W'_{t*} = 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1}
-   \]
-   \[
+   \end{equation}
+   \begin{equation}
    M'_{t*} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
-   \]
+   \end{equation}
 \end{enumerate}
 
 % subsection subgroups_interaction (end)
@@ -457,23 +547,23 @@ M'_{t*} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
 
 The basic scenario was also repeated in the presence of 100 noise variables:
 $Z = (Z_{1}, \ldots, Z_{10})$, and $V = (V_{1}, \ldots, V_{90})$ and had distributions as follows:
-\[
+\begin{equation}
   Z_{1}, \ldots, Z_{5} \overset{iid}{\sim} N(1, 1)
-\]
-\[
+\end{equation}
+\begin{equation}
   Z_{6}, \ldots, Z_{10} \overset{iid}{\sim} N(-1, 1)
-\]
-\[
+\end{equation}
+\begin{equation}
   V_{1}, \ldots, V_{90} \overset{iid}{\sim} N(0, 1)
-\]
+\end{equation}
 That is, $Z_{1}, \ldots, Z_{5}$ were sampled independently from a normal distribution with mean 1 and standard deviation 1, $Z_{6}, \ldots, Z_{10}$ were sampled independently from a normal distribution with mean -1 and standard deviation 1, and $V_{1}, \ldots, V_{90}$ were sampled independently from a standard normal distribution.
 
 In the first case (pure noise), the above variables were made available to the models, but had no effect on $W_{t}, M_{t}$, or $S_{t}$.
 
 In the second case (predictive noise), the $Z$ variables had a small influence on the rate parameter in the survival distribution:
-\[
-  \lambda'_{t}(M_{t+1}, W_{t+1}) = \exp(-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1}) + 0.05 \sum_{i = 1}^{10} Z_{i}.
-\]
+\begin{equation}
+  \lambda'_{t}(M_{t+1}, W_{t+1}) = \exp\del{-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1} + 0.05 \sum_{i = 1}^{10} Z_{i}}.
+\end{equation}
 but did not change the optimal dose, as this modification only shifts the expected survival up or down and does not change the maximum over a range of possible doses.
 
 % subsubsection noise_variables (end)
@@ -487,42 +577,42 @@ The interaction and noise scenarios were also combined together, to create the s
 
 
 
-% \[
+% \begin{equation}
 % \hat{Q}_{t} = R_{t} + \max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
-% \]
+% \end{equation}
 
 % section simulation (end)
 
 \end{document}
 
-% \[
+% \begin{equation}
 % R_{t} = R_{t, 1} + R_{t, 2} + R_{t, 3}
-% \]
+% \end{equation}
 %
 % First, a large negative reward of -60 was given if the patient died, since a primary endpoint is typically overall survival:
 %
-% \[
+% \begin{equation}
 % R_{t, 1}(M_{t-1}, H_{t-1}, D_{t-1}) =
 % \begin{cases}
 %   -60 & \text{patient died} \\
 %   0 & \text{otherwise}
 % \end{cases}
-% \]
+% \end{equation}
 %
 % Second, a small negative reward of -5 was given for an decrease in patient health above 0.5 and a small positive reward of 5 if patient health increased by more than 0.5:
 %
-% \[
+% \begin{equation}
 % R_{t, 2}(M_{t-1}, H_{t-1}, D_{t-1}) =
 % \begin{cases}
 %   5 & \dot{H} > 0.5 \\
 %   0 & -0.5 \leq \dot{H} \leq 0.5 \\
 %   -5 & \dot{H} < -0.5
 % \end{cases}
-% \]
+% \end{equation}
 %
 % Third, similar to the rewards for toxicity, a small negative reward of -5 was given for an increase in tumor mass above 0.5, no reward if the tumor mass did not increase or decrease by more than 0.5, a small positive reward of 5 if the tumor mass decreased by more than 0.5, and a moderate positive reward of 15 was given if the patient was cured (the resulting tumor mass was less than or equal to zero):
 %
-% \[
+% \begin{equation}
 % R_{t, 3}(M_{t-1}, H_{t-1}, D_{t-1}) =
 % \begin{cases}
 %   -5 & \dot{M} > 0.5 \\
@@ -530,27 +620,27 @@ The interaction and noise scenarios were also combined together, to create the s
 %   5 & \dot{M} < -0.5 \\
 %   15 & \dot{M} + M \leq 0
 % \end{cases}
-% \]
+% \end{equation}
 %
 % 
 %
 % \subsection{death} % (fold)
 % \label{sub:death}
 %
-% \[
+% \begin{equation}
 % \lambda(t) = -7 + H_{t} + M_{t}
-% \]
+% \end{equation}
 %
-% \[
+% \begin{equation}
 % \Delta F(t) = e^{-\lambda}
-% \]
+% \end{equation}
 %
-% \[
+% \begin{equation}
 % p = 1 - \Delta F
-% \]
+% \end{equation}
 %
-% \[
+% \begin{equation}
 % \text{patient died} \sim B(p)
-% \]
+% \end{equation}
 %
 % % subsection death (end)
