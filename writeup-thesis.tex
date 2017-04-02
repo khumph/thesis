@@ -369,20 +369,14 @@ where $M(\lambda)$ is the effective number of parameters in the model, accountin
 \subsection{Relationship to CART} % (fold)
 \label{sub:relationship_to_cart}
 
-MARS can also be viewed as a modification of CART to improve performance in the regression setting.
+MARS can also be viewed as a modification of CART to improve performance in the regression setting. If we modified the MARS procedure to consider reflected pairs of step functions of the form $I(x - t > 0)$ and $I(t - x > 0)$ instead of the piecewise linear basis functions and replaced terms involved in interactions by the interaction term (making the term unavailable for further interactions), then the forward pass in MARS is equivalent to the CART tree-growing algorithm. In this case, the multiplication of a step function by a pair of reflected step functions is equivalent to splitting a node.
 
 % subsection relationship_to_cart (end)
 
 \subsection{Advantages of MARS} % (fold)
 \label{sub:advantages_of_mars}
 
-MARS has many of the same advantages as CART
-
-Requires very little pre-processing of data
-
-Models are interpretable
-
-Performs variable selection and models interactions automatically
+MARS has many of the same advantages as CART, in that it requires very litte pre-processing of data, it performs variable selection and models interactions as a part of the model building process, and the models produced are quite interpretable. This last point holds even for models with interactions since products of hinge functions are only nonzero when both hinge functions involved in the product are nonzero, allowing the term to operate only over a relatively small subspace of the two covariates. 
 
 % subsection advantages_of_mars (end)
 
