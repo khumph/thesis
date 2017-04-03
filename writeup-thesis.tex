@@ -30,6 +30,7 @@
 
 \usepackage{amsmath}
 \usepackage{commath}
+\usepackage[]{algorithm2e}
 
 \DeclareMathOperator*{\argmax}{argmax}
 
@@ -46,6 +47,10 @@
 \begin{document}
 
 \maketitle
+
+\tableofcontents
+\listoffigures
+\listoftables
 
 \section{Introduction}
 
@@ -159,17 +164,37 @@ a \emph{dynamic treatment regime}\footnote{ dynamic treatment regimes are also k
 
 % similarities and differences from other types of learning}
 
-Reinforcement learning is a branch of machine learning distinct from the other two main branches, supervised and unsupervised learning. As we will see however, techniques from both supervised and unsupervised learning can be useful in reinforcement learning problems.
+Reinforcement learning is a branch of machine learning distinct from the other two main branches, supervised and unsupervised learning\footnote{As we will see however, techniques from both supervised and unsupervised learning can be useful in reinforcement learning problems.}. A main distinguishing feature of reinforcement learning is the emphasis on learning from experimentation, often over repeated stages.
+
+\subsection{Basic process} % (fold)
+\label{sub:basic_process}
+
+The basic process of reinforcement learning involves a learning agent trying a sequence of actions, recording the consequences (rewards) of those actions, estimating the relationship between the actions and their consequences, and choosing a next action that leads to the best consequences (the action that maximizes the reward, so far as the agent can tell). This is where the ``reinforcement'' in reinforcement learning comes from: actions with favorable consequences (large rewards) tend to be repeated.
+
+rewards
+
+states, etc 
+
+% subsection basic_process (end)
+
+
+
+\subsection{Relationship to supervised and unsupervised learning} % (fold)
+\label{sub:relationship_to_supervise_and_unsupervised_learning}
 
 Supervised learning involves a learning agent being given a list of example actions to taken in given situations, with the goal being that the agent then extrapolates the correct example behavior to new situations. In reinforcement learning problems, agents do not receive direct instruction regarding which action they should take, instead they must learn which actions are best by trying them out. 
 
-Unsupervised learning involves finding hidden structure in collections of example actions and situations where the correct action is unknown. The goal in reinforcement learning problems is to maximize a reward signal (though finding hidden structure may be useful to this end).
+Unsupervised learning involves finding hidden structure in collections of example actions and situations where the correct action is unknown. This goal is distinct from the goal in reinforcement learning problems, which is to maximize a reward signal (though finding hidden structure may be useful to this end).
 
 Unlike other machine learning problems, reinforcement learning problems are closed-loop: the actions of the agent affect the opportunities open to the agent later on. Further, the consequences of actions in reinforcement learning problems can manifest not only in the next opportunity, but in all subsequent opportunities.
 
+% subsection relationship_to_supervise_and_unsupervised_learning (end)
+
+
+
 % basic process of RL
 
-The basic process of reinforcement learning involves a learning agent trying a sequence of actions, recording the consequences (rewards) of those actions, estimating the relationship between the actions and their consequences, and choosing a next action that leads to the best consequences (the action that maximizes the reward, so far as the agent can tell). This is where the ``reinforcement'' in reinforcement learning comes from: actions with favorable consequences (large rewards) tend to be repeated.
+
 
 % elements of RL problems?
 
@@ -231,6 +256,21 @@ The full recursive form is then
 
 % backwards induction
 
+\begin{algorithm}[H]
+  initialize $Q_{K + 1}^{opt}$ arbitrarily \\
+  $Q_{K + 1}^{opt} \gets 0$ \\
+ \For{$k \in K, \ldots, 1$}{
+  read current\;
+  \eIf{understand}{
+   go to next section\;
+   current section becomes this one\;
+   }{
+   go back to the beginning of current section\;
+  }
+ }
+ \caption{Q-learning algorithm}
+\end{algorithm}
+
 % subsubsection estimating_q_functions (end)
 
 \subsection{Estimating optimal dynamic treatment regime} % (fold)
@@ -255,9 +295,9 @@ For every participant $i = 1, \ldots, n$ at each stage $k = 1, \ldots, K$
 \section{Classification and Regression Trees (CART)} % (fold)
 \label{sec:rpart}
 
-Since in reinforcement learning, the rewards are continuous we consider only regression tree version of the CART procedure.
+Since in reinforcement learning rewards are defined to be continuous we consider only the regression tree version of the CART procedure.
 
-A decision tree in computer science is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statment is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node).
+A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statment is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node).
 
 For example, a simple regression tree could be constructed with the following rules:
 \begin{verbatim}
@@ -267,13 +307,20 @@ if Covariate A <= 2 then
 else Outcome = 2.2
 \end{verbatim}
 
+Decision trees are depicted upside down compared to trees in nature:
+
+<picture of example>
+
 Example adapted from \cite{kuhn}
 
-Our overarching goal in tree construction is to create nodes as homogeneous in the outcome as possible. To achieve this we must determine
+\subsection{Tree building} % (fold)
+\label{sub:tree_building}
+
+Our overarching goal in tree construction is to create nodes as homogeneous in the outcome as possible. This is because we will predict a single outcome for all observations in the terminal nodes, meaning nodes heterogeneous in the outcome will yield poor predictions. To achieve this we must determine
 
 \begin{enumerate}
   \item What covariate to use to define a split and what value of the covariate to split on
-  \item When to stop splitting (tree \texttt{depth} or complexity)
+  \item When to stop splitting
   \item How to assign an outcome to each terminal node
 \end{enumerate}
 
@@ -285,11 +332,50 @@ We use the the classification and regression tree (CART) approach of \cite{CART}
 
 Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ and $\bar{y}_{R}$ is the average outcome in the right node, $\text{node}_{R}$. We then choose the split that minimizes the sum of squares. Then the process is repeated for both of the resulting left and right nodes. This feature of recursive splitting, or partitioning, of the data is why this method is also known as \emph{recursive partitioning}. Typically we continue splitting in this manner until the number of observations in a node falls below a threshold (e.g. 20 observations).
 
+\begin{algorithm}[H]
+\While{stopping criteria not met}{
+\For{each terminal node, $R_{m}$}{
+ \For{each $X_{j} \in X$}{
+  \For{each possible split of $X_{j}$}{
+    compute change in SSE resulting from split
+  }
+ }
+ \If{reduction in SSE from split largest}{
+  split node
+  }{
+ }
+ add newly created nodes to set of terminal nodes
+ }
+}
+ \caption{CART Tree building algorithm}
+\end{algorithm}
 
+% subsection tree_building (end)
 
+\subsection{Tree pruning} % (fold)
+\label{sub:tree_pruning}
 
-% More formally the regression tree building procedure is
+The large tree resulting from the tree building/growing phase, $T_{0}$, typically overfits the data. To combat this, we prune back $T_{0}$ using a technique called cost complexity pruning. 
 
+The goal in cost-complexity pruning is to find, for each value of a complexity parameter $\alpha \geq 0$, the subtree $T \subset T_{0}$ created by collapsing any of $T_{0}$'s internal (non-terminal) nodes, which minimizes the cost complexity criterion:
+%
+\begin{equation}
+    C_{\alpha}(T) = \sum_{m = 1}^{\abs{T}} N_{m} Q_{m}(T) + \alpha \abs{T}
+\end{equation}
+where
+%
+\begin{align}
+  N_{m} &= \# \{x_{i} \in R_{m}\} \\
+  \hat{c}_{m} &= \frac{1}{N_{m}} \sum_{x_{i} \in R_{m}} y_{i} \\
+  Q_{m}(T) &= \frac{1}{N_{m}} \sum_{x_{i} \in R_{m}} (y_{i} - \hat{c}_{m})^2
+\end{align}
+and $\abs{T}$ is the number of terminal nodes in subtree $T$. One can show that there is a unique subtree $T_{\alpha}$ that minimizes $C_{\alpha}(T)$ for each given $\alpha$.
+
+In order to find $T_{\alpha}$ for each $\alpha$, we use weakest link pruning. As the name implies, in weakest link pruning, we test out collapsing each internal node, choosing to actually collapse the one with that produces the smallest increase in $\sum_{m = 1}^{\abs{T}} N_{m} Q_{m}(T)$ per node (the weakest link). We continue in this fashion until we've returned to the root node. This sequence contains each $T_{\alpha}$. 
+
+With the $T_{\alpha}$s in hand, we choose the $\alpha$ (and hence $T_{\alpha}$) that minimizes the sum of square errors produced using cross validation. Alternatively, we can use choose the largest $\alpha$ (smallest $T_{\alpha}$) which is within one standard error of the minimum cross validated error.
+
+% subsubsection tree_pruning (end)
 
 
 
@@ -298,8 +384,7 @@ Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ a
 \section{Multivariate adaptive regression splines} % (fold)
 \label{sec:mars}
 
-Multivariate adaptive regression splines, or MARS (Friedman 1991) can be viewed as a generalization of forward stepwise selection regression methods that incorporates variable selection and automatic modelling of interactions. MARS accomplishes this through modelling covariates as piecewise linear basis functions and their products.
-These piecewise linear basis functions are of the form 
+Multivariate adaptive regression splines, or MARS (Friedman 1991) can be viewed as a generalization of stepwise selection regression methods that incorporates variable selection and automatic modelling of interactions. MARS accomplishes this through modelling covariates as piecewise linear basis functions and their products. These piecewise linear basis functions are of the form 
 %
 \begin{equation} \label{eq:bases}
   (x - t)_{+} \text{ and } (t - x)_{+}
@@ -311,7 +396,7 @@ These piecewise linear basis functions are of the form
   0, & \text{otherwise}
   \end{cases}
 \end{equation}
-The set in equtation \ref{eq:bases} sometimes called a \emph{reflected pair} because the values they take on are symmetric (mirrored) across $t$. Each function in the pair is called a \emph{hinge} function, and can alternatively be denoted $h(x - t)$ and $h(t - x)$ respectively. $t$ is called a $knot$ (where the two hinges join).
+The set in equation \ref{eq:bases} sometimes called a \emph{reflected pair} because the values they take on are symmetric (mirrored) across $t$. Each function in the pair is called a \emph{hinge} function, and can alternatively be denoted $h(x - t)$ and $h(t - x)$ respectively. $t$ is called a $knot$ (where the two hinges join).
 
 \subsection{Forward pass} % (fold)
 \label{sub:forward_pass}
@@ -362,7 +447,7 @@ Generalized cross validation is a computational shortcut for linear regression m
       (1 - M(\lambda)/N)^2
     }
 \end{equation}
-where $M(\lambda)$ is the effective number of parameters in the model, accounting for both the actual parameters and parameters used in selecting knot positions. Simulations and mathematical results suggest that $M(\lambda)$ should be set to $r + 3K$, the number of terms plus three times the number of knots, or to $r + 2K$ when the model is restricted to be additive (degree = 1).
+where $M(\lambda)$ is the effective number of parameters in the model, accounting for both the actual parameters and parameters used in selecting knot positions. Simulations and mathematical results tell us that $M(\lambda)$ should be set to $r + 3K$, the number of terms plus three times the number of knots, but can be set to $r + 2K$ when the model is restricted to be additive (degree = 1).
 
 % subsection generalized_cross_validation (end)
 
@@ -379,10 +464,6 @@ MARS can also be viewed as a modification of CART to improve performance in the 
 MARS has many of the same advantages as CART, in that it requires very litte pre-processing of data, it performs variable selection and models interactions as a part of the model building process, and the models produced are quite interpretable. This last point holds even for models with interactions since products of hinge functions are only nonzero when both hinge functions involved in the product are nonzero, allowing the term to operate only over a relatively small subspace of the two covariates. 
 
 % subsection advantages_of_mars (end)
-
-
-
-
 
 % section mars (end)
 
@@ -411,9 +492,7 @@ The goals of the patient model were to capture:
 \subsubsection{Transition functions} % (fold)
 \label{ssub:transition_functions}
 
-
-
-Change in patient quality of life was modelled as a function of tumor mass and dosage of treatment, with doses above 0.5 decreasing quality of life and doses below 0.5 allowing health to increase due to fewer toxic effects from treatment:
+Change in patient quality of life was modelled as a function of tumor mass and dosage of treatment, with doses above 0.5 decreasing quality of life and doses below 0.5 allowing quality of life to increase (toxicity to decrease) due to fewer toxic effects from treatment:
 
 \begin{equation}
 W_{t*} = 0.1 M_{t-1} + 1.2 (D_{t-1} - 0.5) + W_{t - 1}
@@ -471,10 +550,7 @@ Rewards were defined as the log of the observed survival time.
 
 % subsection  (end)
 
-\section{simulation} % (fold)
-\label{sec:simulation}
-
-\subsection{Basic setup} % (fold)
+\subsection{Basic scenario} % (fold)
 \label{sub:basic_setup}
 
 To generate training data, I began by simulating 1000 patients, each receiving at total of six months of treatment ($t = 0, 1, \ldots, 5$), the doses of which were chosen from a uniform distribution over 0 and 1 at the beginning of each month:
@@ -485,9 +561,7 @@ To generate training data, I began by simulating 1000 patients, each receiving a
 Each patient's initial tumor mass, $M_{0}$ and negative of quality of life (toxicity), $W_{0}$ were generated independently from uniform distributions between 0 and 2:
 
 \begin{equation}
-  W_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
-\end{equation}
-\begin{equation}
+  W_{0} \overset{iid}{\sim} \text{Unif}(0, 2), \qquad
   M_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
 \end{equation}
 
@@ -504,10 +578,21 @@ If $S_{t} \leq 1$ (i.e. the patient would not survive past another month), the p
   \end{cases}
 \end{equation}
 
+\subsubsection{Tuning parameters for basic scenario} % (fold)
+\label{ssub:tuning_parameters_for_basic_scenario}
+
+\begin{itemize}
+  \item CART: the complexity parameter $\alpha$ was chosen using 10 fold cross validation as ????
+  \item MARS: the number of terms in each model, $\lambda$ was chosen using generalized cross validation
+  \item RF: the number of parameters to consider for splitting in each resample, \texttt{mtry} was fixed at 2 plus the treatment variable \texttt{dose} which was chosen in each resample, making this equivalent to bagging
+\end{itemize}
+
+% subsubsection tuning_parameters_for_basic_scenario (end)
+
 % subsection basic_setup (end)
 
 
-\subsection{Subgroups/Interaction} % (fold)
+\subsection{Subgroups/Interaction scenario} % (fold)
 \label{sub:subgroups_interaction}
 
 In addition to the basic scenario just described, two additional baseline covariates, $X_{1}$ and $X_{2}$ were simulated from uniform distributions over 0, 1:
@@ -526,49 +611,72 @@ Using the values of these covariates, four approximately equally sized subgroups
 M'_{t*} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
 \end{equation}
    \item $X_{1} < 0.5$ \& $X_{2} > 0.5$: the drug is 50\% more effective for these patients, but they are also 50\% more sensitive to its effects:
-   \begin{equation}
-   W'_{t*} = 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1}
-   \end{equation}
-   \begin{equation}
-   M'_{t*} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
-   \end{equation}
+   \begin{align}
+   W'_{t*} &= 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1} \\
+   M'_{t*} &= [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+   \end{align}
 \end{enumerate}
+
+\subsubsection{Tuning parameters for interaction scenario} % (fold)
+\label{ssub:tuning_parameters_for_interaction_scenario}
+
+\begin{itemize}
+  \item CART: the complexity parameter $\alpha$ was chosen using 10 fold cross validation as ????
+  \item MARS: the number of terms in each model, $\lambda$ was chosen using generalized cross validation
+  \item RF: the number of parameters to consider for splitting in each resample, \texttt{mtry} was fixed at 2 plus the treatment variable \texttt{dose} which was chosen in each resample
+\end{itemize}
+
+% subsubsection tuning_parameters_for_interaction_scenario (end)
 
 % subsection subgroups_interaction (end)
 
-\subsubsection{Noise variables} % (fold)
-\label{ssub:noise_variables}
+\subsection{High-dimensional noise scenarios} % (fold)
+\label{sub:noise_variables}
 
-The basic scenario was also repeated in the presence of 100 noise variables:
-$Z = (Z_{1}, \ldots, Z_{10})$, and $V = (V_{1}, \ldots, V_{90})$ and had distributions as follows:
-\begin{equation}
-  Z_{1}, \ldots, Z_{5} \overset{iid}{\sim} N(1, 1)
-\end{equation}
-\begin{equation}
-  Z_{6}, \ldots, Z_{10} \overset{iid}{\sim} N(-1, 1)
-\end{equation}
-\begin{equation}
-  V_{1}, \ldots, V_{90} \overset{iid}{\sim} N(0, 1)
-\end{equation}
-That is, $Z_{1}, \ldots, Z_{5}$ were sampled independently from a normal distribution with mean 1 and standard deviation 1, $Z_{6}, \ldots, Z_{10}$ were sampled independently from a normal distribution with mean -1 and standard deviation 1, and $V_{1}, \ldots, V_{90}$ were sampled independently from a standard normal distribution.
+The basic scenario was also repeated in the presence of 100 noise variables, $Z = (Z_{1}, \ldots, Z_{10})$ and $V = (V_{1}, \ldots, V_{90})$ with distributions as follows:
+\begin{align}
+  Z_{1}, \ldots, Z_{5} &\overset{iid}{\sim} N(1, 1) \\
+  Z_{6}, \ldots, Z_{10} &\overset{iid}{\sim} N(-1, 1) \\
+  V_{1}, \ldots, V_{90} &\overset{iid}{\sim} N(0, 1)
+\end{align}
+That is, $Z_{1}, \ldots, Z_{5}$ were sampled independently from a normal distribution with mean 1 and standard deviation 1, $Z_{6}, \ldots, Z_{10}$ were sampled independently from a normal distribution with mean -1 and standard deviation 1, and $V_{1}, \ldots, V_{90}$ were sampled independently from a standard normal distribution. These covariates were used in two separate scenarios described below.
 
-In the first case (pure noise), the above variables were made available to the models, but had no effect on $W_{t}, M_{t}$, or $S_{t}$.
+\subsubsection{Pure noise scenario} % (fold)
+\label{ssub:pure_noise}
 
-In the second case (predictive noise), the $Z$ variables had a small influence on the rate parameter in the survival distribution:
+In the first noise scenario, pure noise, the above variables were made available to the models, but had no effect on $W_{t}, M_{t}$, or $S_{t}$.
+
+% subsubsection pure_noise (end)
+
+\subsubsection{Predictive noise scenario} % (fold)
+\label{ssub:predictive_noise}
+In the second noise scenario, predictive noise, the $Z$ variables had a small influence on the rate parameter in the survival distribution:
 \begin{equation}
   \lambda'_{t}(M_{t+1}, W_{t+1}) = \exp\del{-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1} + 0.05 \sum_{i = 1}^{10} Z_{i}}.
 \end{equation}
-but did not change the optimal dose, as this modification only shifts the expected survival up or down and does not change the maximum over a range of possible doses.
+but did not change the optimal dose, as this modification only shifts the expected survival up or down and does not change the dose chosen to achieve the maximum survival over the range of possible doses.
+
+% subsubsection predictive_noise (end)
 
 % subsubsection noise_variables (end)
 
-\subsubsection{Both interaction and noise} % (fold)
+\subsubsection{Both interaction and noise scenario} % (fold)
 \label{ssub:subsubsection_name}
 
 The interaction and noise scenarios were also combined together, to create the same subgroups as defined above in the presence of pure noise, and the presence of predictive noise.
 
-% subsubsection subsubsection_name (end)
+% subsubsection ssubsubsection_name (end)
 
+\subsubsection{Tuning parameters for all noise scenarios} % (fold)
+\label{ssub:tuning_parameters_for_all_noise_scenarios}
+
+\begin{itemize}
+  \item CART: the complexity parameter $\alpha$ was chosen using 10 fold cross validation as ????
+  \item MARS: the number of terms in each model, $\lambda$ was chosen using generalized cross validation
+  \item RF: the number of parameters to consider for splitting in each resample, \texttt{mtry} was fixed at 10 ($\approx \sqrt{p}$), plus the treatment variable \texttt{dose} which was chosen in each resample
+\end{itemize}
+
+% subsubsection tuning_parameters_for_all_noise_scenarios (end)
 
 
 % \begin{equation}
@@ -576,6 +684,16 @@ The interaction and noise scenarios were also combined together, to create the s
 % \end{equation}
 
 % section simulation (end)
+
+\section{Simulation Results} % (fold)
+\label{sec:simulation_results}
+
+% section simulation_results (end)
+
+\section{Discussion} % (fold)
+\label{sec:discussion}
+
+% section discussion (end)
 
 \end{document}
 
