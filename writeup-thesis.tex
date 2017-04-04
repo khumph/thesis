@@ -33,6 +33,7 @@
 \usepackage[]{algorithm2e}
 
 \DeclareMathOperator*{\argmax}{argmax}
+\RestyleAlgo{boxruled}
 
 %--------------------------------------------------------------------------
 %  TITLE SECTION
@@ -377,7 +378,12 @@ With the $T_{\alpha}$s in hand, we choose the $\alpha$ (and hence $T_{\alpha}$) 
 
 % subsubsection tree_pruning (end)
 
+\subsection{Advantages and disadvantages to CART} % (fold)
+\label{sub:advantages_and_disadvantages_to_cart}
 
+
+
+% subsection advantages_and_disadvantages_to_cart (end)
 
 % section rpart (end)
 
@@ -467,8 +473,69 @@ MARS has many of the same advantages as CART, in that it requires very litte pre
 
 % section mars (end)
 
-\section{random forest} % (fold)
+\section{Random forest} % (fold)
 \label{sec:random_forest}
+
+\subsection{Bagging} % (fold)
+\label{sub:bagging}
+
+As mentioned above, single trees tend to have quite high variance (small changes in the data can produce very different trees), however when grown sufficiently deep or bushy, they can have relatively low bias. Bootstrap aggregating (bagging for short) is a general technique that is useful whenever a modelling technique has these properties (high variance, low bias). 
+
+Consider a collection of independent and identically distributed random variables, $X_{1}, X_{2}, \ldots, X_{n}$, with variance $\sigma^2$ and sample mean $\bar{X}$. It's easy to show that 
+\begin{equation}
+  \operatorname{Var}[\bar{X}] = \frac{\sigma^2}{n},
+\end{equation}
+the variance of the sample mean lower by a factor of $n$ than the variance of any single observation. If we could build trees on many different samples then average the results, we could exploit this property to drastically reduce the variance and therefore increase performance.
+
+Typically, however, we only have one sample to work with so we can take $B$ bootstrap samples of our one sample to approximate these samples, then aggregate the results into a single prediction. In the case of regression problems like ours, this typically amounts to averaging the predictions for each observation and choosing that as the predicted outcome. 
+
+\begin{algorithm}[H]
+\For{$i$ in 1 to $B$}{
+  Take a bootstrap sample of the data \\
+  Fit model to this sample (e.g. grow an unpruned tree)
+ }
+ \caption{Bagging}
+\end{algorithm}
+
+In fact, this method provides a built-in way to estimate the test error by only averaging predictions for any given tree using observations that were not in the bootstrap sample used to train that tree (called the out-of-bag sample, about 1/3 of the observations on average). This out-of-bag sample typically approximates the cross validation estimate of error rate quite well, but requires much less computation.
+
+As you might have guessed, we can't in practice achieve a $B$ fold decrease in the variance from a single tree because our trees are not independent. This is most egregious when there is a single very strong predictor. This will tend to be the first few splits, and thus strongly influence the remaining shape of the tree, and lead to highly correlated trees across bootstrap samples. 
+
+% subsection bagging (end)
+
+\subsection{Random forest} % (fold)
+\label{sub:random_forest}
+
+Statistically, we can decrease correlation by introducing randomness, so \cite{rf} suggested that instead of considering all $p$ predictors for each split, to only consider a random subset $m_{try} \subset p$, randomly sampled from $p$ for each split. 
+
+\begin{algorithm}[H]
+\For{$i$ in 1 to $B$}{
+  take a bootstrap sample of the data \\
+  Grow a tree on this sample: \\
+  \While{stopping criteria not met}{
+  \For{each split}{
+    randomly select $m_{try}$ of $p$ original covariates \\
+    split on a covariate in $m_{try}$ causing largest decrease in SSE
+   }
+  }
+  
+  (do not prune)
+ }
+ \caption{Random forest}
+\end{algorithm}
+
+How should we choose $B$ and $m_{try}$? There is no danger to overfitting by growing more trees so $B$ is typically set at a large enough number for the error rate to level off, \cite{khun} recommends starting at 1000. Recommendations for $m_{try}$ are often set at a default of $\sqrt{p}$ or $p/3$, the latter recommended for regression problems, though $m_{try}$ can be also be chosen using resampling techniques. 
+
+% subsection random_forest (end)
+
+\subsection{Advantages and disadvantages to random forest} % (fold)
+\label{sub:advantages_and_disadvantages_to_random_forest}
+
+This approach leads to significantly more accurate predictions over a single tree, but also significantly reduces the interpretability.
+
+% subsection advantages_and_disadvantages_to_random_forest (end)
+
+variable importance in rf
 
 % section random_forest (end)
 
@@ -682,6 +749,30 @@ The interaction and noise scenarios were also combined together, to create the s
 % \begin{equation}
 % \hat{Q}_{t} = R_{t} + \max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
 % \end{equation}
+
+\subsection{Procedure} % (fold)
+\label{sub:procedure}
+
+With the training data generated from each scenario listed above, Q-learning was applied using each of CART, MARS, and random forest to estimate the Q-functions at each stage. The fitted models for each stage under each scenario were saved for use on the validation set. 
+
+% subsection procedure (end)
+
+\subsection{Validation} % (fold)
+\label{sub:validation}
+
+For validation data, I simulated the starting conditions for 200 in the same way as for the training data. I made 15 copies of these individuals which would undergo one of the following regimes:
+
+\begin{enumerate}
+  \item 10 constant dose regimes (doses of $0.1, 0.2, \ldots,$ or 1 at each stage)
+  \item ``One-on-one-off'' - an alternating constant dose regime starting at the maximum dose, switching dose to 0 for next stage, and repeating through the end of the trial
+  \item ``Best'' - the best greedy dose choice given complete knowledge of the transition functions and their influence on survival
+  \item The estimated best doses (ones that maximize expected survival) from each of the three methods to estimate Q-functions: CART, MARS, and random forest
+\end{enumerate}
+
+At each stage, patients would receive the treatment as dictated by the regimes above.
+
+
+% subsection validation (end)
 
 % section simulation (end)
 
