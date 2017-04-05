@@ -42,8 +42,9 @@ Qlearn <- function(form, dat_long, boot = F, nstages = 6, ...) {
   mod_list <- list()
   for (i in (nstages - 1):0) {
     dat <- filter(dat_long, month == i)
-    mod_list[[i + 1]] <- train(form, dat, na.action = na.omit, ...)
-    new_dat <- max_df(dat, mod_list[[i + 1]], truth = F, pred = F)
+    mod <- train(form, dat, na.action = na.omit, ...)
+    new_dat <- max_df(dat, mod, truth = F, pred = F)
+    mod_list[[i + 1]] <- mod
     bestR <- new_dat$bestR
     bestD <- new_dat$best
     if (i > 0) {
