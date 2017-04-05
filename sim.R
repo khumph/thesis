@@ -1,13 +1,12 @@
-# simulation functions ----------------------------------------------------
-
 updateW <- function(M, W, D, a1 = 0.1, b1 = 1.2, c1, d1 = 0.5, truth) {
   truth <- rep(truth, length(M))
   W_next <-
-    a1 * M + b1 * (c1 * D  - d1) + W + ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
+    a1 * M + b1 * (c1 * D  - d1) + W +
+    ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
   ifelse(W_next > 0, W_next, 0)
 }
 
-Wnext <- function(dat, int, noise_pred, truth = F) {
+Wnext <- function(dat, truth = F) {
   if (truth) {
     dat %>% mutate(W_next = updateW(tumor_mass, toxicity, dose,
                                     c1 = c1,
@@ -27,12 +26,13 @@ updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, c2, d2 = 0.5,
   truth <- rep(truth, length(M))
   M_next <- ifelse(M > 0,
                    (a2 * W - b2 * (c2 * D  - d2)) +
-                     M + sum(a3 * Z) + ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
+                     M + sum(a3 * Z) +
+                     ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
                    0)
   ifelse(M_next > 0, M_next, 0)
 }
 
-Mnext <- function(dat, int, noise_pred, truth = F) {
+Mnext <- function(dat, truth = F) {
   if (truth) {
     dat %>% mutate(M_next = updateM(tumor_mass, toxicity, dose, 
                                     c2 = c2, truth = truth))
@@ -44,7 +44,7 @@ Mnext <- function(dat, int, noise_pred, truth = F) {
   }
 }
 
-genIntNoise <- function(dat, int, noise) {
+genIntNoise <- function(dat, int, noise, noise_pred) {
   if (int) {
     dat <- dat %>%
       mutate(
@@ -53,6 +53,8 @@ genIntNoise <- function(dat, int, noise) {
         c1 = ifelse(X1 > 0.5, 1.5, 1),
         c2 = ifelse(X2 > 0.5, 1.5, 1)
       )
+  } else {
+    dat <- dat %>% mutate(c1 = 1, c2 = 1)
   }
   if (noise) {
     dat <- dat %>%
@@ -70,38 +72,29 @@ genIntNoise <- function(dat, int, noise) {
       ) %>% 
       bind_cols(
         replicate(90, rnorm(nrow(.))) %>% as.data.frame())
-  }
-  if (!int) {
+  } 
+  if (noise_pred) {
     dat <- dat %>% mutate(
-      c1 = 1,
-      c2 = 1
-    )
+      noise_chng = Z1 + Z2 + Z3 + Z4 + Z5 + Z6 + Z7 + Z8 + Z9 + Z10)
+  } else {
+    dat <- dat %>% mutate(noise_chng = 0)
   }
   dat
 }
 
-
-lamNext <- function(dat, int, noise_pred) {
-  if (noise_pred) {
-    dat %>% mutate(lam = lambda(M_next, W_next,
-                                Z = Z1 + Z2 + Z3 + Z4 + Z5 + Z6 + Z7 + Z8 + Z9 + Z10))
-  } else {
-    dat %>% mutate(lam = lambda(M_next, W_next))
-  }
-}
-
 # defined as in NSCLC paper
-lambda <- function(M, W, mu0 = -6, mu1 = 1, mu2 = 1.1, mu3 = 0.75, a3 = 0.05, Z = 0) {
+lambda <- function(M, W, Z, mu0 = -6, mu1 = 1, mu2 = 1.1, mu3 = 0.75,
+                   a3 = 0.05) {
   exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M + a3 * Z)
 }
+```
 
-# sim ---------------------------------------------------------------------
-
-simMonth <- function(dat, int, noise_pred) {
-  dat <- Mnext(dat, int, noise_pred)
-  dat <- Wnext(dat, int, noise_pred)
-  dat <- lamNext(dat, int, noise_pred)
+```{r sim}
+simMonth <- function(dat) {
+  dat <- Mnext(dat)
+  dat <- Wnext(dat)
   dat %>% mutate(
+    lam = lambda(M_next, W_next, Z = noise_chng),
     d_next = runif(nrow(.), min = 0, max = 1),
     surv_time = rexp(nrow(.), lam),
     expect_surv_time = 1 / lam,
@@ -119,28 +112,22 @@ sim <- function(N = 1000, Ttot = 6, int = F, noise = F, noise_pred = F) {
     dead = rep(F, N)
   )
   
-  dat <- genIntNoise(dat, int, noise)
+  dat <- genIntNoise(dat, int, noise, noise_pred)
   
-  d <- simMonth(dat, int = int, noise_pred = noise_pred) %>%
+  d <- simMonth(dat) %>%
     mutate(reward = ifelse(dead, log(surv_time), 0))
-    # mutate(reward = -M_next)
-    # mutate(reward = log(expect_surv_time))
   out <- d
   for (i in 1:(Ttot - 1)) {
     d <- d %>% mutate(month = i,
                       tumor_mass = M_next,
                       toxicity = W_next,
                       dose = d_next) %>%
-      simMonth(int = int, noise_pred = noise_pred) %>%
+      simMonth() %>%
       mutate(reward = ifelse(dead, log(i + 1 + surv_time), 0))
-      # mutate(reward = -M_next)
-      # mutate(reward = log(expect_surv_time))
     out <- bind_rows(out, d)
   }
   out %>% mutate(
     reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
-    # reward = -M_next,
-    # reward = log(expect_surv_time),
     Qhat = reward,
     best = NA
   )

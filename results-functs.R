@@ -1,5 +1,3 @@
-# results functions -------------------------------------------------------
-
 indPlot <- function(data, ex_ID) {
   tox_mass_plot <- ggplot(data = filter(data, ID == ex_ID)) +
     geom_line(mapping = aes(x = month, y = toxicity, group = ID),
@@ -21,22 +19,24 @@ maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred, seed = 1) {
   dat <- dat %>% filter(ID %in% ids)
   
   df <- max_df(
-    data = dat,
+    dat,
     model = Q$mod_list[[mon + 1]],
+    truth = F,
+    pred = F,
     nested = T
   ) %>% ungroup() %>%
     mutate(ID = factor(ID))
   
   df_best <-
     dat %>% mutate(reward = Qhat) %>% 
-    maxMonth(int, noise_pred, nested = T) %>%
+    max_df(model = NULL, truth = T, pred = F, nested = T) %>%
     mutate(ID = factor(ID))
   
   ggplot(data = df) +
     geom_line(mapping = aes(x = dose, y = preds, color = ID)) +
     geom_line(
       data = df_best,
-      aes(x = dose, y = reward, color = ID),
+      aes(x = dose, y = preds, color = ID),
       linetype = 2
     ) +
     labs(caption = "dotted lines are true values")
