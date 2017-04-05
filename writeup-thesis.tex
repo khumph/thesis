@@ -381,7 +381,9 @@ With the $T_{\alpha}$s in hand, we choose the $\alpha$ (and hence $T_{\alpha}$) 
 \subsection{Advantages and disadvantages to CART} % (fold)
 \label{sub:advantages_and_disadvantages_to_cart}
 
+The main advantage of regression trees is their easy interpretation, even by non-experts, largely due to the convenient graphical tree representation. CART also intrinsically conducts feature selection as part of the model building process and easy handles many types of covariates without the need for pre-processing, creating dummy variables, or even specification of the form of the relationship between the covariates and the outcome. There are also methods to handle missing data specific to trees \cite{esl}.
 
+Trees however, tend to have lower predictive performance compared to other methods, particularly in the regression setting. Part of the reason is that trees tend to be sensitive to changes in data, which is to say they have high variance (though ensemble methods like random forest, discussed below, exploit this property to achieve better performance). In the regression setting in particular, trees have a lack of smoothness and difficulty in capturing additive structures. Multivariate adaptive regression splines (MARS) can be viewed as a modification of the CART technique to overcome these issues.
 
 % subsection advantages_and_disadvantages_to_cart (end)
 
@@ -460,7 +462,7 @@ where $M(\lambda)$ is the effective number of parameters in the model, accountin
 \subsection{Relationship to CART} % (fold)
 \label{sub:relationship_to_cart}
 
-MARS can also be viewed as a modification of CART to improve performance in the regression setting. If we modified the MARS procedure to consider reflected pairs of step functions of the form $I(x - t > 0)$ and $I(t - x > 0)$ instead of the piecewise linear basis functions and replaced terms involved in interactions by the interaction term (making the term unavailable for further interactions), then the forward pass in MARS is equivalent to the CART tree-growing algorithm. In this case, the multiplication of a step function by a pair of reflected step functions is equivalent to splitting a node.
+As mentioned above, MARS can also be viewed as a modification of CART to improve performance in the regression setting. If we modified the MARS procedure to consider reflected pairs of step functions of the form $I(x - t > 0)$ and $I(t - x > 0)$ instead of the piecewise linear basis functions and replaced terms involved in interactions by the interaction term (making the term unavailable for further interactions), then the forward pass in MARS is equivalent to the CART tree-growing algorithm. In this case, the multiplication of a step function by a pair of reflected step functions is equivalent to splitting a node.
 
 % subsection relationship_to_cart (end)
 
