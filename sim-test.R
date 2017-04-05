@@ -1,88 +1,35 @@
-# best possible -----------------------------------------------------------
-
-maxMonth <- function(dat, int, noise_pred, nested = F, pred = F) {
-  dat <- ungroup(dat)
-  if (!pred) {
-    deads <- filter(dat, is.na(M_next)) %>% mutate(dose = NA)
-    dat <- filter(dat, !is.na(M_next))
-  }
-  dat <- dat %>% 
-    mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.005))) %>%
-    unnest()
-  dat <- Mnext(dat, int, noise_pred, truth = T)
-  dat <- Wnext(dat, int, noise_pred, truth = T)
-  dat <- lamNext(dat, int, noise_pred)
-  dat <- dat %>% mutate(
-    expect_surv_time = 1 / lam,
-    reward = log(expect_surv_time)
-  )
-  if (!nested) {
-    dat <- dat %>% group_by(ID) %>% mutate(
-      bestR = max(reward),
-      bestD = ifelse(near(reward, bestR), dose, NA),
-      best = quantile(bestD, probs = 0, na.rm = T, type = 3, names = F)
-    )
-  }
-  if (nested) {
-    dat %>% ungroup()
-  } else if (pred) {
-    dat %>% filter(near(dose, best)) %>% arrange(ID) %>% ungroup()
-  } else {
-    dat %>% filter(near(dose, best)) %>% bind_rows(deads) %>%
-      arrange(ID) %>% ungroup()
-  }
-}
-
-
 # test simulation -----------------------------------------------------
 
-getPreds <- function(Q, name, dat, pred, int, noise_pred) {
-  regex_name <- paste0("^", name, "$")
-  if (!pred) {
-    dat_opt <- filter(dat, !is.na(M_next), str_detect(group, regex_name))
-  } else {
-    dat_opt <- filter(dat, str_detect(group, regex_name)) 
-  }
-  
+getPreds <- function(Q, name, dat, pred) {
   optimD <- max_df(
-    data = dat_opt,
+    dat = filter(dat, str_detect(group, paste0("^", name, "$"))),
     model = Q$mod_list[[dat$month[1] + 1]],
-    form = Q$formula,
-    mod_type = Q$mod_type,
-    pred = pred
-  )
-  bestDopt <- maxMonth(optimD, int = int, noise_pred = noise_pred, pred = pred)$dose
-  optimD <- optimD %>% mutate(best_dose = bestDopt)
+    truth = F, pred = pred)
   
-  if (!pred) {
-    deads <- filter(dat, is.na(M_next), str_detect(group, regex_name)) %>%
-      mutate(dose = NA)
-    bind_rows(optimD, deads) %>% arrange(ID)
-  } else {
-    optimD
-  }
+  bestDopt <- max_df(dat = optimD, model = NULL,
+                     truth = T, pred = pred)$dose
+  optimD %>% mutate(best_dose = bestDopt)
 }
 
-simMonthT <- function(dat, Q, int, noise_pred, pred = F) {
+simMonthT <- function(dat, Q, pred) {
   out <- dat %>% filter(group != "best",
                         !str_detect(group, paste(names(Q), collapse = "|"))) %>%
     mutate(dose = ifelse(group == "1on1off",
                          ifelse(dat$month[1] %% 2 == 1, 0, 1),
                          dose))
   
-  bestD <- maxMonth(filter(dat, group == "best"),
-                    int = int, noise_pred = noise_pred, pred = pred)
+  bestD <- max_df(dat = filter(dat, group == "best"),
+                  model = NULL, truth = T, pred = pred)
   
   optimD <- map2_df(Q, names(Q),
-                    ~ getPreds(.x, .y, dat = dat, pred = pred,
-                               int = int, noise_pred = noise_pred))
+                    ~ getPreds(.x, .y, dat = dat, pred = pred))
   
   dat <- bind_rows(out, bestD, optimD) %>% arrange(ID) 
-  dat <- Mnext(dat, int, noise_pred)
-  dat <- Wnext(dat, int, noise_pred)
-  dat <- lamNext(dat, int, noise_pred)
+  dat <- Mnext(dat)
+  dat <- Wnext(dat)
   dat %>%
     mutate(
+      lam = lambda(M_next, W_next, Z = noise_chng),
       pdeath = pexp(lam),
       surv_time = rexp(nrow(.), lam),
       expect_surv_time = 1 / lam,
@@ -103,7 +50,7 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6) {
     dead = rep(F, npergroup)
   )
   
-  dat <- genIntNoise(dat, int, noise)
+  dat <- genIntNoise(dat, int, noise, noise_pred)
   
   D1 <- rep(seq(from = 0.1, to = 1, by = 0.1), each = npergroup)
   
@@ -119,25 +66,19 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6) {
       best_dose = NA
     )
   
-  d <- simMonthT(dat, Q, int = int, noise_pred = noise_pred, pred = T) %>%
+  d <- simMonthT(dat, Q, pred = T) %>%
     mutate(reward = ifelse(dead, log(surv_time), 0))
-    # mutate(reward = -M_next)
-    # mutate(reward = log(expect_surv_time))
   out <- d
   for (i in 1:(Ttot - 1)) {
     d <- d %>% mutate(month = i,
                       tumor_mass = M_next,
                       toxicity = W_next) %>%
-      simMonthT(Q, int = int, noise_pred = noise_pred) %>%
+      simMonthT(Q, pred = F) %>%
       mutate(reward = ifelse(!dead, 0, log(i + 1 + surv_time)))
-      # mutate(reward = -M_next)
-      # mutate(reward = log(expect_surv_time))
     out <- bind_rows(out, d)
   }
   out %>% group_by(ID) %>% mutate(
     reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
-    # reward = -M_next,
-    # reward = log(expect_surv_time),
     pdeath = ifelse(is.na(pdeath), 1, pdeath),
     tot_reward = sum(reward[1:6], na.rm = T),
     Qhat = reward,

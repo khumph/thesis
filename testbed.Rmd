@@ -2,8 +2,8 @@
 title: 'Testbed: `r ifelse(params$noise & params$int, "Interaction and noise", ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original")))`'
 output: html_notebook
 params:
-  noise: !r T
-  int: !r T
+  noise: !r F
+  int: !r F
 ---
 
 `r ifelse(params$int, "Interaction = half of people more sensitive to drug (toxicity increases 50% higher than usual with dose), half of people's tumor's reduce 50% more with dose", "Original")`
@@ -14,9 +14,9 @@ rm(list = ls())
 ```
 
 ```{r}
-int <- T
-noise <- T
-noise_pred <- T
+int <- F
+noise <- F
+noise_pred <- F
 ```
 
 `r ifelse (noise & !noise_pred, "No predicitive noise", "Predictive noise")`
@@ -57,8 +57,7 @@ treatment <- "dose"
 pred_nms <- nms[!(nms %in% c(response, treatment))]
 form <- paste(response,
                    "~",
-                   paste0(c(pred_nms, treatment), collapse = " + "))
-
+                   paste0(c(pred_nms, treatment), collapse = " + ")) %>% as.formula()
 ```
 
 ```{r}
@@ -71,10 +70,8 @@ indPlot(dat_long, ex_ID)
 ```{r}
 # grid <- expand.grid(cp = 10^(seq(-4, -3, 1)))
 Q_rpart <- Qlearn(
-  data = dat_long,
-  formula = form,
-  treatment = "dose",
-  mod_type = "caret",
+  form,
+  dat_long,
   # tuneGrid = expand.grid(cp = 10^(seq(-7, -1, 1))),
   # trControl = trainControl(method = "cv"),
   method = 'rpart1SE',
@@ -111,10 +108,8 @@ allowFunct <- function(degree, pred, parents, namesx) {
 
 set.seed(20170128)
 Q_mars <- Qlearn(
-  data = dat_long,
-  formula = form,
-  treatment = "dose",
-  mod_type = "caret",
+  form,
+  dat_long,
   method = 'gcvEarth',
   trControl = trainControl(method = "none"),
   nk = 200,
@@ -134,10 +129,8 @@ maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred, mon = 5)
 grid <- expand.grid(mtry = floor(sqrt(length(pred_nms))))
 
 Q_rf <- Qlearn(
-  data = dat_long,
-  formula = form,
-  treatment = "dose",
-  mod_type = "caret",
+  form,
+  dat_long,
   method = 'ranger',
   tuneGrid = grid,
   trControl = trainControl(method = "none"),
@@ -155,8 +148,9 @@ maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r}
-Q_list <- list(CART = Q_rpart, MARS = Q_mars, RF = Q_rf)
+# Q_list <- list(CART = Q_rpart, MARS = Q_mars, RF = Q_rf)
 set.seed(20170128)
-dat_test <- sim_test(Q = Q_list, int = int, noise = noise, noise_pred = noise_pred) 
+Q_list = list(MARS = Q_mars)
+dat_test <- sim_test(Q = Q_list, int = int, noise = noise, noise_pred = noise_pred)
 dat_test %>% plots_tab(Q_list = Q_list)
 ```
