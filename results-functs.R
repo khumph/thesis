@@ -44,7 +44,7 @@ maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred, seed = 1) {
     labs(caption = "dotted lines are true values")
 }
 
-plots_tab <- function(dat_test_long) {
+plots_tab <- function(dat_test_long, Q_list) {
   dat_long_summ <- dat_test_long %>% group_by(ID) %>%
     mutate(
       cumSurv = prod(1 - pdeath[1:6]),
@@ -122,11 +122,13 @@ plots_tab <- function(dat_test_long) {
       color = group
     ), shape = 5) +
     labs(y = "log months of survival",
-         caption = "diamonds represent mean survival times for each group")
+         caption = "diamonds represent mean survival times for each group") + 
+    theme(legend.position = "none")
   
-  tab_MSE <- dat_test_long %>% group_by(month) %>% 
-    filter(group == "optim") %>% summarise(MSE_dose = mean((dose - best_dose)^2, na.rm = T),
-                                           MAE_dose = mean(abs(dose - best_dose), na.rm = T))
+  tab_MSE <- dat_test_long %>%
+    filter(group %in% names(Q_list)) %>% group_by(group, month) %>% 
+    summarise(MSE_dose = mean((dose - best_dose) ^ 2, na.rm = T),
+              MAE_dose = mean(abs(dose - best_dose), na.rm = T))
   
   list(
     plot_dose = plot_dose,

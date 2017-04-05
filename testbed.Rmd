@@ -1,33 +1,30 @@
 ---
-title: 'Testbed: `r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original"))`'
+title: 'Testbed: `r ifelse(params$noise & params$int, "Interaction and noise", ifelse(params$noise, "Noise", ifelse(params$int, "Interaction", "Original")))`'
 output: html_notebook
 params:
   noise: !r T
   int: !r T
 ---
 
-NEW reward definition (with gaussian curves over doses which zero out M or W)
-
-`r ifelse(params$noise, "Noise", ifelse(params$int, "Interaction = half of people more sensitive to drug (toxicity increases 50% higher than usual with dose), half of people's tumor's reduce 50% more with dose", "Original"))`
+`r ifelse(params$int, "Interaction = half of people more sensitive to drug (toxicity increases 50% higher than usual with dose), half of people's tumor's reduce 50% more with dose", "Original")`
 
 
-```{r, eval=F}
+```{r}
 rm(list = ls())
 ```
 
 ```{r}
-int <- params$int
-noise <- params$noise
-noise_pred <- F
+int <- T
+noise <- T
+noise_pred <- T
 ```
 
-`r ifelse (noise & !noise_pred, "No predicitive noise", "")`
+`r ifelse (noise & !noise_pred, "No predicitive noise", "Predictive noise")`
 
 ```{r setup}
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
 p_load(tidyverse, rms, caret, gridExtra, stringr)
-source("sim-functs.R")
 source("sim.R")
 source("q-functs.R")
 source("sim-test.R")
@@ -36,7 +33,7 @@ source("results-functs.R")
 
 ```{r sim}
 set.seed(20161116)
-dat_long <- sim(int = int, noise = noise, noise_pred = noise_pred)
+dat_long <- sim(int = int, noise = noise, noise_pred = noise_pred, Ttot = 6)
 ```
 
 ```{r formula}
@@ -57,15 +54,11 @@ if (int & !noise) {
 }
 response <- "Qhat"
 treatment <- "dose"
-pred_nms <- nms[!(nms %in% response)]
-form_base <- paste(response,
+pred_nms <- nms[!(nms %in% c(response, treatment))]
+form <- paste(response,
                    "~",
-                   paste0(pred_nms, collapse = " + "))
-ints <- paste0(pred_nms[!(pred_nms %in% treatment)], ":", treatment)
-ints <- paste(ints, collapse = " + ")
-formula <- paste(c(form_base, ints), collapse = " + ")
-form <- as.formula(form_base)
-form_int <- as.formula(formula)
+                   paste0(c(pred_nms, treatment), collapse = " + "))
+
 ```
 
 ```{r}
@@ -74,37 +67,19 @@ ex_ID <- sample(dat_long$ID, 1)
 indPlot(dat_long, ex_ID)
 ```
 
-# rcs
-```{r}
-if (!noise) {
-  set.seed(20170128)
-  Q_rcs <- Qlearn(
-  data = dat_long,
-  formula = form,
-  treatment = "dose",
-  mod_type = "rcs"
-  )
-  Q <- Q_rcs
-}
-```
-
-```{r}
-if (!noise) {
-  maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
-}
-```
-
 # rpart
 ```{r}
-grid <- expand.grid(cp = 10^(seq(-4, -3, 1)))
+# grid <- expand.grid(cp = 10^(seq(-4, -3, 1)))
 Q_rpart <- Qlearn(
   data = dat_long,
   formula = form,
   treatment = "dose",
   mod_type = "caret",
-  tuneGrid = grid,
-  method = 'rpart',
-  minbucket = 2
+  # tuneGrid = expand.grid(cp = 10^(seq(-7, -1, 1))),
+  # trControl = trainControl(method = "cv"),
+  method = 'rpart1SE',
+  maxsurrogate = 0,
+  minbucket = 5
 )
 Q <- Q_rpart
 ```
@@ -115,6 +90,25 @@ maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 
 # MARS
 ```{r}
+#--- predictors in PREDICTORS are allowed to interact with predictors in PARENTS
+#--- but no other interactions are allowed
+
+PREDICTORS <- pred_nms
+PARENTS <-  c("dose")
+allowFunct <- function(degree, pred, parents, namesx) {
+  if (degree <= 1)
+    return(TRUE)
+  predictor <- namesx[pred]
+  parents <- namesx[parents != 0]
+  if ((any(predictor %in% PREDICTORS) &&
+       any(parents %in% PARENTS)) ||
+      (any(predictor %in% PARENTS) &&
+       any(parents %in% PREDICTORS))) {
+    return(TRUE)
+  }
+  FALSE
+}
+
 set.seed(20170128)
 Q_mars <- Qlearn(
   data = dat_long,
@@ -123,37 +117,21 @@ Q_mars <- Qlearn(
   mod_type = "caret",
   method = 'gcvEarth',
   trControl = trainControl(method = "none"),
+  nk = 200,
+  allowed = allowFunct,
   tuneGrid = expand.grid(degree = 2)
 )
 Q <- Q_mars
 ```
 
 ```{r}
-maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
+maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred, mon = 5)
 ```
-
-```{r, eval = F}
-set.seed(20170128)
-dat <- map_df(1:10, ~ sim_test(Q, int = int, noise = noise, noise_pred = noise_pred)) %>%
-  group_by(group, ID, month) %>%
-  summarise_all(funs(mean(., na.rm = T)))
-dat %>% plots_tab()
-```
-
 
 # rf
 ```{r}
-if (noise) {
-  grid <- expand.grid(mtry = 10)
-  # splitvars <- c("dose")
-  # tc <- trainControl(method = "none")
-# } else if (int) {
-#   grid <- expand.grid(mtry = 1)
-#   splitvars <- c("dose")
-#   tc <- trainControl(method = "none")
-} else {
-  grid <- expand.grid(mtry = 1)
-}
+# grid <- expand.grid(mtry = seq(2, numpreds, length = 5))
+grid <- expand.grid(mtry = floor(sqrt(length(pred_nms))))
 
 Q_rf <- Qlearn(
   data = dat_long,
@@ -163,9 +141,9 @@ Q_rf <- Qlearn(
   method = 'ranger',
   tuneGrid = grid,
   trControl = trainControl(method = "none"),
-  min.node.size = 2,
+  min.node.size = 5,
   importance = "impurity",
-  num.trees = 500,
+  num.trees = 1000,
   always.split.variables = c("dose")
 )
 
@@ -177,12 +155,8 @@ maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r}
-if (noise) {
-  Q_list = list(rpart = Q_rpart, mars = Q_mars, rf = Q_rf)
-} else {
-  Q_list = list(rcs = Q_rcs, Q_rpart, mars = Q_mars, rf = Q_rf)
-}
-
+Q_list <- list(CART = Q_rpart, MARS = Q_mars, RF = Q_rf)
 set.seed(20170128)
-sim_test(Q = Q_list, int = int, noise = noise, noise_pred = noise_pred) %>% plots_tab()
+dat_test <- sim_test(Q = Q_list, int = int, noise = noise, noise_pred = noise_pred) 
+dat_test %>% plots_tab(Q_list = Q_list)
 ```

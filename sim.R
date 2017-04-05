@@ -1,9 +1,9 @@
 # simulation functions ----------------------------------------------------
 
 updateW <- function(M, W, D, a1 = 0.1, b1 = 1.2, c1, d1 = 0.5, truth) {
-  # truth <- rep(truth, length(M))
+  truth <- rep(truth, length(M))
   W_next <-
-    a1 * M + b1 * (c1 * D  - d1) + W #+ ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
+    a1 * M + b1 * (c1 * D  - d1) + W + ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
   ifelse(W_next > 0, W_next, 0)
 }
 
@@ -24,10 +24,10 @@ Wnext <- function(dat, int, noise_pred, truth = F) {
 
 updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, c2, d2 = 0.5,
                     X = 0, Z = 0, a3 = 1e-3, truth) {
-  # truth <- rep(truth, length(M))
+  truth <- rep(truth, length(M))
   M_next <- ifelse(M > 0,
                    (a2 * W - b2 * (c2 * D  - d2)) +
-                     M + sum(a3 * Z), #+ ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
+                     M + sum(a3 * Z) + ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
                    0)
   ifelse(M_next > 0, M_next, 0)
 }
@@ -81,46 +81,19 @@ genIntNoise <- function(dat, int, noise) {
 }
 
 
-# lamNext <- function(dat, int, noise_pred) {
-#   if (noise_pred) {
-#     dat %>% mutate(lam = lambda(M_next, W_next,
-#                                 Z = Z1 + Z2 + Z3 + Z4 + Z5 + Z6 + Z7 + Z8 + Z9 + Z10))
-#   } else {
-#     dat %>% mutate(lam = lambda(M_next, W_next))
-#   }
-# }
-# # defined as in NSCLC paper
-# lambda <- function(M, W, mu0 = -7, mu1 = 1, mu2 = 1.2, mu3 = 1, a3 = 0.05, Z = 0) {
-#   exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M + a3 * Z)
-# }
-
 lamNext <- function(dat, int, noise_pred) {
   if (noise_pred) {
-    dat %>% mutate(lam = lambda(M_next, W_next, tumor_mass, toxicity, dose, c1 = c1, c2 = c2,
+    dat %>% mutate(lam = lambda(M_next, W_next,
                                 Z = Z1 + Z2 + Z3 + Z4 + Z5 + Z6 + Z7 + Z8 + Z9 + Z10))
   } else {
-    dat %>% mutate(lam = lambda(M_next, W_next, tumor_mass, toxicity, dose, c1 = c1, c2 = c2))
+    dat %>% mutate(lam = lambda(M_next, W_next))
   }
 }
 
-# new definition
-lambda <- function(M_next, W_next, M, W, dose, c1, c2,
-                   mu0 = -5, mu1 = 1, mu2 = 1.2, a3 = 0.05, Z = 0) {
-  dw <- ((-0.1 * M - W) / 1.2 + 0.5) / c1
-  dm <- ((0.15 * W + M) / 1.2 + 0.5) / c2
-  # dm <- ifelse(M > 0, dm, dw)
-  exp(mu0 - mu1 * exp(-(dose - dw)^2) -
-        mu2 * exp(-(dose - dm)^2) + mu2 * M_next + mu1 * W_next)
+# defined as in NSCLC paper
+lambda <- function(M, W, mu0 = -6, mu1 = 1, mu2 = 1.1, mu3 = 0.75, a3 = 0.05, Z = 0) {
+  exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M + a3 * Z)
 }
-
-
-
-# original definition
-# lambda <- function(M, W, mu0 = -6.5, mu1 = 0.9, mu2 = 1) {
-#   exp(mu0 + mu1 * W + mu2 * M)
-# }
-
-
 
 # sim ---------------------------------------------------------------------
 
@@ -131,6 +104,7 @@ simMonth <- function(dat, int, noise_pred) {
   dat %>% mutate(
     d_next = runif(nrow(.), min = 0, max = 1),
     surv_time = rexp(nrow(.), lam),
+    expect_surv_time = 1 / lam,
     dead = ifelse(dead, dead, surv_time < 1)
   )
 }
@@ -148,8 +122,9 @@ sim <- function(N = 1000, Ttot = 6, int = F, noise = F, noise_pred = F) {
   dat <- genIntNoise(dat, int, noise)
   
   d <- simMonth(dat, int = int, noise_pred = noise_pred) %>%
-    mutate(reward = ifelse(dead, log(surv_time), log(1)))
+    mutate(reward = ifelse(dead, log(surv_time), 0))
     # mutate(reward = -M_next)
+    # mutate(reward = log(expect_surv_time))
   out <- d
   for (i in 1:(Ttot - 1)) {
     d <- d %>% mutate(month = i,
@@ -157,13 +132,15 @@ sim <- function(N = 1000, Ttot = 6, int = F, noise = F, noise_pred = F) {
                       toxicity = W_next,
                       dose = d_next) %>%
       simMonth(int = int, noise_pred = noise_pred) %>%
-      mutate(reward = ifelse(!dead, log(i + 1), log(i + 1 + surv_time)))
+      mutate(reward = ifelse(dead, log(i + 1 + surv_time), 0))
       # mutate(reward = -M_next)
+      # mutate(reward = log(expect_surv_time))
     out <- bind_rows(out, d)
   }
   out %>% mutate(
     reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
     # reward = -M_next,
+    # reward = log(expect_surv_time),
     Qhat = reward,
     best = NA
   )

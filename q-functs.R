@@ -89,11 +89,11 @@ one_step_Q <- function(form, data, mod_type, ...) {
   )
 }
 
-Qlearn <- function(data, formula, treatment, mod_type, boot = F, ...) {
+Qlearn <- function(data, formula, treatment, mod_type, boot = F, nstages = 6, ...) {
   form <- makeForm(formula, treatment, mod_type)
   
   mod_list <- list()
-  for (i in 5:1) {
+  for (i in (nstages - 1):1) {
     Q1 <- one_step_Q(form, filter(data, month == i), mod_type, ...)
     mod_list[[i + 1]] <- Q1$model
     data <- data %>% mutate(
