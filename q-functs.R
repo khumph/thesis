@@ -1,33 +1,6 @@
 # Q-learning functions ----------------------------------------------------
 
-makeForm <- function(formula, treatment, mod_type = "rcs") {
-  form_char <- as.character(formula)
-  response <- form_char[2]
-  predictors <- form_char[3]
-  predictor_names <- strsplit(predictors, " \\+ ")[[1]]
-  covariates <- predictor_names[!(predictor_names %in% treatment)]
-  
-  if (mod_type == "rcs") {
-    form_base_rcs <- paste(response,
-                           "~",
-                           paste0("rcs(", predictor_names, ")", collapse = " + "))
-    ints <-
-      paste0("rcs(", predictor_names, ")", " %ia% ", "rcs(", treatment, ")")
-    trtbytrt <-
-      paste0("rcs(", treatment, ")", " %ia% ", "rcs(", treatment, ")")
-    ints <- ints[ints != trtbytrt]
-    ints <- paste(ints, collapse = " + ")
-    formula <- paste(c(form_base_rcs, ints), collapse = " + ")
-  }
-  
-  list(
-    formula = as.formula(formula),
-    covariates = covariates,
-    treatment = treatment
-  )
-}
-
-max_df <- function(data, model, form, mod_type, 
+max_df <- function(data, model,
                    x = seq(0, 1, by = 0.01), nested = F, pred = F) {
   data <- ungroup(data)
   if (pred) {
@@ -62,24 +35,14 @@ max_df <- function(data, model, form, mod_type,
   }
 }
 
-one_step_Q <- function(form, data, mod_type, ...) {
+one_step_Q <- function(form, data, ...) {
   
-  if (mod_type == "rcs") {
-    model <- ols(form$formula,
-                 x = T,
-                 y = T,
+  model <- train(form,
                  data,
+                 na.action = na.omit,
                  ...)
-  }
   
-  if (mod_type == "caret") {
-    model <- train(form$formula,
-                   data,
-                   na.action = na.omit,
-                   ...)
-  }
-  
-  new_dat <- max_df(data, model, form, mod_type = mod_type)
+  new_dat <- max_df(data, model)
   
   list(
     data = new_dat,
@@ -89,30 +52,23 @@ one_step_Q <- function(form, data, mod_type, ...) {
   )
 }
 
-Qlearn <- function(data, formula, treatment, mod_type, boot = F, nstages = 6, ...) {
-  form <- makeForm(formula, treatment, mod_type)
+Qlearn <- function(data, form, boot = F, nstages = 6, ...) {
   
   mod_list <- list()
-  for (i in (nstages - 1):1) {
-    Q1 <- one_step_Q(form, filter(data, month == i), mod_type, ...)
+  for (i in (nstages - 1):0) {
+    Q1 <- one_step_Q(form, filter(data, month == i), ...)
     mod_list[[i + 1]] <- Q1$model
-    data <- data %>% mutate(
-      Qhat = ifelse(month == i - 1,
-                    reward + ifelse(!is.na(Q1$max), Q1$max, 0),
-                    Qhat),
-      best = ifelse(month == i, Q1$best, best)
-    )
+    if (i > 0) {
+      data <- data %>% mutate(
+        Qhat = ifelse(month == i - 1,
+                      reward + ifelse(!is.na(Q1$max), Q1$max, 0),
+                      Qhat))
+    }
+    data <- data %>% mutate(best = ifelse(month == i, Q1$best, best))
   }
-  Q1 <- one_step_Q(form, filter(data, month == 0), mod_type, ...)
-  mod_list[[1]] <- Q1$model
-  data <- data %>% mutate(
-    best = ifelse(month == 0, Q1$best, best)
-  )
   
   list(
     data = data,
-    mod_list = mod_list,
-    formula = form,
-    mod_type = mod_type
+    mod_list = mod_list
   )
 }

@@ -47,8 +47,6 @@ getPreds <- function(Q, name, dat, pred, int, noise_pred) {
   optimD <- max_df(
     data = dat_opt,
     model = Q$mod_list[[dat$month[1] + 1]],
-    form = Q$formula,
-    mod_type = Q$mod_type,
     pred = pred
   )
   bestDopt <- maxMonth(optimD, int = int, noise_pred = noise_pred, pred = pred)$dose

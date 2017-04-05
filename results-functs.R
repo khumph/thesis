@@ -23,8 +23,6 @@ maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred, seed = 1) {
   df <- max_df(
     data = dat,
     model = Q$mod_list[[mon + 1]],
-    form = Q$formula,
-    mod_type = Q$mod_type,
     nested = T
   ) %>% ungroup() %>%
     mutate(ID = factor(ID))
