@@ -23,13 +23,14 @@
 % allows usage of \enquote to quote things
 \usepackage{csquotes}
 
-% \usepackage[backend = bibtex, sorting=none, hyperref = true]{biblatex}
-% \addbibresource{spray.bib}
-\usepackage{cite}
+% \usepackage[backend = bibtex, sorting=none, ]{biblatex}
 \usepackage{ctable}
 
 \usepackage{amsmath}
 \usepackage{commath}
+% \usepackage{bibtex}
+\usepackage[style=authoryear-comp, hyperref = true]{biblatex}
+\addbibresource{library.bib}
 \usepackage[]{algorithm2e}
 
 \DeclareMathOperator*{\argmax}{argmax}
@@ -60,22 +61,18 @@
 
 % Why personalized medicine?}
 
-Patients often show significant differences in their responses to treatment. [\textbf{provide some examples}] Significant gains in public health can be made from identifying subgroups and the corresponding treatments which are most effective for them, rather than relying on identification of only the most effective treatment overall.
+Patients often show significant differences in their responses to treatment. Adverse reactions to drugs alone contribute to significant public health burden despite these drugs being shown to be beneficial (on average) in clinical trials (\cite{Pirmohamed2004}). Not only are there subpopulations for whom treatments are especially deleterious, some groups have a more robust response to certain treatments. It stands to reason, therefore, that significant gains in public health can be made from identifying these subgroups and the corresponding treatments which are most effective for them, rather than relying on identification of only the most effective treatment overall.
 
 % What is personalized medicine?
 
-This is the idea of \emph{personalized medicine}\footnote{Personalized medicine is also called precision medicine, stratified medicine, and P4 medicine}, which is the commonsensical notion that the best treatment for a given patient depends upon that patients' characteristics \cite{defn-paper}. The term is most often used today to when the characteristics are biomarkers, perhaps whether metastatic breast cancer cells  overexpress human epidermal growth factor receptor 2 (HER2), and these biomarkers are used to determine the best treatment for a particular individual, and when to use it. In the case of the patients with HER2-positive cells, they should receive a different treatment (trastuzumab) from those with HER2-negative cells \cite{} .
+This is the idea of \emph{personalized medicine}\footnote{Personalized medicine is also called precision medicine, stratified medicine, and P4 medicine}, which is the commonsensical notion that the best treatment for a given patient depends upon that patients' characteristics (\cite{pm-defn}). The term is most often used today to when the characteristics are biomarkers, perhaps whether metastatic breast cancer cells  over-express human epidermal growth factor receptor 2 (HER2), and these biomarkers are used to determine the best treatment for a particular individual, and when to use it. In the case of the patients with HER2-positive cells, they should receive a different treatment (trastuzumab) from those with HER2-negative cells (\cite{Baselga2006}).
 % When/where did personalized medicine start?
-However, the general idea goes back at least as far as Hippocrates \textbf{[cite]}, and are implemented in principle whenever a physician tries to inform a treatment decision by determining whether the cause of an infection is bacterial or viral.
+However, the general idea goes back at least as far as Hippocrates\footnote{Hippocrates is attributed with saying “It is more important to know what sort of person has a disease than to know what sort of disease a person has.” \cite{Fischer2015}} and is implemented in principle whenever a physician tries to inform a treatment decision by determining whether the cause of an infection is bacterial or viral.
+
+While personalized medicine in principle has a long history and shows considerable promise, there are numerous challenges in identifying these subgroups of patients and the optimal treatment for each. Chief among them is determining how to select from what is often a multitude of plausible subgroups. This effort is also hindered by disease processes which are usually quite complicated and not well understood. Furthermore, optimal treatments can change over time with the ebb and flow of changing disease processes.
 
 % subsection personalized_medicine (end) 
 
-
-% What are some challenges to implementing/discovering personalized treatments?}
-
-Lots of possible subgroups, complexity of disease
-
-% What are some methods that have been used in the past to find personalized treatment regimes?
 \subsection{Statistical methods to personalize medicine} % (fold)
 \label{sub:statistical_methods_to_personalize_medicine}
 
@@ -86,18 +83,18 @@ Lots of possible subgroups, complexity of disease
 
 % traditional methods: ad hoc subgroup analyses, or searching for treatment by subgroups interactions 
 
-Statistically, the personalization of medicine involves the identification of patient subgroups which respond to treatment differently. Traditionally, this is accomplished by investigation of (often ad hoc) treatment by covariate interactions, where values of the covariate identify subgroups. Using the HER2 breast cancer example above, we could encapsulate our knowledge of a patient's HER2 status into a binary covariate which indicates whether she was HER2 positive or negative, then statistically test if the coefficient on an interaction term between the indicator of HER2 status and treatment is significantly different from 0.
+Statistically, the personalization of medicine involves the identification of patient subgroups which respond to treatment differently. Traditionally, this is accomplished by investigation of (often ad hoc) treatment by covariate interactions, where different values of a covariate identify subgroups (\cite{Byar1985}). Using the HER2 breast cancer example above, we could encapsulate our knowledge of a patient's HER2 status into a binary covariate which indicates whether she was HER2 positive or negative, then statistically test if the coefficient on an interaction term with the indicator of HER2 status and treatment is significantly different from 0.
 
 % Problems: Curse of dimensionality, multiple comparisons
 
-While straightforward, this approach has several problems. First, which subgroups to examine is often a subjective judgement made by the researcher (and where to cutoff a group that is formed based on a continuous covariate). Second, since the numer of plausible subgroups can grow large quickly the number of interaction terms required can grow quite large in typical problems causing a reduction in power and requiring an much greater growth of sample size (curse of dimensionality). There are also issues to be addressed with multiple comparisons.
+While straightforward, this approach has several problems. First, which subgroups to examine is often a subjective judgement made by the researcher (as is where to cutoff a group that is formed based on a continuous covariate). Second, since the numer of plausible subgroups can grow large quickly the number of interaction terms required can grow quite large in typical problems. In addition to issues with multiple comparison, this requires a much greater growth of sample size (i.e., it suffers from the curse of dimensionality).
 
 \subsubsection{Algorithms for detecting interactions} % (fold)
 \label{ssub:algorithms_for_detecting_interactions}
 
-In response to the above problem with the traditional approach, several novel algorithms to detect interactions have been developed.
+In response to the above problems with the traditional approach, several novel algorithms to detect interactions have been developed. Most are based on reclusive portioning (\cite{Doove2013}), the basic process of which is described in detail below. These tree structures are appealing because they are easy to interpret, and ``naturally'' partition samples into subgroups. These and other methods are promising but it is not clear how to extend them to address our goal of determining optimal dosing strategies, i.e. how to select the optimal value of a continuous treatment. Nor do they directly consider more than a single stage of treatment, or how to adapt treatment over time to changing situations.
 
-interaction trees - easy to interpret, final trees don't connect with any objective function - hard to determine optimal treatment for patients
+% interaction trees - easy to interpret, final trees don't connect with any objective function - hard to determine optimal treatment for patients
 
 % Su, X., Tsai, C.-L., Wang, H., Nickerson, D. M., and Li, B. (2009), “Subgroup analysis via recursive partitioning,” Journal of Machine Learning Research, 10, 141–158.
 % introduces interaction trees - applys to wage data
@@ -124,9 +121,7 @@ interaction trees - easy to interpret, final trees don't connect with any object
 %
 % Faries, D. E., Chen, Y., Lipkovich, I., Zagar, A., Liu, X., and Obenchain, R. L. (2013), “Local control for identifying subgroups of interest in observational research: Persistence of treatment for major depressive disorder,” International Journal of Methods in Psychiatric Research, 22, 185–194.
 
-
 %%%%%
-
 
 % maximize value function
 %
@@ -138,169 +133,142 @@ interaction trees - easy to interpret, final trees don't connect with any object
 
 % All limited to single step?
 
-
 % subsubsection statistical_methods_to_personalize_medicine (end)
-
-\subsection{Dynamic treatment regimes} % (fold)
-\label{sub:dynamic_treatment_regimes}
-
-To formalize our idea of personalized medicine mentioned above, we can think of a personalized treatment as a decision rule, or a \emph{treatment regime} (or individualized treatment rule), that provides the best treatment given a patients' characteristics, or their \emph{state}.
-
-Since for many diseases, patients often receive different stages of treatments over time, it is useful to generalize a single stage treatment regime into
-a \emph{dynamic treatment regime}\footnote{ dynamic treatment regimes are also known as adaptive treatment strategies \textbf{[cite]} or treatment policies \textbf{cite}}, which is a generalization of the ideas of personalized medicine to sequencial decisions where the aspects of a person's state can vary over time. A dynamic treatment regime dictates treatments at each time point based on the changing (dynamic) states for every patient.
-
-% subsection dynamic_treatment_regimes (end)
 
 % How can reinforcement learning be of use in determining personalized treatments?
 
-
-
-\subsection{overview of contents} % (fold)
+\subsection{Overview of contents} % (fold)
 \label{sub:overview_of_contents}
+
+This paper intends to demonstrate how the obstacles to identifying optimal treatment regimes for a given individual can be addressed using Q-learning, a method from reinforcement learning, in conjunction with tree-based statistical learning models. We will see how these methods can dramatically increase survival times in a simulated cancer clinical trial where doses are chosen at each month of treatment, without a model of the disease process or a priori hypotheses about subgroup membership. The simulation was inspired by \textcite{crt} who achieved similar results using extremely randomized trees and support vector regression to estimate Q-functions. We will replicate and extend their results to more scenarios (e.g. situations with lots of meaningless covariates and patient subgroups) using much more interpretable models.
+
+We will first overview the field of reinforcement learning, then describe its relevance for personalized medicine and the reinforcement learning technique utilized in this study, Q-learning. We will then describe the three different tree-based supervised learning methods that we will use in conjunction with Q-learning to estimate optimal dosing strategies: regression tress constructed using the classification and regression trees (CART) method, Multivariate adaptive regression splines (MARS), and random forests (RF), the latter serving as a less interpretable comparison analogous to the extremely randomized trees used by \textcite{crt}. We will illustrate each technique with a simple example. We will then discuss the details of the simulation setup, followed by simulation results and a discussion.
 
 % subsection overview_of_contents (end)
 
 \section{Reinforcement Learning} % (fold)
 \label{sec:reinforcement_learning}
 
-% similarities and differences from other types of learning}
-
-Reinforcement learning is a branch of machine learning distinct from the other two main branches, supervised and unsupervised learning\footnote{As we will see however, techniques from both supervised and unsupervised learning can be useful in reinforcement learning problems.}. A main distinguishing feature of reinforcement learning is the emphasis on learning from experimentation, often over repeated stages.
-
-\subsection{Basic process} % (fold)
+\subsection{Basic elements and basic process} % (fold)
 \label{sub:basic_process}
 
-The basic process of reinforcement learning involves a learning agent trying a sequence of actions, recording the consequences (rewards) of those actions, estimating the relationship between the actions and their consequences, and choosing a next action that leads to the best consequences (the action that maximizes the reward, so far as the agent can tell). This is where the ``reinforcement'' in reinforcement learning comes from: actions with favorable consequences (large rewards) tend to be repeated.
+Reinforcement learning is a branch of machine learning distinct from the two main branches more familiar to statisticians, supervised and unsupervised learning\footnote{Techniques from both supervised and unsupervised learning can, however, be useful in reinforcement learning problems, as we will see for supervised learning methods.}. Every reinforcement problem has the following elements:
 
-rewards
+A learning \emph{agent}, who has goals related to its \emph{environment}, loosely defined as everything outside the agent's direct control. Features of the environment are represented to the agent through \emph{states}. Given a state representation, an agent can take an \emph{action} to affect the environment in order to achieve some goal. A goal is defined to the agent in such a way that maximizing a scalar quantity called the \emph{reward} would achieve the goal. Given a state representation, an agent's follows a \emph{policy}, roughly a guide to which actions to take (or which ones to favor) given a state signal to determine what action to take. An optimal policy therefore, is policy that achieves the largest reward over the long run.
 
-states, etc 
+The basic process of reinforcement learning involves a learning agent being presented with states, trying a sequence of actions, recording the consequences (rewards) of those actions in each state, estimating the relationship between the actions and their consequences, and choosing a next action that leads to the best consequences (the action that maximizes the reward, so far as the agent can tell). This is where the ``reinforcement'' in reinforcement learning comes from: actions with favorable consequences (large rewards) tend to be repeated.
 
 % subsection basic_process (end)
-
-
 
 \subsection{Relationship to supervised and unsupervised learning} % (fold)
 \label{sub:relationship_to_supervise_and_unsupervised_learning}
 
-Supervised learning involves a learning agent being given a list of example actions to taken in given situations, with the goal being that the agent then extrapolates the correct example behavior to new situations. In reinforcement learning problems, agents do not receive direct instruction regarding which action they should take, instead they must learn which actions are best by trying them out. 
+Reinforcement learning is distinct from supervised and unsupervised learning. Supervised learning involves a learning agent being given a list of example actions to taken in given situations, with the goal being that the agent then extrapolates the correct example behavior to new situations, while unsupervised learning involves finding hidden structure in collections of example actions and situations where the correct action is unknown. In reinforcement learning problems, agents do not (need to) receive direct instruction regarding which action they should take, instead they learn which actions are best by trying them out. Further, the goal in reinforcement learning problems is to maximize a reward signal, not find hidden structure (though finding hidden structure may be useful to this end).
 
-Unsupervised learning involves finding hidden structure in collections of example actions and situations where the correct action is unknown. This goal is distinct from the goal in reinforcement learning problems, which is to maximize a reward signal (though finding hidden structure may be useful to this end).
-
-Unlike other machine learning problems, reinforcement learning problems are closed-loop: the actions of the agent affect the opportunities open to the agent later on. Further, the consequences of actions in reinforcement learning problems can manifest not only in the next opportunity, but in all subsequent opportunities.
+Also unlike other machine learning problems, reinforcement learning problems are closed-loop: the actions of the agent affect the opportunities open to the agent later on, hence consequences of actions in reinforcement learning problems can manifest not only in the next opportunity, but in all subsequent opportunities.
 
 % subsection relationship_to_supervise_and_unsupervised_learning (end)
 
+\subsection{Connection to personalized medicine} % (fold)
+\label{sub:dynamic_treatment_regimes}
 
+To connect reinforcement learning to our idea of personalized medicine mentioned above, we can think of a personalized treatment as a decision rule, or a \emph{treatment regime}\footnote{Sometimes also called an individualized treatment rule} that provides the best treatment given a patients' characteristics, or their state (in this context, patients are the important aspect of the environment, about whom we have goals and thus in terms of whom rewards are defined). Since for many diseases, patients often receive different stages of treatments over time, it is useful to generalize a single stage treatment regime into a \emph{dynamic treatment regime} (DTR) or in the terminology of reinforcement learning, a \emph{treatment policy}. A dynamic treatment regime generalizes of the ideas of personalized medicine by dictating treatments at each step of a sequence of possible treatment assignments based on the changing (dynamic) states of each individual patient. In order to determine which dynamic treatment regime is best (optimal) we will employ Q-learning, the most popular method for estimating optimal dynamic treatment regimes.
 
-% basic process of RL
-
-
-
-% elements of RL problems?
+% subsection dynamic_treatment_regimes (end)
 
 % section reinforcement_learning (end)
 
 \section{Q-learning} % (fold)
 \label{sec:q_learning}
 
-Q-learning is the most popular method for estimating dynamic treatment regimes.
-
-% watkins
-
-\subsection{Notation} % (fold)
-\label{sub:notation}
-Following the notation in Chakraborty [\textbf{CITE}], patients are recruited covariates measured before the trial begins that are recorded in a vector denoted $\bm{\bm{O}}_{1}$. These covariates will be referred to as the patient history at stage 1: $H_{1} \doteq \bm{O}_{1}$. A first treatment, $A_{1}$, is randomly assigned to each patient and each patient is measured again for the same covariates as before, $\bm{O}_{2}$ and scalar reward is received, $R_{1}$. This reward can be any scalar number for which maximizing would achieve the goals of the study \textbf{[S\&B]}. Most often rewards are simply set to be a continuous outcome of interest (e.g. number of kg of weight lost in a weight loss study). The treatment and second observation of covariates are incorporated in each patients history at stage 2: $H_{2} \doteq (\bm{O}_{1}, A_{1}, \bm{O}_{2})$. A second treatment, $A_{2}$ is then assigned to each patient at random (potentially depending on $Y_{1}$ and/or $H_{2}$) and the outcome is observed again, $Y_{2}$. Note that this can easily be modified for a single terminal outcome by setting $Y_{1} = 0$. The optimal Q-functions (Q for quality - quality of treatment decisions) are then defined as follows $\bm{r}_{k} = (R_{1k}, R_{2k}, \ldots, R_{nk})$
-
-
-% subsection notation (end)
-
-\subsection{Estimating Q-functions} % (fold)
-\label{sub:estimating_q_functions}
-
-Q-functions are defined as the expected rewards at each stage $k$ given that treatment(s) $\bm{A_{k}}$ was assigned and patient histories/characteristics up to stage $k$ were $\bm{H_{k}}$:
-
+Following the notation in \textcite{dtr-book}, suppose patients are recruited into a clinical trial and covariates measured before the trial begins are recorded in a vector, $\bm{\bm{O}}_{1}$. These covariates will be referred to as the patient history at stage 1: $H_{1} \equiv \bm{O}_{1}$. A first treatment, $A_{1}$, is randomly assigned to each patient and each patient is measured again for the same covariates as before, $\bm{O}_{2}$ and scalar reward is received, $R_{1}$. As mentioned above, this reward can be any scalar number for which maximizing would achieve the goals of the study (\cite{Sutton2016}). Most often rewards are simply set to be a continuous outcome of interest (e.g. kg of weight lost in a weight loss study). The treatment and second observation of covariates are incorporated into each patients history at stage 2: $H_{2} \equiv (\bm{O}_{1}, A_{1}, \bm{O}_{2})$. A second treatment, $A_{2}$ is then assigned to each patient at random (potentially depending on $R_{1}$ and/or $H_{2}$) and is followed by another outcome/reward, $R_{2}$. This process can be repeated through as many stages as desired. Note that this scheme can easily be modified for a single terminal outcome by setting $R_{1}, \ldots, R_{K-1} \equiv 0$ for a sequence of $K$ stages (as we do in the simulation below). The Q-functions (Q for quality--i.e. quality of treatment decisions) are defined as the expected rewards at each stage $k$ given that treatment(s) $\bm{A_{k}}$ was assigned and patient histories/characteristics up to stage $k$ were $\bm{H_{k}}$:
 \begin{equation}
    Q_{k}(\bm{A}_{k}, \bm{H}_{k})  = \operatorname{E}[\bm{r}_{k} \mid \bm{A}_{k}, \bm{H}_{k}], \quad k = 1, \ldots, K
 \end{equation}
 
-Since Q-functions are conditional expectations, standard regression techniques are applicable and hence the most popular method for estimating Q-functions in the health sciences is ordinary least squares (linear regression) [\textbf{murphy DTR review}].
+%
+% $\bm{r}_{k} = (R_{1k}, R_{2k}, \ldots, R_{nk})$
+%
 % \begin{equation}
 %   Q_{j}^{opt}(H_{j}, A_{j}; \bm{\beta}_{j}, \bm{\psi}_{j}) = \bm{\beta}^{T} H_{j0} + \bm{\psi}^{T} H_{j1} A_{j}, \quad j = 1, 2
 % \end{equation}
 %
 % Where $H_{j0}$ are main effects of history which includes an intercept term and a main effect for treatment, $A_{j}$
-That being said, any modelling method can be used, and recently \textbf{Zhao et al} have used techniques from statistical learning, namely extremely randomized trees and support vector regression to fit Q-functions. Note that Q-functions may differ across stages of treatment.
+
+\subsection{Estimating Q-functions and optimal DTRs} % (fold)
+\label{sub:estimating_q_functions}
+
+Since Q-functions are conditional expectations, standard regression techniques are applicable and hence the most popular method for estimating Q-functions in the health sciences is ordinary least squares (\cite{dtr-review}).
+
+That being said, any modelling method can be used, and as mentioned above recently \textcite{crt} have used extremely randomized trees and support vector regression to fit Q-functions. Note that Q-functions may differ across stages of treatment. The steps of Q-learning are as follows:
 
 \begin{enumerate}
-  \item Set $Q^{opt}_{K + 1} \doteq 0$ (though any value will do)
-  \item Create a pseudo-outcome for the last stage, $K$, estimation:
+  \item Set the Q-function after the final stage to be 0, $\hat{Q}_{K+1} \doteq 0$ (though any value will do)
+  \item Create a pseudo-outcome for the last stage, $K$, by adding the rewards actually received at that stage to the estimated rewards that would have been obtained if the optimal dynamic treatment regime was followed after stage $K$:
   \begin{align}
-    \hat{\bm{r}}_{K} &= \bm{r}_{K} + \max_{a_{K+1}} Q_{K+1}^{opt}(\bm{A}_{K+1}, \bm{H}_{K+1}) \\
+    \hat{\bm{r}}_{K} &= \bm{r}_{K} + \max_{a_{K+1}} \hat{Q}_{K+1}(\bm{A}_{K+1}, \bm{H}_{K+1}) \\
     \hat{\bm{r}}_{K} &= \bm{r}_{K}
   \end{align}
-  \item Estimate the $K - 1$ (preceding stage) Q-function using the pseudo-outcome just created, $\hat{\bm{r}}_{K}$ as the outcome, all aspects of patient history at that stage, $\bm{H}_{K}$, desired as covariates, in addition to treatment by covariate interactions for covariates in $\bm{H}_{K}$ thought to be indicative of subgroups with differential treatment effects:
+  \item Estimate the preceding stage Q-function, $Q_{K - 1}$, using the pseudo-outcome just created, $\hat{\bm{r}}_{K}$ as the outcome, all aspects of patient history at that stage, $\bm{H}_{K}$ desired as covariates, in addition to (if fitting a linear regression model) treatment by covariate interactions for covariates in $\bm{H}_{K}$ thought to be indicative of subgroups with differential treatment effects:
   \begin{equation}
-      Q_{K}^{opt}(A_{2}, H_{2}) = \operatorname{E}[\hat{\bm{r}}_{K} \mid \bm{A}_{K}, \bm{H}_{K}]
+      \hat{Q}_{K}(A_{K}, H_{K}) = \operatorname{E}[\hat{\bm{r}}_{K} \mid \bm{A}_{K}, \bm{H}_{K}]
   \end{equation}
-  \item Create the pseudo-outcome for the previous stage:
+  \item Create the pseudo-outcome for the previous stage $K - 1$, again as if the optimal treatment regime will be followed after $K - 1$:
   \begin{equation}
-    \hat{\bm{r}}_{K-1} = \bm{r}_{K-1} + \max_{a_K} Q_{K}^{opt}(A_{K}, H_{K})
+    \hat{\bm{r}}_{K-1} = \bm{r}_{K-1} + \max_{a_K} \hat{Q}_{K}(A_{K}, H_{K})
   \end{equation}
   \item Repeat until you've estimated the Q-function for the first stage
 \end{enumerate}
 
-The full recursive form is then 
+The full recursive form of Q-learning can be then written on a single line as:
   \begin{equation}
-     Q_{k}(\bm{A}_{k}, \bm{H}_{k})  = \operatorname{E}[\bm{r}_{k} + \max_{a_{k+1}} Q_{k+1}(\bm{A}_{k+1}, \bm{H}_{k+1}) \mid \bm{A}_{k}, \bm{H}_{k}], \quad k = 1, \ldots, K
+     \hat{Q}_{k}(\bm{A}_{k}, \bm{H}_{k})  = \operatorname{E}[\bm{r}_{k} + \max_{a_{k+1}} \hat{Q}_{k+1}(\bm{A}_{k+1}, \bm{H}_{k+1}) \mid \bm{A}_{k}, \bm{H}_{k}], \quad k = 1, \ldots, K
   \end{equation}
 
 % backwards induction
 
-\begin{algorithm}[H]
-  initialize $Q_{K + 1}^{opt}$ arbitrarily \\
-  $Q_{K + 1}^{opt} \gets 0$ \\
- \For{$k \in K, \ldots, 1$}{
-  read current\;
-  \eIf{understand}{
-   go to next section\;
-   current section becomes this one\;
-   }{
-   go back to the beginning of current section\;
-  }
- }
- \caption{Q-learning algorithm}
-\end{algorithm}
-
 % subsubsection estimating_q_functions (end)
 
-\subsection{Estimating optimal dynamic treatment regime} % (fold)
-\label{sub:estimating_optimal_dynamic_treatment_regime}
-
-The optimal treatment at each stage is then the treatment which maximizes the corresponding stage's Q-function:
-
+With the Q-functions in hand, the optimal treatment for each participant $i \in 1, \ldots, n$ at each stage $k$ is then the treatment which maximizes the corresponding stage's Q-function:
 \begin{equation}
-  a^{opt}_{ik} = \argmax_{a_{ik}} Q_{k}(\bm{a}_{ik}, \bm{h}_{ik})
+  \hat{a}^{opt}_{ik} = \argmax_{a_{ik}} \hat{Q}_{k}(\bm{a}_{ik}, \bm{h}_{ik}), \enspace i = 1, \ldots, n; \enspace k = 1, \ldots, K
 \end{equation}
-
-For every participant $i = 1, \ldots, n$ at each stage $k = 1, \ldots, K$
-
-% subsubsection estimating_optimal_dynamic_treatment_regime (end)
 
 % subsection steps_in_two_stage_q_learning (end)
 
+\begin{algorithm}[H]
+  initialize $\hat{Q}_{K + 1}^{opt}$ arbitrarily:
+\[
+    \hat{Q}_{K + 1}^{opt} \gets 0
+\]
+ \For{$k \in K, \ldots, 1$}{
+  Estimate the rewards that would occur if the optimal policy was  followed after $k$:
+  
+$ \hat{\bm{r}}_{k} \gets \bm{r}_{k} + \max_{A_{k+1}} \hat{Q}_{k+1}(\bm{A}_{k+1}, \bm{H}_{k+1})$
 
+\medskip
+
+Estimate the Q-function, $Q_{k}(A_{k}, \bm{H}_{k})$, for the preceding stage using this reward as the outcome (e.g. through ordinary least squares).
+
+\medskip
+
+Estimate the optimal treatment(s) for each patient at stage $k$:
+
+$\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, \bm{H}_{k})$
+ }
+ \caption{Q-learning}
+\end{algorithm}
 
 % section q_learning (end)
 
 \section{Classification and Regression Trees (CART)} % (fold)
 \label{sec:rpart}
 
-Since in reinforcement learning rewards are defined to be continuous we consider only the regression tree version of the CART procedure.
+As mentioned before, trees have many attractive features, particularly when the goal is obtaining subgroups, as will be discussed in the last part of this section. Since in reinforcement learning rewards are defined to be continuous we consider only the regression tree version of the CART procedure in the discussion below.
 
-A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statment is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node).
+A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statment is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node). Unlike trees in nature, decision trees grow from the root node downward, as shown in the illustrative example below.
 
-For example, a simple regression tree could be constructed with the following rules:
+For example, a simple regression tree could be constructed with the following rules (adapted from \cite{apm}):
 \begin{verbatim}
 if Covariate A <= 2 then
 |   if Covariate B >= 34.2 then Outcome = 6
@@ -308,16 +276,10 @@ if Covariate A <= 2 then
 else Outcome = 2.2
 \end{verbatim}
 
-Decision trees are depicted upside down compared to trees in nature:
+\subsection{Tree growing} % (fold)
+\label{sub:tree_growing}
 
-<picture of example>
-
-Example adapted from \cite{kuhn}
-
-\subsection{Tree building} % (fold)
-\label{sub:tree_building}
-
-Our overarching goal in tree construction is to create nodes as homogeneous in the outcome as possible. This is because we will predict a single outcome for all observations in the terminal nodes, meaning nodes heterogeneous in the outcome will yield poor predictions. To achieve this we must determine
+Our overarching goal in tree construction is to create nodes as homogeneous in the outcome as possible. This is because we will predict a single outcome for all observations in the terminal nodes, meaning nodes heterogeneous in the outcome will yield poor predictions. To achieve this we must determine:
 
 \begin{enumerate}
   \item What covariate to use to define a split and what value of the covariate to split on
@@ -325,12 +287,10 @@ Our overarching goal in tree construction is to create nodes as homogeneous in t
   \item How to assign an outcome to each terminal node
 \end{enumerate}
 
-We use the the classification and regression tree (CART) approach of \cite{CART}. We begin with all of the data (the \emph{root node}) and evaluate the sum of squared errors that result from splitting each unique value of each covariate:
-
+We use the the classification and regression tree (CART) approach of \textcite{CART}. We begin with all of the data (the \emph{root node}) and evaluate the sum of squared errors that result from splitting each unique value of each covariate:
 \begin{equation}
   SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2 
-\end{equation} 
-
+\end{equation}
 Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ and $\bar{y}_{R}$ is the average outcome in the right node, $\text{node}_{R}$. We then choose the split that minimizes the sum of squares. Then the process is repeated for both of the resulting left and right nodes. This feature of recursive splitting, or partitioning, of the data is why this method is also known as \emph{recursive partitioning}. Typically we continue splitting in this manner until the number of observations in a node falls below a threshold (e.g. 20 observations).
 
 \begin{algorithm}[H]
@@ -348,10 +308,10 @@ Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ a
  add newly created nodes to set of terminal nodes
  }
 }
- \caption{CART Tree building algorithm}
+ \caption{Regression tree building algorithm}
 \end{algorithm}
 
-% subsection tree_building (end)
+% subsection tree_growing (end)
 
 \subsection{Tree pruning} % (fold)
 \label{sub:tree_pruning}
@@ -378,21 +338,43 @@ With the $T_{\alpha}$s in hand, we choose the $\alpha$ (and hence $T_{\alpha}$) 
 
 % subsubsection tree_pruning (end)
 
+\subsection{Variable importance in CART} % (fold)
+\label{sub:variable_importance_in_cart}
+
+Variable importance in trees can be measured by summing the overall reduction in the optimization criteria for each prediction (\cite{CART}). In regression trees, the optimization criteria is typically SSE, so we could sum the reductions in SSE from each splits made based on a particular covariate, repeating the process for every covariate.
+
+% subsection variable_importance_in_cart (end)
+
+
 \subsection{Advantages and disadvantages to CART} % (fold)
 \label{sub:advantages_and_disadvantages_to_cart}
 
-The main advantage of regression trees is their easy interpretation, even by non-experts, largely due to the convenient graphical tree representation. CART also intrinsically conducts feature selection as part of the model building process and easy handles many types of covariates without the need for pre-processing, creating dummy variables, or even specification of the form of the relationship between the covariates and the outcome. There are also methods to handle missing data specific to trees \cite{esl}.
+The main advantage of regression trees is their easy interpretation, even by non-experts, largely due to the convenient graphical tree representation. CART also intrinsically conducts feature selection as part of the model building process and easy handles many types of covariates without the need for pre-processing, creating dummy variables, or even specification of the form of the relationship between the covariates and the outcome. There are also methods to handle missing data specific to trees see \textcite{esl} for details.
 
-Trees however, tend to have lower predictive performance compared to other methods, particularly in the regression setting. Part of the reason is that trees tend to be sensitive to changes in data, which is to say they have high variance (though ensemble methods like random forest, discussed below, exploit this property to achieve better performance). In the regression setting in particular, trees have a lack of smoothness and difficulty in capturing additive structures. Multivariate adaptive regression splines (MARS) can be viewed as a modification of the CART technique to overcome these issues.
+Trees however, tend to have lower predictive performance compared to other methods, particularly in the regression setting. Part of the reason is that trees tend to be sensitive to changes in data, which is to say they have high variance (though ensemble methods like random forest, discussed below, exploit this property to achieve better performance). In the regression setting in particular, trees are hindered by a lack of smoothness and difficulty in capturing additive structures. Multivariate adaptive regression splines (MARS) can be viewed as a modification of the CART technique to overcome these issues.
 
 % subsection advantages_and_disadvantages_to_cart (end)
 
+\subsection{Illustrative example} % (fold)
+\label{sub:example}
+
+Let's examine CART, MARS, and random forest (below) using a simple sub-problem from the simulation described in detail below. Suppose we want to predict the change in the mass of the $i$th cancer patient's tumor from month one to month two, $Y_{i} \equiv M_{i1} - M_{i0}$, given the dose of a drug, $D_{i}$, which they were (randomly) assigned. The true relationship is given by
+\begin{equation}
+  Y_{i} = 0.15 - 1.2 (D_{i} - 0.5) + \epsilon_{i} 
+\end{equation}
+Where $\epsilon_{i} \sim N(0, 0.05)$. 100 patients were simulated with random starting tumor masses sampled from a uniform distribution from 1 to 2, $M_{0} \overset{iid}{\sim} \text{Unif}(1, 2)$, and doses were sampled from a uniform distribution between 0 (none) and 1 (the maximum tolerable dose), $D \overset{iid}{\sim} \text{Unif}(0, 1)$.
+
+Fitting a regression tree to the example data yields the following tree
+
+% subsection example (end)
+
+
 % section rpart (end)
 
-\section{Multivariate adaptive regression splines} % (fold)
+\section{Multivariate adaptive regression splines (MARS)} % (fold)
 \label{sec:mars}
 
-Multivariate adaptive regression splines, or MARS (Friedman 1991) can be viewed as a generalization of stepwise selection regression methods that incorporates variable selection and automatic modelling of interactions. MARS accomplishes this through modelling covariates as piecewise linear basis functions and their products. These piecewise linear basis functions are of the form 
+MARS (\cite{mars}) can be viewed as a generalization of stepwise regression methods that incorporates automatic modelling of interactions. MARS accomplishes this through modelling covariates as piecewise linear basis functions and their products. These piecewise linear basis functions are of the form 
 %
 \begin{equation} \label{eq:bases}
   (x - t)_{+} \text{ and } (t - x)_{+}
@@ -404,12 +386,12 @@ Multivariate adaptive regression splines, or MARS (Friedman 1991) can be viewed 
   0, & \text{otherwise}
   \end{cases}
 \end{equation}
-The set in equation \ref{eq:bases} sometimes called a \emph{reflected pair} because the values they take on are symmetric (mirrored) across $t$. Each function in the pair is called a \emph{hinge} function, and can alternatively be denoted $h(x - t)$ and $h(t - x)$ respectively. $t$ is called a $knot$ (where the two hinges join).
+The set in equation \ref{eq:bases} sometimes called a \emph{reflected pair} because the values they take on are symmetric (reflected) across $t$. Each function in the pair is called a \emph{hinge} function, and can alternatively be denoted $h(x - t)$ and $h(t - x)$ respectively. $t$ is called a $knot$ (where the two hinges join).
 
 \subsection{Forward pass} % (fold)
 \label{sub:forward_pass}
 
-As in forward stepwise linear regression methods we begin with only a constant:
+As in forward stepwise linear regression methods, in MARS,  we begin with only a constant:
 \begin{equation}
   f(X) = \beta_{0}
 \end{equation}
@@ -508,7 +490,7 @@ As you might have guessed, we can't in practice achieve a $B$ fold decrease in t
 \subsection{Random forest} % (fold)
 \label{sub:random_forest}
 
-Statistically, we can decrease correlation by introducing randomness, so \cite{rf} suggested that instead of considering all $p$ predictors for each split, to only consider a random subset $m_{try} \subset p$, randomly sampled from $p$ for each split. 
+Statistically, we can decrease correlation by introducing randomness, so \textcite{rf} suggested that instead of considering all $p$ predictors for each split, to only consider a random subset $m_{try} \subset p$, randomly sampled from $p$ for each split. 
 
 \begin{algorithm}[H]
 \For{$i$ in 1 to $B$}{
@@ -526,18 +508,23 @@ Statistically, we can decrease correlation by introducing randomness, so \cite{r
  \caption{Random forest}
 \end{algorithm}
 
-How should we choose $B$ and $m_{try}$? There is no danger to overfitting by growing more trees so $B$ is typically set at a large enough number for the error rate to level off, \cite{khun} recommends starting at 1000. Recommendations for $m_{try}$ are often set at a default of $\sqrt{p}$ or $p/3$, the latter recommended for regression problems, though $m_{try}$ can be also be chosen using resampling techniques. 
+How should we choose $B$ and $m_{try}$? There is no danger to overfitting by growing more trees so $B$ is typically set at a large enough number for the error rate to level off, \textcite{apm} recommend starting at 1000. Recommendations for $m_{try}$ are often set at a default of $\sqrt{p}$ or $p/3$, the latter specifically recommended for regression problems, though in practice $m_{try}$ should be chosen using resampling techniques. 
 
 % subsection random_forest (end)
+
+\subsection{Variable importance in random forests} % (fold)
+\label{sub:variable_importance_in_random_forests}
+
+% subsection variable_importance_in_random_forests (end)
 
 \subsection{Advantages and disadvantages to random forest} % (fold)
 \label{sub:advantages_and_disadvantages_to_random_forest}
 
-This approach leads to significantly more accurate predictions over a single tree, but also significantly reduces the interpretability.
+This approach leads to significantly more accurate predictions over a single tree, but also significantly reduces the interpretability. This makes subgroup identification difficult, relegating the endeavor to simply examining variable importance measures, which indicate the importance in terms of predictive accuracy, not necessarily that a variable identifies a subgroup with differential treatment effects.
 
 % subsection advantages_and_disadvantages_to_random_forest (end)
 
-variable importance in rf
+
 
 % section random_forest (end)
 
@@ -546,7 +533,7 @@ variable importance in rf
 \subsection{Patient Model} % (fold)
 \label{sub:vpm}
 
-Largely inspired by \cite{paper}
+Largely inspired by \textcite{crt}
 
 The goals of the patient model were to capture:
 
@@ -647,17 +634,6 @@ If $S_{t} \leq 1$ (i.e. the patient would not survive past another month), the p
   \end{cases}
 \end{equation}
 
-\subsubsection{Tuning parameters for basic scenario} % (fold)
-\label{ssub:tuning_parameters_for_basic_scenario}
-
-\begin{itemize}
-  \item CART: the complexity parameter $\alpha$ was chosen using 10 fold cross validation as ????
-  \item MARS: the number of terms in each model, $\lambda$ was chosen using generalized cross validation
-  \item RF: the number of parameters to consider for splitting in each resample, \texttt{mtry} was fixed at 2 plus the treatment variable \texttt{dose} which was chosen in each resample, making this equivalent to bagging
-\end{itemize}
-
-% subsubsection tuning_parameters_for_basic_scenario (end)
-
 % subsection basic_setup (end)
 
 
@@ -669,33 +645,22 @@ In addition to the basic scenario just described, two additional baseline covari
   X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1) 
 \end{equation}
 Using the values of these covariates, four approximately equally sized subgroups were constructed:
-\begin{enumerate}
-  \item $X_{1} < 0.5$ \& $X_{2} < 0.5$: patients simulated identically to those in the basic scenario.
-  \item $X_{1} > 0.5$ \& $X_{2} < 0.5$: these patients are 50\% more sensitive to the effects of the drug:
+\begin{description}
+  \item [$X_{1} < 0.5 \ \& \ X_{2} < 0.5$:] patients simulated identically to those in the basic scenario.
+  \item [$X_{1} > 0.5 \ \& \ X_{2} < 0.5$:] these patients are 50\% more sensitive to the effects of the drug:
    \begin{equation}
    W'_{t*} = 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1}
    \end{equation}
-   \item $X_{1} < 0.5$ \& $X_{2} > 0.5$: the treatment is 50\% more effective for these patients:
+   \item [$X_{1} < 0.5 \ \& \ X_{2} > 0.5$:] the treatment is 50\% more effective for these patients:
 \begin{equation}
 M'_{t*} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
 \end{equation}
-   \item $X_{1} < 0.5$ \& $X_{2} > 0.5$: the drug is 50\% more effective for these patients, but they are also 50\% more sensitive to its effects:
+   \item [$X_{1} > 0.5 \ \& \ X_{2} > 0.5$:] the drug is 50\% more effective for these patients, but they are also 50\% more sensitive to its effects:
    \begin{align}
    W'_{t*} &= 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1} \\
    M'_{t*} &= [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
    \end{align}
-\end{enumerate}
-
-\subsubsection{Tuning parameters for interaction scenario} % (fold)
-\label{ssub:tuning_parameters_for_interaction_scenario}
-
-\begin{itemize}
-  \item CART: the complexity parameter $\alpha$ was chosen using 10 fold cross validation as ????
-  \item MARS: the number of terms in each model, $\lambda$ was chosen using generalized cross validation
-  \item RF: the number of parameters to consider for splitting in each resample, \texttt{mtry} was fixed at 2 plus the treatment variable \texttt{dose} which was chosen in each resample
-\end{itemize}
-
-% subsubsection tuning_parameters_for_interaction_scenario (end)
+\end{description}
 
 % subsection subgroups_interaction (end)
 
@@ -717,6 +682,8 @@ In the first noise scenario, pure noise, the above variables were made available
 
 % subsubsection pure_noise (end)
 
+
+
 \subsubsection{Predictive noise scenario} % (fold)
 \label{ssub:predictive_noise}
 In the second noise scenario, predictive noise, the $Z$ variables had a small influence on the rate parameter in the survival distribution:
@@ -732,44 +699,46 @@ but did not change the optimal dose, as this modification only shifts the expect
 \subsubsection{Both interaction and noise scenario} % (fold)
 \label{ssub:subsubsection_name}
 
-The interaction and noise scenarios were also combined together, to create the same subgroups as defined above in the presence of pure noise, and the presence of predictive noise.
+The interaction and noise scenarios were also combined together, to create the same subgroups as defined above in the presence of pure noise, and the presence of predictive noise, as described above.
 
 % subsubsection ssubsubsection_name (end)
 
-\subsubsection{Tuning parameters for all noise scenarios} % (fold)
-\label{ssub:tuning_parameters_for_all_noise_scenarios}
 
-\begin{itemize}
-  \item CART: the complexity parameter $\alpha$ was chosen using 10 fold cross validation as ????
-  \item MARS: the number of terms in each model, $\lambda$ was chosen using generalized cross validation
-  \item RF: the number of parameters to consider for splitting in each resample, \texttt{mtry} was fixed at 10 ($\approx \sqrt{p}$), plus the treatment variable \texttt{dose} which was chosen in each resample
-\end{itemize}
+\subsection{Tuning parameters \& details of model fit} % (fold)
+\label{ssub:tuning_parameters_for_interaction_scenario}
 
-% subsubsection tuning_parameters_for_all_noise_scenarios (end)
+\begin{description}
+  \item [CART:] Nodes with 15 or fewer observations were not split, nor were splits made if they produced nodes with fewer than 5 observations, or did not increase the overall R-squared by at least $10^{-5}$.
+  In the pruning step, $\alpha$ was chosen using the smallest tree (largest $\alpha$) within one standard error of the minimum 10 fold cross validation error. This was achieved via the \texttt{caret} package in \textsf{R} (which calls the \texttt{rpart} package) using \texttt{method = "rpart1SE"}.
+  \item [MARS:] Only interactions with the treatment variable, \texttt{dose}, were allowed, and these were restricted to second degree interactions. The forward pass was stopped if more than 200 terms were created, or further terms would decrease change in SSE? of less than 0.001. The number of terms in the model, $\lambda$, was chosen using generalized cross validation. 
+  \item [RF:] In all scenarios, \texttt{dose} was forced to be considered at each split.
+  \begin{description}
+    \item [Basic setup:] the number of parameters to consider at each split, $m_{try}$, was fixed at 1 ($\approx \sqrt{p}$) plus \texttt{dose}.
+    \item [Interaction only:] $m_{try}$ fixed at 1 ($\approx \sqrt{p}$) plus \texttt{dose}.
+    \item [All noise scenarios:] $m_{try}$ was fixed at 10 ($\approx \sqrt{p}$), plus the treatment variable \texttt{dose}
+  \end{description}
+\end{description}
 
 
-% \begin{equation}
-% \hat{Q}_{t} = R_{t} + \max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
-% \end{equation}
 
 \subsection{Procedure} % (fold)
 \label{sub:procedure}
 
-With the training data generated from each scenario listed above, Q-learning was applied using each of CART, MARS, and random forest to estimate the Q-functions at each stage. The fitted models for each stage under each scenario were saved for use on the validation set. 
+With the training data generated from each scenario listed above, Q-learning was applied using each of CART, MARS, and random forest to estimate the Q-functions at each stage. The fitted models for each stage under each scenario were saved for use on the validation set.
 
 % subsection procedure (end)
 
 \subsection{Validation} % (fold)
 \label{sub:validation}
 
-For validation data, I simulated the starting conditions for 200 in the same way as for the training data. I made 15 copies of these individuals which would undergo one of the following regimes:
+For validation data, I simulated the starting conditions for 200 new patients in the same way as for the training data. I made 15 copies of these individuals (i.e. each copy with the same initial tumor mass and toxicities) who would undergo one of the following regimes:
 
-\begin{enumerate}
-  \item 10 constant dose regimes (doses of $0.1, 0.2, \ldots,$ or 1 at each stage)
-  \item ``One-on-one-off'' - an alternating constant dose regime starting at the maximum dose, switching dose to 0 for next stage, and repeating through the end of the trial
-  \item ``Best'' - the best greedy dose choice given complete knowledge of the transition functions and their influence on survival
-  \item The estimated best doses (ones that maximize expected survival) from each of the three methods to estimate Q-functions: CART, MARS, and random forest
-\end{enumerate}
+\begin{description}
+  \item [10 constant dose regimes:] the same doses of $0.1, 0.2, \ldots,$ or 1 given at each stage
+  \item [``One-on-one-off'':] an alternating dose regime starting at the maximum dose (1), switching dose to 0 for next stage, and repeating through the end of the trial.
+  \item [``Best'':] the greedy dose choice given complete knowledge of the transition functions and their influence on survival
+  \item [CART, MARS, RF:] The estimated best doses (ones that maximize expected survival) from each of the three methods to estimate Q-functions: CART, MARS, and random forest
+\end{description}
 
 At each stage, patients would receive the treatment as dictated by the regimes above.
 
@@ -788,7 +757,13 @@ At each stage, patients would receive the treatment as dictated by the regimes a
 
 % section discussion (end)
 
+\printbibliography
+
 \end{document}
+
+% \begin{equation}
+% \hat{Q}_{t} = R_{t} + \max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
+% \end{equation}
 
 % \begin{equation}
 % R_{t} = R_{t, 1} + R_{t, 2} + R_{t, 3}
