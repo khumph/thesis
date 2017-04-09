@@ -28,7 +28,6 @@
 
 \usepackage{amsmath}
 \usepackage{commath}
-% \usepackage{bibtex}
 \usepackage[style=authoryear-comp, hyperref = true]{biblatex}
 \addbibresource{library.bib}
 \usepackage[]{algorithm2e}
@@ -261,10 +260,10 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, \bm{H}_{k})$
 
 % section q_learning (end)
 
-\section{Classification and Regression Trees (CART)} % (fold)
+\section{Regression Trees} % (fold)
 \label{sec:rpart}
 
-As mentioned before, trees have many attractive features, particularly when the goal is obtaining subgroups, as will be discussed in the last part of this section. Since in reinforcement learning rewards are defined to be continuous we consider only the regression tree version of the CART procedure in the discussion below.
+As mentioned before, trees have many attractive features, particularly when the goal is obtaining subgroups, as will be discussed in the last part of this section. Since in reinforcement learning rewards are defined to be continuous we consider the regression tree version of the CART procedure in the discussion below.
 
 A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statment is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node). Unlike trees in nature, decision trees grow from the root node downward, as shown in the illustrative example below.
 
@@ -308,7 +307,7 @@ Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ a
  add newly created nodes to set of terminal nodes
  }
 }
- \caption{Regression tree building algorithm}
+ \caption{Regression tree growing algorithm}
 \end{algorithm}
 
 % subsection tree_growing (end)
@@ -336,9 +335,28 @@ In order to find $T_{\alpha}$ for each $\alpha$, we use weakest link pruning. As
 
 With the $T_{\alpha}$s in hand, we choose the $\alpha$ (and hence $T_{\alpha}$) that minimizes the sum of square errors produced using cross validation. Alternatively, we can use choose the largest $\alpha$ (smallest $T_{\alpha}$) which is within one standard error of the minimum cross validated error.
 
+\begin{algorithm}[H]
+\For{each internal node}{
+  collapse node
+  
+  compute cost-complexity criterion value
+}
+\For{each subtree $T$ with the same number of terminal nodes $\abs{T}$}{
+
+}
+Find nodes that, if collapsed, produce the smallest increase in SSE per node (weakest link), these are the $T_{\alpha}$s
+
+\For{each $T_{\alpha}$}{
+ calculate the cross validation error
+}
+Choose the largest $T_{\alpha}$ within one standard error of the minimum cross validation error
+ \caption{Regression tree pruning algorithm}
+\end{algorithm}
+
+
 % subsubsection tree_pruning (end)
 
-\subsection{Variable importance in CART} % (fold)
+\subsection{Variable importance} % (fold)
 \label{sub:variable_importance_in_cart}
 
 Variable importance in trees can be measured by summing the overall reduction in the optimization criteria for each prediction (\cite{CART}). In regression trees, the optimization criteria is typically SSE, so we could sum the reductions in SSE from each splits made based on a particular covariate, repeating the process for every covariate.
@@ -346,7 +364,7 @@ Variable importance in trees can be measured by summing the overall reduction in
 % subsection variable_importance_in_cart (end)
 
 
-\subsection{Advantages and disadvantages to CART} % (fold)
+\subsection{Advantages and disadvantages} % (fold)
 \label{sub:advantages_and_disadvantages_to_cart}
 
 The main advantage of regression trees is their easy interpretation, even by non-experts, largely due to the convenient graphical tree representation. CART also intrinsically conducts feature selection as part of the model building process and easy handles many types of covariates without the need for pre-processing, creating dummy variables, or even specification of the form of the relationship between the covariates and the outcome. There are also methods to handle missing data specific to trees see \textcite{esl} for details.
@@ -750,10 +768,92 @@ At each stage, patients would receive the treatment as dictated by the regimes a
 \section{Simulation Results} % (fold)
 \label{sec:simulation_results}
 
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=\textwidth]{results-plot-orig.png}
+\end{center}
+\caption[Months of survival under basic scenario]{Months of survival under each regime for the basic scenario. The same 200 patients were simulated under each treatment regime (same initial tumor masses and toxicities). This test simulation was  repeated 25 times and averaged over the 25 repetitions. Notches extend $1.58 \times IQR / \sqrt{n}$, giving a rough 95\% confidence interval for medians. Upper whisker extends $1.5 \times IQR$ beyond the upper hinge (top of box). Observations beyond that are shown as points.}
+\label{fig:results-orig}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=\textwidth]{results-plot-int.png}
+\end{center}
+\caption[Months of survival under the interaction scenario]{Months of survival under each regime for the interaction scenario.}
+\label{fig:results-int}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=\textwidth]{results-plot-noise.png}
+\end{center}
+\caption[Months of survival under the noise scenario]{Months of survival under each regime for the noise scenario.}
+\label{fig:results-noise}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=\textwidth]{results-plot-noise-pred.png}
+\end{center}
+\caption[Months of survival under the predictive noise scenario]{Months of survival under each regime for the predictive noise scenario.}
+\label{fig:results-noise}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=\textwidth]{results-plot-int-noise.png}
+\end{center}
+\caption[Months of survival under the interaction and noise scenario]{Months of survival under each regime for the interaction and noise scenario.}
+\label{fig:results-int-noise}
+\end{figure} 
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=\textwidth]{results-plot-int-noise-pred.png}
+\end{center}
+\caption[Months of survival under the interaction and predictive noise scenario]{Months of survival under each regime for the interaction and predictive noise scenario.}
+\label{fig:results-int-noise-pred}
+\end{figure}
+
+%latex.default(., file = "", rowname = NULL, colheads = labs,     booktabs = T)%
+\begin{table}[H]
+\caption[Average months of survival under each scenario]{Average months of survival under each scenario, averaged over 25 test sets each with 200 participants for each regime. B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, IN is the interaction and noise scenario, and IPN is the interaction and predictive noise scenario.}
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{IN}&\multicolumn{1}{c}{IPN}\tabularnewline
+\midrule
+greedy&$13.5$&$13.4$&$13.7$&$24.3$&$23.9$&$23.9$\tabularnewline
+RF&$12.1$&$12.5$&$13.2$&$19.6$&$21.2$&$20.5$\tabularnewline
+MARS&$16.1$&$12.0$&$ 9.2$&$20.7$&$15.5$&$17.8$\tabularnewline
+CART&$ 4.0$&$ 3.6$&$ 3.3$&$ 4.7$&$ 3.2$&$ 3.9$\tabularnewline
+1on1off&$ 5.6$&$ 5.6$&$ 5.7$&$ 7.3$&$ 7.1$&$ 7.3$\tabularnewline
+1&$ 3.8$&$ 3.8$&$ 3.8$&$ 3.5$&$ 3.4$&$ 3.4$\tabularnewline
+0.9&$ 4.0$&$ 3.9$&$ 3.9$&$ 3.6$&$ 3.6$&$ 3.6$\tabularnewline
+0.8&$ 4.0$&$ 4.1$&$ 4.1$&$ 4.0$&$ 3.9$&$ 3.9$\tabularnewline
+0.7&$ 3.9$&$ 3.9$&$ 3.9$&$ 4.3$&$ 4.3$&$ 4.3$\tabularnewline
+0.6&$ 3.8$&$ 3.7$&$ 3.7$&$ 4.7$&$ 4.6$&$ 4.5$\tabularnewline
+0.5&$ 3.6$&$ 3.6$&$ 3.6$&$ 4.7$&$ 4.6$&$ 4.6$\tabularnewline
+0.4&$ 3.7$&$ 3.6$&$ 3.6$&$ 4.2$&$ 4.3$&$ 4.3$\tabularnewline
+0.3&$ 3.9$&$ 3.9$&$ 3.8$&$ 4.2$&$ 4.0$&$ 4.0$\tabularnewline
+0.2&$ 3.7$&$ 3.6$&$ 3.6$&$ 4.0$&$ 3.8$&$ 3.8$\tabularnewline
+0.1&$ 3.3$&$ 3.3$&$ 3.3$&$ 3.4$&$ 3.4$&$ 3.4$\tabularnewline
+\bottomrule
+\end{tabular}\end{center}
+\end{table}
+
 % section simulation_results (end)
 
 \section{Discussion} % (fold)
 \label{sec:discussion}
+
+% Main results
+% Relation to other literature/previous research
+% biological rationale/possible explanation/mechanisms
+% strengths and limitations: address limitations but then try to minimize impact
+% Implications/take home message 
+% Directions for future research
 
 % section discussion (end)
 
