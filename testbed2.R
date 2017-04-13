@@ -3,19 +3,21 @@ ptm <- proc.time()
 library(pacman)
 p_load(tidyverse, rms, caret, gridExtra, stringr)
 source("sim.R")
-source("sim-test-deter.R")
+source("sim-test2.R")
 source("q-functs.R")
 source("results-functs.R")
 
-samps <- 20
+samps <- 1
+nstages <- 3
+i <- 1
 
 x <- list(
-  # orig = rep(F, 3) #,
-   # noise = c(F, T, F) #,
-  noise_pred = c(F, T, T),
-  int = c(T, F, F),
-  int_noise = c(T, T, F),
-  int_noise_pred = rep(T, 3)
+  orig = rep(F, 3) #,
+  # noise = c(F, T, F),
+  # noise_pred = c(F, T, T),
+  # int = c(T, F, F),
+  # int_noise = c(T, T, F),
+  # int_noise_pred = rep(T, 3)
 )
 
 # boot_samp <- function(dat_long, seed) {
@@ -33,9 +35,9 @@ for (i in seq_along(x)) {
 # set.seed(20161116)
 # dat_long <- sim(int = int, noise = noise, noise_pred = noise_pred, Ttot = 6)
 
-dat_long <- map_df(1:samps, ~ sim(N = 1000,
+dat_long <- map_df(1:samps, ~ sim(N = 100,
                                   int = int, noise = noise,
-                                  noise_pred = noise_pred, Ttot = 6,
+                                  noise_pred = noise_pred, Ttot = nstages,
                                   seed = 20170411 + .x) %>% mutate(samp = .x))
 
 # bootSamps <- map_df(1:samps, ~ boot_samp(dat_long, seed = .x) %>%
@@ -72,7 +74,8 @@ Q_rpart <- map(
   1:samps,
   ~ Qlearn(
     form = form,
-    filter(dat_long, samp == .x),
+    dat_long = filter(dat_long, samp == .x),
+    nstages = nstages,
     # tuneGrid = expand.grid(cp = 10^(seq(-7, -1, 1))),
     # trControl = trainControl(method = "boot"),
     method = 'rpart1SE',
@@ -113,6 +116,7 @@ Q_mars <- map(
   1:samps, ~ Qlearn(
     form,
     filter(dat_long, samp == .x),
+    nstages = nstages,
     method = 'gcvEarth',
     trControl = trainControl(method = "none"),
     nk = 200,
@@ -120,7 +124,7 @@ Q_mars <- map(
     tuneGrid = expand.grid(degree = 2)
   )) %>% set_names(paste0("mars", 1:samps))
 
-t_mars <- proc.time() - ptm_mars
+(t_mars <- proc.time() - ptm_mars)
 
 
 # # BMARS -------------------------------------------------------------------
@@ -152,6 +156,7 @@ Q_rf <- map(1:samps, ~ Qlearn(
   form,
   filter(dat_long, samp == .x),
   method = 'ranger',
+  nstages = nstages,
   # tuneGrid = grid,
   tuneGrid = expand.grid(mtry = length(pred_nms)),
   trControl = trainControl(method = "none"),
@@ -184,8 +189,9 @@ t_rf <- proc.time() - ptm_rf
 ptm_test <- proc.time()
 
 Q_list <- c(Q_rpart, Q_mars,  Q_rf)
+Q_list <- Q_mars
 dat_test <- sim_test(Q_list, int = int, noise = noise, noise_pred = noise_pred,
-                     npergroup = 1000, seed = 20170410)
+                     npergroup = 1000, Ttot = nstages, seed = 20170410)
 
 t_test <- proc.time() - ptm_test
 
@@ -203,7 +209,7 @@ var_nms <- map_chr(prefix, ~ paste0(.x, type_nm))
 for (i in 1:length(var_nms)) {
   assign(var_nms[[i]], list(dat_test, Q_list)[[i]])
 }
-save(list = var_nms, file = paste0(type_nm, ".Rdata"))
+# save(list = var_nms, file = paste0(type_nm, ".Rdata"))
 }
 
 (t <- proc.time() - ptm)
