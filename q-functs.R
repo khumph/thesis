@@ -7,7 +7,7 @@ max_df <- function(dat, model, truth, pred, nested = F) {
   
   if (truth) {
     dat <- dat %>% 
-      mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.005))) %>%
+      mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.01))) %>%
       unnest()
     dat <- Mnext(dat, truth = truth)
     dat <- Wnext(dat, truth = truth)
@@ -55,7 +55,6 @@ Qlearn <- function(form, dat_long, boot = F, nstages = 6, ...) {
       mutate(best = ifelse(month == i, bestD, best))
   }
   list(
-    data = dat_long,
     mod_list = mod_list
   )
 }

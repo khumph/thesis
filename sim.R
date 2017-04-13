@@ -1,8 +1,10 @@
+# simulation functions ----------------------------------------------------
+
 updateW <- function(M, W, D, a1 = 0.1, b1 = 1.2, c1, d1 = 0.5, truth) {
-  truth <- rep(truth, length(M))
+  # truth <- rep(truth, length(M))
   W_next <-
-    a1 * M + b1 * (c1 * D  - d1) + W +
-    ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
+    a1 * M + b1 * (c1 * D  - d1) + W #+
+    # ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
   ifelse(W_next > 0, W_next, 0)
 }
 
@@ -23,11 +25,11 @@ Wnext <- function(dat, truth = F) {
 
 updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, c2, d2 = 0.5,
                     X = 0, Z = 0, a3 = 1e-3, truth) {
-  truth <- rep(truth, length(M))
+  # truth <- rep(truth, length(M))
   M_next <- ifelse(M > 0,
                    (a2 * W - b2 * (c2 * D  - d2)) +
-                     M + sum(a3 * Z) +
-                     ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
+                     M + sum(a3 * Z), #+
+                     # ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
                    0)
   ifelse(M_next > 0, M_next, 0)
 }
@@ -83,13 +85,14 @@ genIntNoise <- function(dat, int, noise, noise_pred) {
 }
 
 # defined as in NSCLC paper
-lambda <- function(M, W, Z, mu0 = -6, mu1 = 1, mu2 = 1.1, mu3 = 0.75,
+lambda <- function(M, W, Z, mu0 = -5.5, mu1 = 1, mu2 = 1.2, mu3 = 0.75,
                    a3 = 0.05) {
   exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M + a3 * Z)
 }
-```
 
-```{r sim}
+
+# simulation --------------------------------------------------------------
+
 simMonth <- function(dat) {
   dat <- Mnext(dat)
   dat <- Wnext(dat)
@@ -102,7 +105,8 @@ simMonth <- function(dat) {
   )
 }
 
-sim <- function(N = 1000, Ttot = 6, int = F, noise = F, noise_pred = F) {
+sim <- function(N = 1000, Ttot = 6, int = F, noise = F, noise_pred = F, seed = 1) {
+  set.seed(seed)
   dat <- tibble(
     ID = 1:N,
     month = rep(0, N),

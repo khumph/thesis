@@ -10,13 +10,13 @@ getPreds <- function(Q, name, dat, pred) {
 }
 
 simMonthT <- function(dat, Q, pred) {
-  out <- dat %>% filter(group != "best",
+  out <- dat %>% filter(group != "greedy",
                         !str_detect(group, paste(names(Q), collapse = "|"))) %>%
     mutate(dose = ifelse(group == "1on1off",
                          ifelse(dat$month[1] %% 2 == 1, 0, 1),
                          dose))
   
-  bestD <- max_df(dat = filter(dat, group == "best"),
+  bestD <- max_df(dat = filter(dat, group == "greedy"),
                   model = NULL, truth = T, pred = pred)
   
   optimD <- map2_df(Q, names(Q),
@@ -35,7 +35,8 @@ simMonthT <- function(dat, Q, pred) {
     )
 }
 
-sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6) {
+sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6, seed = 1) {
+  set.seed(seed)
   ngroups <- 12 + length(Q)
   M0 <- runif(npergroup, min = 0, max = 2)
   W0 <- runif(npergroup, min = 0, max = 2)
@@ -53,7 +54,7 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6) {
   D1 <- rep(seq(from = 0.1, to = 1, by = 0.1), each = npergroup)
   
   groups <- c(seq(from = 0.1, to = 1, by = 0.1) %>% as.character(),
-              "best",
+              "greedy",
               names(Q), "1on1off")
   
   dat <- dat[rep(seq_len(nrow(dat)), ngroups), ] %>% 
@@ -72,7 +73,7 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6) {
                       tumor_mass = M_next,
                       toxicity = W_next) %>%
       simMonthT(Q, pred = F) %>%
-      mutate(reward = ifelse(!dead, 0, log(i + 1 + surv_time)))
+      mutate(reward = ifelse(!dead, 0, log(i + surv_time)))
     out <- bind_rows(out, d)
   }
   out %>% group_by(ID) %>% mutate(
