@@ -624,7 +624,7 @@ When using this model to predict the test data we obtain a root mean squared err
 
 \section{Simulation}
 
-Largely inspired by \textcite{crt} and \textcite{nsclc}, we simulated a cancer clinical trial for an advanced generic cancer. Our primary goal was to maximize survival time. To achieve this, we first simulated a trial where patients are given a random dose of a single drug at the beginning of each of six months. We then applied Q-learning using each of the methods above to estimate the relationship between doses and death given different patient histories. In a validation trial of the same design, we chose optimal doses based on the estimated relationships.
+Largely inspired by \textcite{crt} and \textcite{nsclc}, we estimated optimal dynamic treatment regimes chosen from different doses of a single drug in a simulated cancer clinical trial for an advanced generic cancer. Our primary goal was to maximize survival time. To achieve this, we first simulated a trial where at the beginning of each of six months, patients' tumor masses and qualities of life were measured, and each patient was assigned a random dose of the drug. We then applied Q-learning using each of the methods above to estimate the relationship between doses and survival time given different patient histories. In a validation trial of the same design, we chose optimal doses based on the estimated relationships, and observed their effects of survival.
 
 \subsection{Patient Model} % (fold)
 \label{sub:vpm}
@@ -642,7 +642,7 @@ Largely inspired by \textcite{crt} and \textcite{nsclc}, we simulated a cancer c
 \subsubsection{Transition functions} % (fold)
 \label{ssub:transition_functions}
 
-Change in patient toxicity defined as the negative of wellness or quality of life\footnote{For simplicity, we take wellness and quality of life to be equivalent and exactly the opposite of toxicity}, was modelled as a function of tumor mass and dosage of treatment. All else being equal, doses above 0.5 increase toxicity (decrease quality of life) and doses below 0.5 decrease toxicity (increase quality of life) due to fewer toxic effects from treatment:
+Patient toxicity at a given month $t$, $W$, which we define as the negative of wellness or quality of life\footnote{For simplicity, we take wellness and quality of life to be equivalent and exactly the opposite of toxicity}, was modelled as a function of tumor mass and dosage of treatment:
 %
 \begin{equation}
 W_{t*} = 0.1 M_{t-1} + 1.2 (D_{t-1} - 0.5) + W_{t - 1}
@@ -653,14 +653,10 @@ W_{t} = \begin{cases}
   0 &\text{if } W_{t*} \leq 0
 \end{cases}
 \end{equation}
+This model captures the facts that higher tumor masses at month $t-1$, $M_{t-1}$, increase the measured toxicity at month $t$, $W_{t}$, and doses at month $t-1$, $D_{t -1}$, above 0.5 increase $W_{t}$ and $D_{t -1}$ below 0.5 decrease $W_{t}$ due to fewer toxic effects from treatment. Also $W_{t}$ is bounded by 0, which signfies no toxic effects.
 
-Where $W_{t}$ is toxicity (negative of the patient quality of life/wellness) at month $t$, bounded by 0 (no toxic effects from treatment),
-$M_{t-1}$ is the tumor mass the previous month,
-$D_{t-1}$ is the dose of treatment for the previous month, and
-$W_{t}$ is the toxicity at the previous month.
-
-Tumor mass change was modelled as a function of patient health and dosage, with doses above 0.5 decreasing tumor mass and doses below 0.5 causing tumor mass to increase for a given toxicity:
-
+Tumor mass at month $t$, $M_{t}$, was modelled as a function of toxicity measured the previous month, $W_{t-1}$, and dose assigned the previous month $D_{t-1}$: 
+%
 \begin{equation}
 M_{t*} = [0.15 W_{t-1} - 1.2 (D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
 \end{equation}
@@ -670,12 +666,8 @@ M_{t} = \begin{cases}
   0 &\text{if } M_{t*} \leq 0
 \end{cases}
 \end{equation}
-
-Where $M_{t}$ is the tumor mass at month $t$, bounded by 0 since mass is strictly positive,
-$W_{t-1}$ is patient toxicity at month $t - 1$,
-$M_{t-1}$ is the tumor mass at month $t - 1$,
-$D_{t-1}$ is the dose assigned at month $t - 1$, and
-$I(M_{t-1} > 0)$ indicates that if a person is cured (previous tumor mass = 0), then tumors do not recur.
+%
+for a given $W_{t-1}$, $D_{t-1}$ above 0.5 decreases $M_{t}$ and doses below 0.5 cause $M_{t}$ to increase, with $M_{t}$ is bounded by 0 since mass is strictly positive.
 
 % subsubsection transition_functions (end)
 
@@ -684,9 +676,9 @@ $I(M_{t-1} > 0)$ indicates that if a person is cured (previous tumor mass = 0), 
 
 Survival times (in months) were generated from an exponential distribution with a rate parameter modeled as a function of the tumor mass and toxicity at time $t$:
 \begin{equation}
-  \lambda_{t}(M_{t+1}, W_{t+1}) = \exp(-7 + W_{t+1} + 1.2 M_{t+1} + W_{t+1} M_{t+1}).
+  \lambda_{t}(M_{t+1}, W_{t+1}) = \exp(-6.5 + W_{t+1} + 1.2 M_{t+1} + 0.8 W_{t+1} M_{t+1}).
 \end{equation}
-This formulation indicates that we take tumor mass to be more important in survival than toxicity. The interaction between tumor mass and toxicity reflects the belief that higher levels of both tumor mass and toxicity lead to a greater reduction in survival than either alone.
+This indicates that we take tumor mass to be more important in survival than toxicity. The interaction between tumor mass and toxicity reflects the belief that higher levels of both tumor mass and toxicity lead to a greater reduction in survival than either alone.
 
 % subsubsection survival_model (end)
 
@@ -695,7 +687,7 @@ This formulation indicates that we take tumor mass to be more important in survi
 \subsection{Basic scenario} % (fold)
 \label{sub:basic_setup}
 
-To generate training data, we began by simulating 1000 patients, each receiving at total of six months of treatment ($t = 0, 1, \ldots, 5$), the doses of which were chosen from a uniform distribution over 0 and 1 at the beginning of each month:
+To generate the training data, we began by simulating 1000 patients, each receiving a total of six months of treatment ($t = 0, 1, \ldots, 5$), the doses of which were chosen from a uniform distribution over 0 and 1 at the beginning of each month:
 \begin{equation}
   D_{t} \overset{iid}{\sim} \text{Unif}(0, 1), \quad t = 0, 1, \ldots, 5
 \end{equation}
@@ -709,10 +701,10 @@ Each patient's initial tumor mass, $M_{0}$, and negative of quality of life (tox
 
 At each month $t$, the next month's tumor mass, $M_{t + 1}$, and toxicity, $W_{t + 1}$, were computed in response to dose at month $t$, $D_{t}$, for each patient as described above. Similarly, the rate parameter for the survival distribution, $\lambda_{t+1}(M_{t + 1}, W_{t + 1})$, was updated for each patient from these next month's tumor masses and toxicities. Survival times, $S_{t}$ were then randomly sampled from the exponential distribution with the just computed rate parameter:
 \begin{equation}
-  S_{t} \sim \text{Exp}(\exp(-6 + W_{t+1} + 1.2 M_{t+1} + 0.75 W_{t+1} M_{t+1}))
+  S_{t} \sim \text{Exp}(\exp(-6.5 + W_{t+1} + 1.2 M_{t+1} + 0.8 W_{t+1} M_{t+1}))
 \end{equation}
 
-If $S_{it} \leq 1$ for patient $i$ (i.e. the patient would not survive past another month), the patient was said to have died before the next month, and the reward received was computed as the total log survival time: log of the total number of months the patient had survived (including the fraction of a month before their death). If patient $i$ survived up to the final mont of treatment $t = 5$, the rewards were computed as $\log(S_{i5} + 5)$, the log of the simulated survival time after the final treatment plus the the number of months already elapsed. 
+If $S_{it} \leq 1$ for patient $i$ (i.e. the patient would not survive another month), the reward received was computed as the total log survival time: log of the total number of months the patient had survived (including the fraction of a month before their death, $S_{it}$). If patient $i$ survived up to the final mont of treatment $t = 5$, the rewards were computed as $\log(S_{i5} + 5)$, the log of the simulated survival time after the final treatment plus the the number of months already elapsed. 
 \begin{equation}
   R_{t + 1} = \begin{cases}
     \log(S_{t} + \sum_{j = 0}^{t} j) & \text{if } S_{t} \leq 1 \text{ or } t = 5 \\
@@ -726,7 +718,7 @@ If $S_{it} \leq 1$ for patient $i$ (i.e. the patient would not survive past anot
 \subsection{Interaction scenario} % (fold)
 \label{sub:subgroups_interaction}
 
-In the interaction scenario, in addition to the basic scenario just described, two additional baseline covariates, $X_{1}$ and $X_{2}$ were simulated from uniform distributions over 0, 1:
+The interaction scenario was identical to the basic scenario just described with the addition of two baseline covariates, $X_{1}$ and $X_{2}$ which were simulated from uniform distributions over 0, 1:
 \begin{equation}
   X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1) 
 \end{equation}
@@ -753,7 +745,7 @@ M'_{t*} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
 \subsection{High-dimensional noise scenarios} % (fold)
 \label{sub:noise_variables}
 
-In the noise scenarios, 100 noise variables: $Z = (Z_{1}, \ldots, Z_{10})$ and $V = (V_{1}, \ldots, V_{90})$ were also simulated with distributions as follows:
+In the noise scenarios, 100 addition variables: $Z = (Z_{1}, \ldots, Z_{10})$ and $V = (V_{1}, \ldots, V_{90})$ were also simulated with distributions as follows:
 \begin{align}
   Z_{1}, \ldots, Z_{5} &\overset{iid}{\sim} N(1, 1) \\
   Z_{6}, \ldots, Z_{10} &\overset{iid}{\sim} N(-1, 1) \\
@@ -772,9 +764,9 @@ In the noise scenario, the above variables were made available to the models, bu
 \label{ssub:predictive_noise}
 In the predictive noise scenario, the $Z$ variables had a small influence on the rate parameter in the survival distribution:
 \begin{equation}
-  \lambda'_{t}(M_{t+1}, W_{t+1}) = \exp\del{-6 + W_{t+1} + 1.2 M_{t+1} + 0.75 W_{t+1} M_{t+1} + 0.05 \sum_{i = 1}^{10} Z_{i}}.
+  \lambda'_{t}(M_{t+1}, W_{t+1}) = \exp\del{-6.5 + W_{t+1} + 1.2 M_{t+1} + 0.8 W_{t+1} M_{t+1} + 0.05 \sum_{i = 1}^{10} Z_{i}}
 \end{equation}
-but did not change the optimal dose, as this modification only shifts the expected survival up or down and does not change the dose chosen to achieve the maximum survival over the range of possible doses.
+but did not change the optimal dose, as this modification only shifts the expected survival up or down and therefore does not change the optimal dose.
 
 % subsubsection predictive_noise (end)
 
@@ -794,8 +786,8 @@ The interaction and noise scenarios were also combined together, to create the s
 \begin{description}
   \item [CART:] Nodes with 15 or fewer observations were not split, nor were splits made if they produced nodes with fewer than 5 observations, or did not increase the overall R-squared by at least $10^{-5}$.
   In the pruning step, $\alpha$ was chosen using the smallest tree (largest $\alpha$) within one standard error of the minimum 10 fold cross validation error. This was achieved via the \texttt{caret} package in \textsf{R} (which calls the \texttt{rpart} package) using \texttt{method = "rpart1SE"}.
-  \item [MARS:] Only interactions with the treatment variable, \texttt{dose}, were allowed, and these were restricted to second degree interactions. The forward pass was stopped if more than 200 terms were created, or further terms would decrease the SSE by less than 0.001. The number of terms in the model, $\lambda$, was chosen using generalized cross validation. 
-  \item [RF:] In all scenarios, 500 trees were grown, \texttt{dose} was forced to be considered at each split, and the out-of-bag samples were used to choose $m_{try}$. However since more often than not $m_{try} = p$ minimized the out-of-bag error, or was not much different than the minimum, $m_{try} = p$ (bagging) was chosen.
+  \item [MARS:] Only interactions with the treatment variable, \texttt{dose}, were allowed, and these were restricted to second degree interactions. The forward pass was stopped if more than 200 terms were created, or further terms would decrease the $R^2$ by less than 0.001. The number of terms in the model, $\lambda$, was chosen using generalized cross validation. Modelling was performed with the \texttt{earth} package in \textsf{R} called through the \texttt{caret} package.
+  \item [RF:] Initially 500 trees were grown, with \texttt{dose} forced to be considered at each split and the out-of-bag samples used to choose $m_{try}$ from an even grid of five values from 2 to $p$. However, in each scenario, $m_{try} = p$ was at or very near the minimum out-of-bag error, so $m_{try} = p$ (bagging) was performed with with 250 trees. Trees were grown until further splits would result in terminal nodes with less than five observations. Modelling and resampling was performed using the \texttt{caret} package in \textsf{R} to call the \texttt{ranger} package.
   % \begin{description}
   %   \item [Basic setup:] the number of parameters to consider at each split, $m_{try}$, was fixed at 1 ($\approx \sqrt{p}$) plus \texttt{dose}.
   %   \item [Interaction only:] $m_{try}$ fixed at 1 ($\approx \sqrt{p}$) plus \texttt{dose}.
@@ -815,12 +807,12 @@ With the training data generated from each scenario listed above, Q-learning was
 \subsection{Validation} % (fold)
 \label{sub:validation}
 
-Starting conditions for 200 new patients were simulated as in the training data. We made 15 copies of these individuals (i.e. each copy with the same initial tumor mass and toxicities) who would undergo one of the following regimes:
+Starting conditions for 200 new patients were simulated identically to patients in the training data. We made 15 copies of these individuals (i.e. each copy with the same initial tumor mass and toxicities) who would undergo one of the following regimes:
 
 \begin{description}
   \item [10 constant dose regimes:] the same doses of $0.1, 0.2, \ldots,$ or 1 given at each stage
-  \item [``One-on-one-off'':] an alternating dose regime starting at the maximum dose (1), switching dose to 0 for next stage, and repeating through the end of the trial.
-  \item [``greedy'':] the dose that maximizes the expected survival at each month, given complete knowledge of the transition functions and their influence on survival
+  \item [``One-on-one-off'':] an alternating dose regime starting at the maximum dose (1), switching the dose to 0 for next stage, and repeating through the end of the trial.
+  \item [``greedy'':] the dose that maximizes the expected survival at each month, given complete knowledge of the transition functions and their influence on survival (without considering the effect on survival in future months).
   \item [CART, MARS, RF:] The doses that maximize expected survival at each month as estimated from each of the CART, MARS, and random forest models used to estimate the Q-function for each month
 \end{description}
 
@@ -831,15 +823,17 @@ Starting conditions for 200 new patients were simulated as in the training data.
 \section{Simulation Results} % (fold)
 \label{sec:simulation_results}
 
-\begin{figure}[h]
+\begin{figure}[!tbp]
 \begin{center}
 \includegraphics[width=\textwidth]{results-plot-no-int.png}
 \end{center}
-\caption[Months of survival under scenarios without interaction]{Months of survival under each regime for the basic scenario. The same 200 patients were simulated under each treatment regime (same initial tumor masses and toxicities). This test simulation was  repeated 25 times and averaged over the 25 repetitions. Notches extend $1.58 \times IQR / \sqrt{n}$, giving a rough 95\% confidence interval for medians. Upper whisker extends $1.5 \times IQR$ beyond the upper hinge (top of box). Observations beyond that are shown as points.}
+\caption[Months of survival under scenarios without interaction]{Months of survival under each regime for the basic scenario. The same 200 patients were simulated under each treatment regime (same initial tumor masses and toxicities). This test simulation was  repeated 25 times and averaged over the 25 repetitions. 
+% Notches extend $1.58 \times IQR / \sqrt{n}$, giving a rough 95\% confidence interval for medians. 
+Upper whisker extends $1.5 \times IQR$ beyond the upper hinge/quartile (top of box), and vice versa for the lower quartile. Observations beyond the whiskers shown as points.}
 \label{fig:results-no-int}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[!tbp]
 \begin{center}
 \includegraphics[width=\textwidth]{results-plot-int.png}
 \end{center}
@@ -847,73 +841,31 @@ Starting conditions for 200 new patients were simulated as in the training data.
 \label{fig:results-int}
 \end{figure}
 
-%latex.default(., file = "", rowname = NULL, colheads = labs,     booktabs = T)%
-\begin{table}[h]
-\caption[Average months of survival under each scenario]{Average months of survival under each scenario, averaged over 25 test sets each with 200 participants for each regime. B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, IN is the interaction and noise scenario, and IPN is the interaction and predictive noise scenario.}
-\begin{center}
-\begin{tabular}{lrrrrrr}
-\toprule
-\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{IN}&\multicolumn{1}{c}{IPN}\tabularnewline
-\midrule
-greedy&$13.5$&$13.4$&$13.7$&$24.3$&$23.9$&$23.9$\tabularnewline
-RF&$12.1$&$12.5$&$13.2$&$19.6$&$21.2$&$20.5$\tabularnewline
-MARS&$16.1$&$12.0$&$ 9.2$&$20.7$&$15.5$&$17.8$\tabularnewline
-CART&$ 4.0$&$ 3.6$&$ 3.3$&$ 4.7$&$ 3.2$&$ 3.9$\tabularnewline
-1on1off&$ 5.6$&$ 5.6$&$ 5.7$&$ 7.3$&$ 7.1$&$ 7.3$\tabularnewline
-1&$ 3.8$&$ 3.8$&$ 3.8$&$ 3.5$&$ 3.4$&$ 3.4$\tabularnewline
-0.9&$ 4.0$&$ 3.9$&$ 3.9$&$ 3.6$&$ 3.6$&$ 3.6$\tabularnewline
-0.8&$ 4.0$&$ 4.1$&$ 4.1$&$ 4.0$&$ 3.9$&$ 3.9$\tabularnewline
-0.7&$ 3.9$&$ 3.9$&$ 3.9$&$ 4.3$&$ 4.3$&$ 4.3$\tabularnewline
-0.6&$ 3.8$&$ 3.7$&$ 3.7$&$ 4.7$&$ 4.6$&$ 4.5$\tabularnewline
-0.5&$ 3.6$&$ 3.6$&$ 3.6$&$ 4.7$&$ 4.6$&$ 4.6$\tabularnewline
-0.4&$ 3.7$&$ 3.6$&$ 3.6$&$ 4.2$&$ 4.3$&$ 4.3$\tabularnewline
-0.3&$ 3.9$&$ 3.9$&$ 3.8$&$ 4.2$&$ 4.0$&$ 4.0$\tabularnewline
-0.2&$ 3.7$&$ 3.6$&$ 3.6$&$ 4.0$&$ 3.8$&$ 3.8$\tabularnewline
-0.1&$ 3.3$&$ 3.3$&$ 3.3$&$ 3.4$&$ 3.4$&$ 3.4$\tabularnewline
-\bottomrule
-\end{tabular}\end{center}
-\end{table}
 
-%latex.default(., file = "", rowname = NULL, colheads = labs,     booktabs = T)%
-\begin{table}[h]
-\caption{MAE of doses}
+%latex.default(r_tab, file = "", colheads = labs, booktabs = T)%
+\begin{table}[!tbp]
+  \caption[Average months of survival under each scenario]{Average months of survival under each scenario, averaged over 5 test sets each with 200 participants for each regime. The fitted B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, IN is the interaction and noise scenario, and IPN is the interaction and predictive noise scenario.}
 \begin{center}
-\begin{tabular}{lrrrrrr}
+\begin{tabular}{lllllll}
 \toprule
-\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{IN}&\multicolumn{1}{c}{IPN}\tabularnewline
+% \multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{Basic}&\multicolumn{1}{c}{Noise}&\multicolumn{1}{c}{\begin{tabular}{c} Predictive \\ noise \end{tabular}} &\multicolumn{1}{c}{Interaction}&\multicolumn{1}{c}{\begin{tabular}{c} Int. \& \\ noise \end{tabular}}&\multicolumn{1}{c}{\begin{tabular}{c} Int. \& \\ pred. noise \end{tabular}}\tabularnewline
+\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{\begin{tabular}{c} I + N \end{tabular}}&\multicolumn{1}{c}{I + PN}\tabularnewline
 \midrule
-RF&$0.184$&$0.102$&$0.075$&$0.094$&$0.116$&$0.103$\tabularnewline
-BMARS&$0.150$&$0.119$&$0.147$&$0.089$&$0.101$&$0.089$\tabularnewline
-MARS&$0.214$&$0.115$&$0.203$&$0.123$&$0.099$&$0.201$\tabularnewline
-CART&$0.236$&$0.261$&$0.275$&$0.315$&$0.282$&$0.320$\tabularnewline
-\bottomrule
-\end{tabular}\end{center}
-\end{table}
-
-
-%latex.default(., file = "", rowname = NULL, colheads = labs,     booktabs = T)%
-\begin{table}[h]
-\begin{center}
-\begin{tabular}{lrrrrrr}
-\toprule
-\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{IN}&\multicolumn{1}{c}{IPN}\tabularnewline
-\midrule
-greedy&$13.4$&$13.3$&$13.2$&$23.4$&$24.2$&$24.4$\tabularnewline
-RF&$12.2$&$13.9$&$13.6$&$21.5$&$18.4$&$17.4$\tabularnewline
-BMARS&$14.1$&$13.6$&$13.6$&$23.8$&$20.3$&$19.2$\tabularnewline
-MARS&$ 9.6$&$ 8.5$&$ 9.4$&$18.6$&$16.5$&$10.7$\tabularnewline
-CART&$ 4.3$&$ 3.5$&$ 3.8$&$ 4.5$&$ 4.2$&$ 3.1$\tabularnewline
-1on1off&$ 5.6$&$ 5.6$&$ 5.5$&$ 7.1$&$ 7.3$&$ 7.3$\tabularnewline
-1&$ 3.8$&$ 3.8$&$ 3.7$&$ 3.4$&$ 3.4$&$ 3.4$\tabularnewline
-0.9&$ 4.1$&$ 4.0$&$ 4.0$&$ 3.7$&$ 3.7$&$ 3.6$\tabularnewline
-0.8&$ 4.1$&$ 4.0$&$ 4.0$&$ 4.0$&$ 4.0$&$ 4.0$\tabularnewline
-0.7&$ 4.0$&$ 3.9$&$ 3.8$&$ 4.3$&$ 4.4$&$ 4.4$\tabularnewline
-0.6&$ 3.6$&$ 3.6$&$ 3.6$&$ 4.6$&$ 4.5$&$ 4.4$\tabularnewline
-0.5&$ 3.6$&$ 3.5$&$ 3.6$&$ 4.4$&$ 4.6$&$ 4.6$\tabularnewline
-0.4&$ 3.7$&$ 3.7$&$ 3.7$&$ 4.3$&$ 4.3$&$ 4.2$\tabularnewline
-0.3&$ 3.9$&$ 3.8$&$ 3.8$&$ 4.0$&$ 4.0$&$ 4.0$\tabularnewline
-0.2&$ 3.7$&$ 3.6$&$ 3.7$&$ 3.9$&$ 3.9$&$ 3.9$\tabularnewline
-0.1&$ 3.3$&$ 3.3$&$ 3.3$&$ 3.4$&$ 3.4$&$ 3.4$\tabularnewline
+greedy&17.8 (1.4)&17.8 (1.4)&17.9 (1.3)&36.2 (3.2)&36.2 (3.2)&36.3 (3.0)\tabularnewline
+RF&16.2 (2.3)&14.1 (2.3)&13.9 (2.2)&28.1 (5.0)&20.6 (4.2)&19.9 (4.9)\tabularnewline
+MARS&16.6 (3.9)&13.8 (3.0)&10.9 (2.9)&25.1 (10.1)&18.5 (3.7)&16.4 (4.6)\tabularnewline
+CART&6.0 (1.0)&4.7 (0.7)&4.5 (0.5)&5.4 (0.7)&4.4 (0.5)&4.2 (0.5)\tabularnewline
+1on1off&6.6 (0.6)&6.6 (0.6)&6.6 (0.6)&8.0 (0.3)&8.0 (0.3)&8.0 (0.3)\tabularnewline
+1&4.5 (0.4)&4.5 (0.4)&4.5 (0.4)&4.0 (0.1)&4.0 (0.1)&4.0 (0.1)\tabularnewline
+0.9&4.7 (0.5)&4.7 (0.5)&4.7 (0.5)&4.3 (0.1)&4.3 (0.1)&4.4 (0.1)\tabularnewline
+0.8&4.7 (0.5)&4.7 (0.5)&4.8 (0.5)&4.7 (0.2)&4.7 (0.2)&4.7 (0.1)\tabularnewline
+0.7&4.5 (0.4)&4.5 (0.4)&4.5 (0.4)&5.0 (0.3)&5.0 (0.3)&5.1 (0.2)\tabularnewline
+0.6&4.2 (0.4)&4.2 (0.4)&4.2 (0.4)&5.4 (0.3)&5.4 (0.3)&5.5 (0.3)\tabularnewline
+0.5&4.1 (0.4)&4.1 (0.4)&4.1 (0.4)&5.3 (0.2)&5.3 (0.2)&5.3 (0.2)\tabularnewline
+0.4&4.3 (0.4)&4.3 (0.4)&4.4 (0.4)&4.9 (0.3)&4.9 (0.3)&4.9 (0.3)\tabularnewline
+0.3&4.6 (0.5)&4.6 (0.5)&4.6 (0.5)&4.6 (0.3)&4.6 (0.3)&4.7 (0.3)\tabularnewline
+0.2&4.3 (0.4)&4.3 (0.4)&4.4 (0.4)&4.6 (0.3)&4.6 (0.3)&4.6 (0.3)\tabularnewline
+0.1&4.0 (0.3)&4.0 (0.3)&4.0 (0.3)&4.1 (0.3)&4.1 (0.3)&4.1 (0.3)\tabularnewline
 \bottomrule
 \end{tabular}\end{center}
 \end{table}
@@ -924,6 +876,13 @@ CART&$ 4.3$&$ 3.5$&$ 3.8$&$ 4.5$&$ 4.2$&$ 3.1$\tabularnewline
 \label{sec:discussion}
 
 This makes subgroup identification difficult, relegating the endeavor to simply examining variable importance measures, which indicate the importance in terms of predictive accuracy, not necessarily that a variable identifies a subgroup with differential treatment effects.
+
+% point out that these types of trials are fundamentally exploratory
+% methods not designed to find interactions
+% not clear how to determine variable importance/interactions
+% you can look for subgroups while also investigating main effect differences between groups
+% purity measure based on predictive performance, not on detecting subgroups - hard base on interaction/subgroup identification with continuous treatment
+% censoring ignored
 
 % Main results
 % Relation to other literature/previous research
