@@ -676,7 +676,7 @@ for a given $W_{t-1}$, $D_{t-1}$ above 0.5 decreases $M_{t}$ and doses below 0.5
 
 Survival times (in months) were generated from an exponential distribution with a rate parameter modeled as a function of the tumor mass and toxicity at time $t$:
 \begin{equation}
-  \lambda_{t}(M_{t+1}, W_{t+1}) = \exp(-6.5 + W_{t+1} + 1.2 M_{t+1} + 0.8 W_{t+1} M_{t+1}).
+  \lambda_{t}(M_{t+1}, W_{t+1}) = \exp(-5.5 + W_{t+1} + 1.2 M_{t+1} + 0.75 W_{t+1} M_{t+1}).
 \end{equation}
 This indicates that we take tumor mass to be more important in survival than toxicity. The interaction between tumor mass and toxicity reflects the belief that higher levels of both tumor mass and toxicity lead to a greater reduction in survival than either alone.
 
@@ -701,7 +701,7 @@ Each patient's initial tumor mass, $M_{0}$, and negative of quality of life (tox
 
 At each month $t$, the next month's tumor mass, $M_{t + 1}$, and toxicity, $W_{t + 1}$, were computed in response to dose at month $t$, $D_{t}$, for each patient as described above. Similarly, the rate parameter for the survival distribution, $\lambda_{t+1}(M_{t + 1}, W_{t + 1})$, was updated for each patient from these next month's tumor masses and toxicities. Survival times, $S_{t}$ were then randomly sampled from the exponential distribution with the just computed rate parameter:
 \begin{equation}
-  S_{t} \sim \text{Exp}(\exp(-6.5 + W_{t+1} + 1.2 M_{t+1} + 0.8 W_{t+1} M_{t+1}))
+  S_{t} \sim \text{Exp}(\exp(-5.5 + W_{t+1} + 1.2 M_{t+1} + 0.75 W_{t+1} M_{t+1}))
 \end{equation}
 
 If $S_{it} \leq 1$ for patient $i$ (i.e. the patient would not survive another month), the reward received was computed as the total log survival time: log of the total number of months the patient had survived (including the fraction of a month before their death, $S_{it}$). If patient $i$ survived up to the final mont of treatment $t = 5$, the rewards were computed as $\log(S_{i5} + 5)$, the log of the simulated survival time after the final treatment plus the the number of months already elapsed. 
@@ -764,7 +764,7 @@ In the noise scenario, the above variables were made available to the models, bu
 \label{ssub:predictive_noise}
 In the predictive noise scenario, the $Z$ variables had a small influence on the rate parameter in the survival distribution:
 \begin{equation}
-  \lambda'_{t}(M_{t+1}, W_{t+1}) = \exp\del{-6.5 + W_{t+1} + 1.2 M_{t+1} + 0.8 W_{t+1} M_{t+1} + 0.05 \sum_{i = 1}^{10} Z_{i}}
+  \lambda'_{t}(M_{t+1}, W_{t+1}) = \exp\del{-5.5 + W_{t+1} + 1.2 M_{t+1} + 0.75 W_{t+1} M_{t+1} + 0.05 \sum_{i = 1}^{10} Z_{i}}
 \end{equation}
 but did not change the optimal dose, as this modification only shifts the expected survival up or down and therefore does not change the optimal dose.
 
@@ -797,24 +797,28 @@ The interaction and noise scenarios were also combined together, to create the s
 
 
 
-\subsection{Procedure} % (fold)
+\subsection{Training procedure} % (fold)
 \label{sub:procedure}
 
-With the training data generated from each scenario listed above, Q-learning was applied using each of CART, MARS, and random forest to estimate the Q-functions at each stage. The fitted models for each stage under each scenario were saved for use on the validation set. We estimated the maximum rewards in each stage for Q-learning and for the validation set by generating predicted rewards under a sequence of doses from 0 to 1 with increments of 0.01, choosing the dose that had the highest predicted reward.
+With the training data generated from each scenario listed above, Q-learning was applied using each of CART, MARS, and random forest to estimate the Q-functions at each stage. The fitted models for each stage under each scenario were saved for use on the validation set. We estimated the maximum rewards in each stage of Q-learning by generating predicted rewards under a sequence of doses from 0 to 1 with increments of 0.01, choosing the dose that had the highest predicted reward.
+
+To quantify the influence the training data have on the resulting estimated optimal dynamic treatment regimes, the process described in the preceding paragraph was repeated for 20 training sets each with 1000 patients.
 
 % subsection procedure (end)
 
 \subsection{Validation} % (fold)
 \label{sub:validation}
 
-Starting conditions for 200 new patients were simulated identically to patients in the training data. We made 15 copies of these individuals (i.e. each copy with the same initial tumor mass and toxicities) who would undergo one of the following regimes:
+Initial tumor masses ($M_{0}$) and toxicities ($W_{0}$) for 1000 new patients, divided into five groups of 200, were simulated identically to those in the training data. We made copies of these individuals (i.e. each copy with the same initial tumor mass and toxicities) who would undergo one of the following regimes:
 
 \begin{description}
   \item [10 constant dose regimes:] the same doses of $0.1, 0.2, \ldots,$ or 1 given at each stage
   \item [``One-on-one-off'':] an alternating dose regime starting at the maximum dose (1), switching the dose to 0 for next stage, and repeating through the end of the trial.
   \item [``greedy'':] the dose that maximizes the expected survival at each month, given complete knowledge of the transition functions and their influence on survival (without considering the effect on survival in future months).
-  \item [CART, MARS, RF:] The doses that maximize expected survival at each month as estimated from each of the CART, MARS, and random forest models used to estimate the Q-function for each month
+  \item [CART, MARS, RF:] The doses that maximize expected survival at each month as estimated from each of the 20 CART, MARS, and random forest models used to estimate the Q-function for each month for each set of training data.
 \end{description}
+
+The transition and survival functions were likewise identical to the training data, with one exception: the 
 
 % subsection validation (end)
 
@@ -822,6 +826,8 @@ Starting conditions for 200 new patients were simulated identically to patients 
 
 \section{Simulation Results} % (fold)
 \label{sec:simulation_results}
+
+Mean months of survival 
 
 \begin{figure}[!tbp]
 \begin{center}
@@ -844,7 +850,8 @@ Upper whisker extends $1.5 \times IQR$ beyond the upper hinge/quartile (top of b
 
 %latex.default(r_tab, file = "", colheads = labs, booktabs = T)%
 \begin{table}[!tbp]
-  \caption[Average months of survival under each scenario]{Average months of survival under each scenario, averaged over 5 test sets each with 200 participants for each regime. The fitted B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, IN is the interaction and noise scenario, and IPN is the interaction and predictive noise scenario.}
+\caption[Average months of survival under each scenario]{Average months of survival under each scenario, averaged over 5 test sets each with 200 participants for each regime. The fitted B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, IN is the interaction and noise scenario, and IPN is the interaction and predictive noise scenario.}
+\label{tab:results}
 \begin{center}
 \begin{tabular}{lllllll}
 \toprule
