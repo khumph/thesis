@@ -30,10 +30,13 @@
 \usepackage{commath}
 \usepackage[style=authoryear-comp, hyperref = true]{biblatex}
 \addbibresource{library.bib}
+
 \usepackage[]{algorithm2e}
+\RestyleAlgo{boxruled}
 
 \DeclareMathOperator*{\argmax}{argmax}
-\RestyleAlgo{boxruled}
+
+
 
 %--------------------------------------------------------------------------
 %  TITLE SECTION
@@ -847,6 +850,24 @@ Upper whisker extends $1.5 \times IQR$ beyond the upper hinge/quartile (top of b
 \label{fig:results-int}
 \end{figure}
 
+\begin{figure}[!tbp]
+\begin{center}
+\includegraphics[width=\textwidth]{results-plot-no-int-3.png}
+\end{center}
+\caption[Months of survival under scenarios without interaction]{Months of survival under each regime for the basic scenario for three months of treatment. The same 200 patients were simulated under each treatment regime (same initial tumor masses and toxicities). This test simulation was  repeated 25 times and averaged over the 25 repetitions. 
+% Notches extend $1.58 \times IQR / \sqrt{n}$, giving a rough 95\% confidence interval for medians. 
+Upper whisker extends $1.5 \times IQR$ beyond the upper hinge/quartile (top of box), and vice versa for the lower quartile. Observations beyond the whiskers shown as points.}
+\label{fig:results-no-int}
+\end{figure}
+
+\begin{figure}[!tbp]
+\begin{center}
+\includegraphics[width=\textwidth]{results-plot-int-3.png}
+\end{center}
+\caption[Months of survival under scenarios with interaction]{Months of survival under each regime for the interaction scenarios for three months of treatment.}
+\label{fig:results-int}
+\end{figure}
+
 
 %latex.default(r_tab, file = "", colheads = labs, booktabs = T)%
 \begin{table}[!tbp]
@@ -877,6 +898,33 @@ CART&6.0 (1.0)&4.7 (0.7)&4.5 (0.5)&5.4 (0.7)&4.4 (0.5)&4.2 (0.5)\tabularnewline
 \end{tabular}\end{center}
 \end{table}
 
+
+%latex.default(r_tab, file = "", rowname = NULL, colheads = labs,     booktabs = T)%
+\begin{table}[!tbp]
+\begin{center}
+\begin{tabular}{lllllll}
+\toprule
+\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
+\midrule
+best&$15.8$&$15.8$&$15.8$&$27.2$&$27.2$&$27.4$\tabularnewline
+BMARS&$10.4$&$7.9$&$ 7.6$&$12.9$&$10.8$&$11.2$\tabularnewline
+MARS&$ 9.5$&$7.4$&$ 7.0$&$12.4$&$ 9.3$&$10.0$\tabularnewline
+RF&$ 9.5$&$7.9$&$ 8.2$&$12.9$&$10.4$&$10.6$\tabularnewline
+CART&$ 6.0$&$5.2$&$ 5.3$&$ 6.3$&$ 5.2$&$ 5.1$\tabularnewline
+1on1off&$ 6.0$&$6.0$&$ 6.0$&$ 6.6$&$ 6.6$&$ 6.6$\tabularnewline
+1&$ 6.8$&$6.8$&$ 6.8$&$ 5.0$&$ 5.0$&$ 5.0$\tabularnewline
+0.9&$ 6.5$&$6.5$&$ 6.6$&$ 5.6$&$ 5.6$&$ 5.6$\tabularnewline
+0.8&$ 6.0$&$6.0$&$ 6.1$&$ 6.1$&$ 6.1$&$ 6.1$\tabularnewline
+0.7&$ 5.3$&$5.3$&$ 5.4$&$ 6.1$&$ 6.1$&$ 6.1$\tabularnewline
+0.6&$ 4.8$&$4.8$&$ 4.9$&$ 5.7$&$ 5.7$&$ 5.8$\tabularnewline
+0.5&$ 4.6$&$4.6$&$ 4.7$&$ 5.2$&$ 5.2$&$ 5.3$\tabularnewline
+0.4&$ 4.8$&$4.8$&$ 4.8$&$ 4.9$&$ 4.9$&$ 4.9$\tabularnewline
+0.3&$ 5.1$&$5.1$&$ 5.2$&$ 4.9$&$ 4.9$&$ 5.0$\tabularnewline
+0.2&$ 5.3$&$5.3$&$ 5.4$&$ 5.2$&$ 5.2$&$ 5.2$\tabularnewline
+0.1&$ 5.3$&$5.3$&$ 5.4$&$ 5.3$&$ 5.3$&$ 5.4$\tabularnewline
+\bottomrule
+\end{tabular}\end{center}
+\end{table}
 % section simulation_results (end)
 
 \section{Discussion} % (fold)

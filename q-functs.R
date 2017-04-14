@@ -12,8 +12,7 @@ max_df <- function(dat, model, truth, pred, nested = F) {
     dat <- Mnext(dat, truth = truth)
     dat <- Wnext(dat, truth = truth)
     dat <- dat %>% mutate(
-      lam = lambda(M_next, W_next, Z = noise_chng),
-      expect_surv_time = 1 / lam,
+      expect_surv_time = 1 / lambda(M_next, W_next, Z = noise_chng),
       preds = log(expect_surv_time)
     )
   } else {
@@ -24,11 +23,9 @@ max_df <- function(dat, model, truth, pred, nested = F) {
   }
   
   if (!nested) {
-    dat <- dat %>% group_by(ID) %>% mutate(
-      bestR = max(preds),
-      best = ifelse(near(preds, bestR), dose, NA),
-      best = quantile(best, probs = 0, na.rm = T, type = 3, names = F)
-    ) %>% filter(near(dose, best))
+    dat <- dat %>% group_by(ID) %>%
+      filter(preds == max(preds)) %>% 
+      slice(1)
     if (!pred) {
       dat <- dat %>% bind_rows(deads) %>% arrange(ID) %>% ungroup() 
     }
@@ -36,15 +33,15 @@ max_df <- function(dat, model, truth, pred, nested = F) {
   dat %>% ungroup()
 }
 
-Qlearn <- function(form, dat_long, boot = F, nstages = 6, ...) {
+Qlearn <- function(form, dat_long, nstages = 6, ...) {
   mod_list <- list()
   for (i in (nstages - 1):0) {
     dat <- filter(dat_long, month == i)
     mod <- train(form, dat, na.action = na.omit, ...)
     new_dat <- max_df(dat, mod, truth = F, pred = F)
     mod_list[[i + 1]] <- mod
-    bestR <- new_dat$bestR
-    bestD <- new_dat$best
+    bestR <- new_dat$preds
+    bestD <- new_dat$dose
     if (i > 0) {
       dat_long <- dat_long %>% mutate(
         Qhat = ifelse(month == i - 1,

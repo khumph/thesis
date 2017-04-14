@@ -1,12 +1,14 @@
+
 getPreds <- function(Q, name, dat, pred) {
   optimD <- max_df(
     dat = filter(dat, str_detect(group, paste0("^", name, "$"))),
     model = Q$mod_list[[dat$month[1] + 1]],
     truth = F, pred = pred)
   
-  bestDopt <- max_df(dat = optimD, model = NULL,
-                     truth = T, pred = pred)$dose
-  optimD %>% mutate(best_dose = bestDopt)
+  # bestDopt <- max_df(dat = optimD, model = NULL,
+  #                    truth = T, pred = pred)$dose
+  optimD 
+  # %>% mutate(best_dose = bestDopt)
 }
 
 simMonthT <- function(dat, Q, bestDoses, pred) {
@@ -15,13 +17,18 @@ simMonthT <- function(dat, Q, bestDoses, pred) {
     mutate(dose = ifelse(group == "1on1off",
                          ifelse(dat$month[1] %% 2 == 1, 0, 1),
                          dose))
-  bDoses <- bestDoses %>% select_(paste0("dose", dat$month[1])) %>% flatten_dbl()
-  bestD <- dat %>% filter(group == "greedy") %>% mutate(dose = bDoses)
   
   optimD <- map2_df(Q, names(Q),
                     ~ getPreds(.x, .y, dat = dat, pred = pred))
   
-  dat <- bind_rows(out, bestD, optimD) %>% arrange(ID) 
+  if (!is.null(bestDoses)) {
+    bDoses <- bestDoses %>% select_(paste0("dose", dat$month[1])) %>% flatten_dbl()
+    bestD <- dat %>% filter(group == "greedy") %>% mutate(dose = bDoses)
+    dat <- bind_rows(out, bestD, optimD) %>% arrange(ID) 
+  } else {
+    dat <- bind_rows(out, optimD) %>% arrange(ID) 
+  }
+  
   dat <- Mnext(dat)
   dat <- Wnext(dat)
   dat %>%
@@ -37,7 +44,7 @@ simMonthT <- function(dat, Q, bestDoses, pred) {
 filterBest <- function(bestD) {
   bestD %>% group_by(ID) %>%
     filter(expect_surv_time == max(expect_surv_time)) %>%
-    select(ID, starts_with("dose"), -dose) %>% ungroup() %>%
+    select(ID, starts_with("dose")) %>% ungroup() %>%
     mutate(totDose = rowSums(.[starts_with("dose", vars = names(.))])) %>%
     group_by(ID) %>% filter(totDose == min(totDose)) %>% ungroup()
 }
@@ -48,10 +55,11 @@ getBestDoses <- function(dat, Ttot) {
   }
   for (i in 0:(Ttot - 1)) {
     if (i == 0) {
-      bestD <- max_df(dat = dat, model = NULL, truth = T,
-                      pred = T, nested = T) %>%
-        select(ID, tumor_mass, toxicity, M_next, W_next, noise_chng,
-               starts_with("c"), expect_surv_time, starts_with("dose")) 
+      bestD <- dat %>%
+        select(ID, tumor_mass, toxicity,  noise_chng, starts_with("c")) %>% 
+        max_df(model = NULL, truth = T, pred = T, nested = T) %>% 
+        select(ID, tumor_mass, toxicity,  noise_chng, starts_with("c"),
+               M_next, W_next, expect_surv_time, starts_with("dose"))
     } else {
       bestD <- max_df(bestDalive, model = NULL, truth = T, pred = T, nested = T)
     }
@@ -60,22 +68,25 @@ getBestDoses <- function(dat, Ttot) {
                                 toxicity = W_next)
     }
     bestD <- bestD %>% 
-      mutate_(.dots = setNames("dose", paste0("dose", i)))
+      mutate_(.dots = setNames("dose", paste0("dose", i))) %>% select(-dose)
     bestDalive <- bestD %>% filter(expect_surv_time > 1)
-    bestDdead1 <- bestD %>% filter(!(ID %in% bestDalive$ID)) %>% filterBest()
+    doseDead1 <- bestD %>% filter(!(ID %in% bestDalive$ID)) %>% filterBest()
     if (i == 0) {
-      bestDdead <- bestDdead1
+      doseDead <- doseDead1
     } else {
-      bestDdead <- bind_rows(bestDdead, bestDdead1)
+      doseDead <- bind_rows(doseDead, doseDead1)
+    }
+    if (nrow(bestDalive) == 0) {
+      break
     }
   }
-  bestD <- bestD %>% filterBest()
-  bind_rows(bestD, bestDdead) %>% arrange(ID)
+  
+  bind_rows(filterBest(bestDalive), doseDead) %>% arrange(ID)
 }
 
-sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 3, seed = 1) {
+sim_test <- function(Q, int, noise, noise_pred, npergroup = 100, Ttot = 3, seed, best = F) {
   set.seed(seed)
-  ngroups <- 12 + length(Q)
+  ngroups <- 11 + length(Q) + ifelse(best, 1, 0)
   M0 <- runif(npergroup, min = 0, max = 2)
   W0 <- runif(npergroup, min = 0, max = 2)
   
@@ -91,9 +102,11 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 3, seed 
   
   D1 <- rep(seq(from = 0.1, to = 1, by = 0.1), each = npergroup)
   
-  groups <- c(seq(from = 0.1, to = 1, by = 0.1) %>% as.character(),
-              "greedy",
-              names(Q), "1on1off")
+  groups <- c(seq(from = 0.1, to = 1, by = 0.1) %>% as.character(), names(Q), "1on1off")
+  
+  if (best) {
+    groups <- c(groups, "greedy")
+  }
   
   dat <- dat[rep(seq_len(nrow(dat)), ngroups), ] %>% 
     mutate(
@@ -102,8 +115,16 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 3, seed 
       dose = c(D1, rep(NA, npergroup * (ngroups - 10))),
       best_dose = NA
     )
-  
-  bestDoses <- getBestDoses(dat = filter(dat, group == "greedy"), Ttot = Ttot)
+
+  if (best) {
+    doseDat <- filter(dat, group == "greedy") %>%
+      mutate(rep = 1:n() %/% (20.000001))
+    reps <- doseDat %>% group_by(rep) %>% count() %>% select(rep) %>% flatten_dbl()
+    bestDoses <- map_df(reps, ~ getBestDoses(dat = filter(doseDat, rep == .x),
+                                            Ttot = Ttot))
+  } else {
+    bestDoses <- NULL
+  }
   
   d <- simMonthT(dat, Q, bestDoses = bestDoses, pred = T) %>%
     mutate(reward = ifelse(dead, log(expect_surv_time), 0))
@@ -119,7 +140,7 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 3, seed 
   out %>% group_by(ID) %>% mutate(
     reward = ifelse(month == Ttot - 1 & !dead, log(expect_surv_time + Ttot - 1), reward),
     pdeath = ifelse(is.na(pdeath), 1, pdeath),
-    tot_reward = sum(reward[1:6], na.rm = T),
+    tot_reward = sum(reward[1:Ttot], na.rm = T),
     Qhat = reward,
     best = NA
   ) %>% arrange(ID) %>% ungroup()
