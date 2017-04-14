@@ -32,9 +32,15 @@ source("results-functs.R")
 ```
 
 ```{r}
-# set.seed(20161116)
-set.seed(20170408)
-dat_long <- sim(int = int, noise = noise, noise_pred = noise_pred, Ttot = 6)
+samps <- 20
+nstages <- 3
+```
+
+```{r}
+dat_long <- map_df(1:samps, ~ sim(N = 1000,
+                                  int = int, noise = noise,
+                                  noise_pred = noise_pred, Ttot = nstages,
+                                  seed = 20170411 + .x) %>% mutate(samp = .x))
 ```
 
 ```{r formula}
@@ -70,22 +76,27 @@ indPlot(dat_long, ex_ID)
 
 # rpart
 ```{r}
-# grid <- expand.grid(cp = 10^(seq(-4, -3, 1)))
-Q_rpart <- Qlearn(
-  form = form,
-  dat_long,
-  # tuneGrid = expand.grid(cp = 10^(seq(-7, -1, 1))),
-  # trControl = trainControl(method = "cv"),
-  method = 'rpart1SE',
-  cp = 1e-5,
-  maxsurrogate = 0,
-  minbucket = 5
-)
-Q <- Q_rpart
+ptm_rpart <- proc.time()
+Q_rpart <- map(
+  1:samps,
+  ~ Qlearn(
+    form = form,
+    dat_long = filter(dat_long, samp == .x),
+    nstages = nstages,
+    # tuneGrid = expand.grid(cp = 10^(seq(-7, -1, 1))),
+    # trControl = trainControl(method = "boot"),
+    method = 'rpart1SE',
+    control = rpart.control(cp = 1e-5,
+                            maxsurrogate = 0,
+                            minbucket = 5,
+                            minsplit = 15)
+  )
+) %>% set_names(paste0("CART", 1:samps))
+(t_rpart <- proc.time() - ptm_rpart)
 ```
 
 ```{r}
-maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
+maxPlots(Q_rpart$CART1, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 # MARS
@@ -109,21 +120,26 @@ allowFunct <- function(degree, pred, parents, namesx) {
   FALSE
 }
 
+ptm_mars <- proc.time()
+
 set.seed(20170128)
-Q_mars <- Qlearn(
-  form,
-  dat_long,
-  method = 'gcvEarth',
-  trControl = trainControl(method = "none"),
-  nk = 200,
-  allowed = allowFunct,
-  tuneGrid = expand.grid(degree = 2)
-)
-Q <- Q_mars
+Q_mars <- map(
+  1:samps, ~ Qlearn(
+    form,
+    filter(dat_long, samp == .x),
+    nstages = nstages,
+    method = 'gcvEarth',
+    trControl = trainControl(method = "none"),
+    nk = 200,
+    allowed = allowFunct,
+    tuneGrid = expand.grid(degree = 2)
+  )) %>% set_names(paste0("mars", 1:samps))
+
+(t_mars <- proc.time() - ptm_mars)
 ```
 
 ```{r}
-maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred, mon = 5)
+maxPlots(Q_mars$mars1, ex_ID, int = int, noise_pred = noise_pred, mon = 5)
 ```
 
 # bagMARS
@@ -147,45 +163,40 @@ maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred, mon = 5)
 
 # rf
 ```{r}
-grid <- expand.grid(mtry = floor(seq(length(pred_nms) / 2, length(pred_nms), length = 4)))
-# grid <- expand.grid(mtry = floor(sqrt(length(pred_nms))))
+# grid <- expand.grid(mtry = floor(seq(length(pred_nms) / 2, length(pred_nms), length = 4)))
 
-Q_rf <- Qlearn(
+ptm_rf <- proc.time()
+
+set.seed(20170128)
+Q_rf <- map(1:samps, ~ Qlearn(
   form,
-  dat_long,
+  filter(dat_long, samp == .x),
   method = 'ranger',
-  tuneGrid = grid,
-  trControl = trainControl(method = "adaptive_boot",
-                           adaptive = list(min = 5, alpha = 0.05,
-                                           method = "gls", complete = F)),
+  nstages = nstages,
+  tuneGrid = expand.grid(mtry = length(pred_nms)),
+  trControl = trainControl(method = "none"),
+#   tuneGrid = grid,
+#   trControl = trainControl(method = "oob"),
   min.node.size = 5,
   importance = "impurity",
   always.split.variables = c("dose"),
-  num.trees = 500
-)
+  num.trees = 250
+)) %>% set_names(paste0("rf", 1:samps))
 
-Q <- Q_rf
+(t_rf <- proc.time() - ptm_rf)
 ```
 
 ```{r}
-maxPlots(Q, ex_ID, int = int, noise_pred = noise_pred)
+maxPlots(Q_rf$rf1, ex_ID, int = int, noise_pred = noise_pred)
 ```
 
 ```{r}
-Q_list <- list(CART = Q_rpart, MARS = Q_mars, BMARS = Q_bmars, RF = Q_rf)
-dat_test <- map_df(1:25, ~ sim_test(Q_list, int = int, noise = noise,
-                               noise_pred = noise_pred, seed = .x) %>%
-                 mutate(rep = .x)) %>% mutate(group = factor(
-    group,
-    levels = c(
-      seq(from = 0.1, to = 1, by = 0.1) %>% as.character(),
-      '1on1off',
-      names(Q_list), "greedy"
-    )
-  ))
-
-dat <- dat_test %>% group_by(group, ID, month) %>%
-  summarise_all(funs(mean(., na.rm = T)))
+ptm_test <- proc.time()
+Q_list <- c(Q_rpart, Q_mars, Q_bmars, Q_rf)
+dat_test <- sim_test(Q_list, int = int, noise = noise, noise_pred = noise_pred,
+                     npergroup = 2000, Ttot = nstages, seed = 20170410,
+                     best = !(noise & !noise_pred))
+(t_test <- proc.time() - ptm_test)
 ```
 
 ```{r}
@@ -196,22 +207,13 @@ type_nm <- paste0(
   ifelse(noise_pred, "_pred", ""),
   ifelse(!noise_pred & !noise & !int, "orig", "")
 )
-prefix <- c("dat_test_", "dat_", "Q_list_")
+prefix <- c("dat_test_", "Q_list_")
 var_nms <- map_chr(prefix, ~ paste0(.x, type_nm))
 for (i in 1:length(var_nms)) {
-  assign(var_nms[[i]], list(dat_test, dat, Q_list)[[i]])
+  assign(var_nms[[i]], list(dat_test, Q_list)[[i]])
 }
-save(list = var_nms, file = paste0(type_nm, ".Rdata"))
+save(list = var_nms, file = paste0(type_nm, "_3.Rdata"))
+
+rm(list = c(var_nms, "dat_test", "dat_long", "Q_list",
+            "Q_mars", "Q_rf", "Q_rpart"))
 ```
-
-```{r}
-reward_plot(dat, Q_list)
-```
-
-```{r}
-plots_tab(dat_test)
-```
-
-
-
-
