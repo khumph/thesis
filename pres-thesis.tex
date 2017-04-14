@@ -1,0 +1,198 @@
+\documentclass[10pt]{beamer}
+\usetheme{metropolis}
+\usepackage{appendixnumberbeamer}
+
+\usepackage{booktabs}
+% \usepackage[scale=2]{ccicons}
+
+% makes table of contents and such hyperlinks
+\usepackage{hyperref}
+
+% \usepackage[style=authoryear, hyperref = true]{biblatex}
+% \addbibresource{library.bib}
+
+% \usepackage{xspace}
+
+\title{Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data}
+\subtitle{\sl or: how I learned to stop worrying and love creating billion-observation data frames}
+\date{\today}
+\author{Kyle Humphrey}
+\institute{University of Arizona}
+% \titlegraphic{\hfill\includegraphics[height=1.5cm]{logo.pdf}}
+
+\begin{document}
+
+\maketitle
+
+% \begin{frame}{Table of contents}
+%   \setbeamertemplate{section in toc}[sections numbered]
+%   \tableofcontents[hideallsubsections]
+% \end{frame}
+
+\section{Introduction}
+
+\begin{frame}[c]{Personalized medicine}
+
+Patients often show significant differences in their responses to treatment.
+\begin{itemize}%[<+->]
+  \item Adverse drug reactions alone are a significant burden 
+  \begin{itemize}
+    \item Accounted for 6.5\% of hospital admissions at two hospitals in England  (\cite{Pirmohamed2004})
+    \item Projected \$850 million cost to NHS annually 
+  \end{itemize}
+  \item Other factors increase patient response to treatment
+  \begin{itemize}
+    \item Whether metastatic breast cancer cells over-express human epidermal growth factor receptor 2 (are HER2-positive)\footnote{Usually, ``personalized medicine'' refers to this type of biomarker-based personalization}
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[c]{How to personalized medicine?}
+
+Typically requires identifying patient subgroups with differential treatment responses
+\begin{itemize}[<+->]
+  \item Statistically, has traditionally required treatment by covariate interactions
+  \begin{itemize}
+    \item Often there are lots of potential subgroups (lots of interactions) - need lots of data and method to avoid inflating type I error rate
+  \end{itemize}
+  \item Lots of novel methods have been proposed
+  \begin{itemize}
+    \item Problem (for our purposes) treatments always categorical (usually binary), only a single stage considered
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[c]{Broad overview}
+
+Goal: find the sequence of doses of a single treatment that maximizes survival time in an adaptive simulated cancer clinical trial\footnote{setup inspired by \textcite{crt}} 
+\begin{itemize}
+    \item Use Q-learning a technique from reinforcement learning
+    \item Use flexible methods from statistical learning to fit Q-functions: 
+    \begin{itemize}
+      \item regression trees (CART)
+      \item Multivariate adaptive regression splines
+      \item Random forest
+    \end{itemize}
+    \item Idea is to  
+\end{itemize}
+
+\end{frame}
+%--- Next Frame ---%
+
+\section{Reinforcement learning} % (fold)
+\label{sec:reinforcement_learning}
+
+\begin{frame}[c]{Reinforcement learning: basic elements}
+
+\begin{itemize}[<+->]
+  \item learning \emph{agent} who has goals related to its
+  \item \emph{environment} (everything outside the agent's direct control)
+  \begin{itemize}
+    \item Features of the environment are represented to the agent through \emph{states}
+  \end{itemize}
+  \item The agent follows a \emph{policy} which dictates what 
+  \item \emph{action} to take given a state signal to affect the environment in order to achieve some goal
+  \begin{itemize}
+    \item goals defined to agent so that maximizing a scalar quantity called the \emph{reward} would achieve the goal
+  \end{itemize}
+  \item Goal of reinforcement learning is to find an \emph{optimal policy}: a policy that achieves the largest reward over the long run. 
+\end{itemize}
+
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Reinforcement learning: basic process}
+
+The agent:
+\begin{itemize}[<+->]
+  \item is presented with states
+  \item tries a sequence of actions
+  \item records the consequences (rewards)
+  \item statistically estimates the relationship between actions, states, and rewards
+  \item chooses next action that leads to largest rewards
+  \begin{itemize}
+    \item Actions with large rewards tend to be repeated, hence ``reinforcement''
+  \end{itemize}
+\end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Reinforcement learning: example}
+
+Board games offer quintessential example, take chess:
+\begin{itemize}
+    \item States: the positions of the pieces on the board
+    \item Actions: any of the legal moves with any given piece
+    \item Rewards: e.g. \\
+    if win $reward \gets 1$ \\
+    if lose $reward \gets 0$
+    \item Policy: ``strategy''
+\end{itemize}
+
+AlphaGo uses reinforcement learning and neural networks
+
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[t]{Reinforcement learning: differences to other areas of machine learning}
+  
+Supervised learning: learning agent given a list of correct example actions to taken in given situations, agent extrapolates correct example behavior to new situations
+
+Unsupervised learning: agent finds hidden structure in collections of example actions and situations where the correct action is unknown.
+
+Reinforcement learning: 
+\begin{itemize}
+  \item No correct example actions required
+  \item Goal is to maximize rewards, not find hidden structure
+  \item Problems are closed loop: actions taken now affect available actions and rewards later
+\end{itemize}
+  
+\end{frame}
+%--- Next Frame ---%
+
+
+\begin{frame}[c]{Reinforcement learning: connection to personalized medicine}
+  
+  \begin{itemize}
+      \item States: patient histories and characteristics
+      \item Actions: possible treatment options
+      \item Rewards: e.g. kg weight lost in weight loss study 
+      \item Policy: \emph{dynamic treatment regime} 
+  \end{itemize}
+
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[t]{Q-learning}
+  
+\end{frame}
+%--- Next Frame ---%
+
+% \begin{frame}[allowframebreaks]{References}
+%
+% \printbibliography[heading=none]
+%
+% \end{frame}
+
+
+% section reinforcement_learning (end)
+
+\section{Methods to fit Q-functions} % (fold)
+\label{sec:methods_to_fit_q_functions}
+
+% section methods_to_fit_q_functions (end)
+
+\section{Simulation} % (fold)
+\label{sec:simulation}
+
+% section simulation (end)
+
+\section{Results} % (fold)
+\label{sec:results}
+
+% section results (end)
+
+
+\end{document}
