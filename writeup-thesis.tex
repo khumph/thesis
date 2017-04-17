@@ -23,18 +23,18 @@
 % allows usage of \enquote to quote things
 \usepackage{csquotes}
 
-% \usepackage[backend = bibtex, sorting=none, ]{biblatex}
 \usepackage{ctable}
 
 \usepackage{amsmath}
 \usepackage{commath}
-\usepackage[style=authoryear-comp, hyperref = true]{biblatex}
+\usepackage[style=authoryear, hyperref = true]{biblatex}
 \addbibresource{library.bib}
 
 \usepackage[]{algorithm2e}
 \RestyleAlgo{boxruled}
 
 \DeclareMathOperator*{\argmax}{argmax}
+
 
 
 
@@ -47,7 +47,7 @@
 \author{\normalsize \sl Kyle Humphrey}
 
 \date{\normalsize \sl \today}
-
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \begin{document}
 
 \maketitle
@@ -73,7 +73,7 @@ However, the general idea goes back at least as far as Hippocrates\footnote{Hipp
 
 While personalized medicine in principle has a long history and shows considerable promise, there are numerous challenges in identifying these subgroups of patients and the optimal treatment for each. Chief among them is the question of how to select from what is often a multitude of plausible subgroups. Narrowing down these subgroups is hindered by disease processes which are usually quite complicated and not well understood. Furthermore, optimal treatments can change over time with the ebb and flow of changing disease processes.
 
-% subsection personalized_medicine (end) 
+% subsection personalized_medicine (end)
 
 \subsection{Statistical methods to personalize medicine} % (fold)
 \label{sub:statistical_methods_to_personalize_medicine}
@@ -83,13 +83,13 @@ While personalized medicine in principle has a long history and shows considerab
 \subsubsection{Traditional methods} % (fold)
 \label{ssub:traditional_methods}
 
-% traditional methods: ad hoc subgroup analyses, or searching for treatment by subgroups interactions 
+% traditional methods: ad hoc subgroup analyses, or searching for treatment by subgroups interactions
 
 Statistically, the personalization of medicine involves the identification of patient subgroups which respond to treatment differently. Traditionally, this is accomplished by investigation of (often ad hoc) treatment by covariate interactions, where different values of a covariate identify subgroups (\cite{Byar1985}). Using the HER2 breast cancer example above, we could encapsulate our knowledge of a patient's HER2 status into a binary covariate which indicates whether she was HER2 positive or negative, then statistically test if the coefficient on an interaction term with the indicator of HER2 status and treatment is significantly different from 0.
 
 % Problems: Curse of dimensionality, multiple comparisons
 
-While straightforward, this approach has several problems. First, which subgroups to examine is often a subjective judgement made by the researcher (as is which cutoff to use to create subgroups from continuous covariates). Second, since the numer of plausible subgroups can be quite large in typical problems, the number of interaction terms required must also be large. In addition to issues with multiple comparison, this requires a much greater growth of sample size (i.e., it suffers from the curse of dimensionality).
+While straightforward, this approach has several problems. First, which subgroups to examine is often a subjective judgement made by the researcher (as is which cutoff to use to create subgroups from continuous covariates). Second, since the number of plausible subgroups can be quite large in typical problems, the number of interaction terms required must also be large. In addition to issues with multiple comparison, this requires a much greater growth of sample size (i.e., it suffers from the curse of dimensionality).
 
 \subsubsection{Algorithms for detecting interactions} % (fold)
 \label{ssub:algorithms_for_detecting_interactions}
@@ -242,16 +242,16 @@ With the Q-functions in hand, the optimal treatment for each participant $i \in 
 
 % subsection steps_in_two_stage_q_learning (end)
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
   initialize $\hat{Q}_{K + 1}$ arbitrarily:
-  
+
   $\hat{Q}_{K + 1} \gets 0$
-  
+
   \medskip
-  
+
  \For{$k$ in $K, \ldots, 1$}{
   Estimate the rewards that would occur if the optimal policy was  followed after $k$:
-  
+
 $ \hat{r}_{k} \gets r_{k} + \max_{A_{k+1}} \hat{Q}_{k+1}(A_{k+1}, H_{k+1})$
 
 \medskip
@@ -264,7 +264,7 @@ Estimate the optimal treatment(s) for each patient at stage $k$:
 
 $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
  }
- 
+
  \caption{Q-learning}
 \end{algorithm}
 
@@ -273,9 +273,9 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 \section{Regression Trees using CART} % (fold)
 \label{sec:rpart}
 
-Since in reinforcement learning rewards are defined to be continuous, we focus on regression trees constructed using the CART procedure of \textcite{CART}. 
+Since in reinforcement learning rewards are defined to be continuous, we focus on regression trees constructed using the CART procedure of \textcite{CART}.
 
-A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statment is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node). Unlike trees in nature, decision trees grow from the root node downward, as shown in the illustrative example below.
+A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statement is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node). Unlike trees in nature, decision trees grow from the root node downward, as shown in the illustrative example below.
 
 % For example, a simple regression tree could be constructed with the following rules (adapted from \cite{apm}):
 % \begin{verbatim}
@@ -298,12 +298,12 @@ Our overarching goal in tree construction is to create nodes as homogeneous in t
 
 We begin with all of the data (the \emph{root node}) and evaluate the sum of squared errors that result from splitting based upon each unique value of each covariate:
 \begin{equation}
-  SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2 
+  SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2
 \end{equation}
 
 Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ and $\bar{y}_{R}$ is the average outcome in the right node, $\text{node}_{R}$. We then choose the split that minimizes the sum of squares. Then the process is repeated for both of the resulting left and right nodes. This feature of recursive splitting, or partitioning, of the data is why this method is also known as \emph{recursive partitioning}. Typically we continue splitting in this manner until the number of observations in a node falls below a threshold (e.g. 20 observations), and assign each terminal node the average outcome of training observations in that node.
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
 \While{stopping criteria not met}{
 \For{each terminal node, $R_{m}$}{
  \For{each $X_{j} \in X$}{
@@ -326,7 +326,7 @@ Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ a
 \subsection{Tree pruning} % (fold)
 \label{sub:tree_pruning}
 
-The large tree resulting from the tree building/growing phase, $T_{0}$, typically overfits the data. To combat this, we prune back $T_{0}$ using a technique called cost complexity pruning. 
+The large tree resulting from the tree building/growing phase, $T_{0}$, typically overfits the data. To combat this, we prune back $T_{0}$ using a technique called cost complexity pruning.
 
 The goal in cost-complexity pruning is to find, for each value of a complexity parameter $\alpha \geq 0$, the subtree $T \subset T_{0}$ created by collapsing any of $T_{0}$'s internal (non-terminal) nodes, which minimizes the cost complexity criterion:
 %
@@ -336,15 +336,15 @@ The goal in cost-complexity pruning is to find, for each value of a complexity p
 %
 where $N_{m}$ is the number of observations in node $m$, $\bar{y}_{m}$ is the average outcome, $y_{i}$ in node $m$, and $Q_{m}(T) = \frac{1}{N_{m}} $, the average mean squared error in node $m$ and $\abs{T}$ is the number of terminal nodes in subtree $T$. One can show that there is a unique subtree $T_{\alpha}$ that minimizes $C_{\alpha}(T)$ for each given $\alpha$.
 
-In order to find $T_{\alpha}$ for each $\alpha$, we use weakest link pruning. As the name implies, in weakest link pruning, we test out collapsing each internal node, choosing to actually collapse the the weakest link: the node that, if collapsed, produces the smallest increase in $\sum_{m = 1}^{\abs{T}} \sum_{x_{i} \in \text{node}_{m}} (y_{i} - \bar{y}_{m})^2$, the sum of squares of the whole tree. We continue in this fashion until we've returned to the root node. This sequence contains each $T_{\alpha}$. 
+In order to find $T_{\alpha}$ for each $\alpha$, we use weakest link pruning. As the name implies, in weakest link pruning, we test out collapsing each internal node, choosing to actually collapse the the weakest link: the node that, if collapsed, produces the smallest increase in $\sum_{m = 1}^{\abs{T}} \sum_{x_{i} \in \text{node}_{m}} (y_{i} - \bar{y}_{m})^2$, the sum of squares of the whole tree. We continue in this fashion until we've returned to the root node. This sequence contains each $T_{\alpha}$.
 
 With the $T_{\alpha}$s in hand, we choose the $\alpha$ (and hence $T_{\alpha}$) that minimizes the sum of square errors produced using cross validation. Alternatively, we can use choose the largest $\alpha$ (smallest $T_{\alpha}$) which is within one standard error of the minimum cross validated error.
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
 \For{each $\alpha > 0$}{
 \While{$T > $ root node}{
   compute change in SSE from collapsing each internal node in turn
-  
+
   collapse node that produces the smallest increase in SSE (weakest link), save resulting tree
 }
 \For{each saved tree}{
@@ -352,7 +352,7 @@ With the $T_{\alpha}$s in hand, we choose the $\alpha$ (and hence $T_{\alpha}$) 
 }
 Choose the saved tree with the smallest cross validation error ($T_{\hat{\alpha}}$)
 }
-Pick the $T_{\hat{\alpha}}$ with the smallest cross validation error as final tree. 
+Pick the $T_{\hat{\alpha}}$ with the smallest cross validation error as final tree.
 
 Or pick the smallest $T_{\hat{\alpha}}$ within one standard error of the $T_{\hat{\alpha}}$ with the smallest cross validation error
  \caption{Regression tree pruning algorithm}
@@ -379,33 +379,38 @@ Trees however, tend to have lower predictive performance compared to other metho
 % subsection advantages_and_disadvantages_to_cart (end)
 
 \subsection{Illustrative example} % (fold)
-\label{sub:example}
+\label{sub:cart-ex}
+
+
 
 Let's examine CART, MARS, and random forest (below) using a simple sub-problem from the simulation described in detail below. Suppose we want to predict the change in the mass of the $i$th cancer patient's tumor from month one to month two, $Y_{i} \equiv M_{i1} - M_{i0}$, given the dose of a drug, $D_{i}$, which they were (randomly) assigned. The true relationship is given by
 \begin{equation}
-  Y_{i} = 0.15 - 1.2 (D_{i} - 0.5) + \epsilon_{i} 
+  Y_{i} = 0.15 - 1.2 (D_{i} - 0.5) + \epsilon_{i}
 \end{equation}
-Where $\epsilon_{i} \sim N(0, 0.05)$. 50 patients were simulated with random starting tumor masses sampled from a uniform distribution from 1 to 2, $M_{0} \overset{iid}{\sim} \text{Unif}(1, 2)$, and doses were sampled from a uniform distribution between 0 (none) and 1 (the maximum tolerable dose), $D \overset{iid}{\sim} \text{Unif}(0, 1)$. 50 additional patients were simulated in the same fashion as test data. 
+Where $\epsilon_{i} \sim N(0, 0.05)$. 50 patients were simulated with random starting tumor masses sampled from a uniform distribution from 1 to 2, $M_{0} \overset{iid}{\sim} \text{Unif}(1, 2)$, and doses were sampled from a uniform distribution between 0 (none) and 1 (the maximum tolerable dose), $D \overset{iid}{\sim} \text{Unif}(0, 1)$. 50 additional patients were simulated in the same fashion as test data.
 
 In this example we used stopping criteria of (1) terminal nodes had to have at least 5 observations (2) nodes with fewer than 15 observations were not split. For pruning, we follow the ``one standard error'' rule, where we choose the smallest tree within one standard error of the tree with the minimum cross validation error.
 
-\begin{figure}[h]
-\begin{center}
-\includegraphics[width=0.75\textwidth]{ex-tree-cart.png}
-\end{center}
-\caption[Regression tree fit to example data]{Regression tree fit to example data. For each split, the variable split upon is shown as a circle representing an internal node (with a numbered box giving the node a number). The values of the splitting variable that define resulting node membership are shown breaking the line connecting nodes (e.g. observations with $D \geq 0.585$ end up in node 2, while observations with $D < 0.585$ end up in node 5). Boxplots show the distribution of responses in each terminal node (nodes 3, 4, 6, and 7, shown at the bottom of the tree)}
-\label{fig:ex-cart-tree}
+\begin{figure}[!htbp]
+
+{\centering \includegraphics[width=0.75\textwidth]{figure/ex-cart-tree-1} 
+
+}
+
+\caption[Regression tree fit to example data]{Regression tree fit to example data. For each split, the variable split upon is shown as a circle representing an internal node (with a numbered box giving the node a number). The values of the splitting variable that define resulting node membership are shown breaking the line connecting nodes (e.g. observations with $D \geq 0.585$ end up in node 2, while observations with $D < 0.585$ end up in node 5). Boxplots show the distribution of responses in each terminal node (nodes 3, 4, 6, and 7, shown at the bottom of the tree)}\label{fig:ex-cart-tree}
 \end{figure}
 
-This produces the tree in Figure \ref{fig:ex-cart-tree}. Since the regression function is actually linear, the splits are intuitive: first we split the root node (node 1) at around the midpoint of the distribution of doses ($D = 0.585$), then we split the observations with doses higher than 0.585 (node 2) at about their median dose, 0.759, producing the terminal nodes 3 and 4. Similarly with doses less than 0.585 (node 5), we split at approximately the median dose (0.317), yielding terminal nodes 6 and 7. 
+This produces the tree in Figure \ref{fig:ex-cart-tree}. Since the regression function is actually linear, the splits are intuitive: first we split the root node (node 1) at around the midpoint of the distribution of doses ($D = 0.585$), then we split the observations with doses higher than 0.585 (node 2) at about their median dose, 0.759, producing the terminal nodes 3 and 4. Similarly with doses less than 0.585 (node 5), we split at approximately the median dose (0.317), yielding terminal nodes 6 and 7.
 
-\begin{figure}[h]
-\begin{center}
-\includegraphics[width=\textwidth]{ex-plot-cart.png}
-\end{center}
-\caption[Predicted regression function for example data using CART]{Predicted regression function for example data using CART. The grey dots are the observations and the dotted line is the true relationship from which they were generated. The solid line connects the predicted values, which are shown with Xs.}
-\label{fig:ex-plot-cart}
+\begin{figure}[!htbp]
+
+{\centering \includegraphics[width=0.75\textwidth]{figure/ex-plot-cart-1} 
+
+}
+
+\caption[Predicted regression function for example data using CART]{Predicted regression function for example data using CART. The grey dots are the observations and the dotted line is the true relationship from which they were generated. The solid line connects the predicted values, which are shown with Xs.}\label{fig:ex-plot-cart}
 \end{figure}
+
 
 The resulting predicted regression function is shown as a solid line in Figure \ref{fig:ex-plot-cart}, with Xs showing the predicted value for each observation in the training data. The grey dots are the actual observations and the dotted line represents the true function from the observations were simulated. Note the piecewise constant form of the function, where all observations in a terminal node receive the same predicted value.
 
@@ -419,7 +424,7 @@ Using this model to predict the change in tumor masses, $Y$, for the test data r
 \section{Multivariate adaptive regression splines (MARS)} % (fold)
 \label{sec:mars}
 
-MARS (\cite{mars}) can be viewed as a generalization of stepwise regression methods that incorporates automatic modelling of interactions. MARS accomplishes this through modelling covariates as piecewise linear basis functions and their products. These piecewise linear basis functions are of the form 
+MARS (\cite{mars}) can be viewed as a generalization of stepwise regression methods that incorporates automatic modelling of interactions. MARS accomplishes this through modelling covariates as piecewise linear basis functions and their products. These piecewise linear basis functions are of the form
 %
 \begin{equation} \label{eq:bases}
   (x - t)_{+} \text{ and } (t - x)_{+}
@@ -464,7 +469,7 @@ where $M$ is the number of terms in the model, and $h_{m}(X)$ is a hinge functio
 \subsection{Backward pass} % (fold)
 \label{sub:backward_pass}
 
-Usually, the function produced by the forward pass is too large and overfits the data, so we use a pruning (backward deletion) procedure. For each term $h_{m}(X)$ in the model, we estimate how much the error would increase by removing it, then remove the term for which removal increases the error the least. Once we've removed one term, we repeat this procedure and delete another term. At each stage of this procedure we obtain $\hat{f}_{\lambda}(X)$, the best model of size $\lambda$ (best model with $\lambda$ terms). Note that we do not proceed backwards along the path through which the covariates were added (indeed we add pairs of hinge functions on at a time, but remove them one by one). 
+Usually, the function produced by the forward pass is too large and overfits the data, so we use a pruning (backward deletion) procedure. For each term $h_{m}(X)$ in the model, we estimate how much the error would increase by removing it, then remove the term for which removal increases the error the least. Once we've removed one term, we repeat this procedure and delete another term. At each stage of this procedure we obtain $\hat{f}_{\lambda}(X)$, the best model of size $\lambda$ (best model with $\lambda$ terms). Note that we do not proceed backwards along the path through which the covariates were added (indeed we add pairs of hinge functions on at a time, but remove them one by one).
 
 To determine the optimal number of terms, $\lambda$, we can use a resampling technique (e.g. cross validation) but for computationally efficiency, we often generalized cross validation (GCV).
 
@@ -475,7 +480,7 @@ To determine the optimal number of terms, $\lambda$, we can use a resampling tec
 
 Generalized cross validation is a computational shortcut for linear regression models, which produces an error that approximates the leave-one-out cross-validated error. For MARS, the generalized cross-validation criterion is defined as
 \begin{equation}
-  GCV(\lambda) = 
+  GCV(\lambda) =
     \frac{
       \sum_{i = 1}^{N}(y_{i} - \hat{f}_{\lambda}(x_{i}))^2
     }{
@@ -503,33 +508,35 @@ Similar to CART, we can measure the importance of each variable by summing the r
 \subsection{Advantages and disadvantages of MARS} % (fold)
 \label{sub:advantages_of_mars}
 
-MARS has many of the same advantages as CART, in that it requires very litte pre-processing of data, it performs variable selection and models interactions as a part of the model building process, and the models produced are quite interpretable. This last point holds even for models with interactions since products of hinge functions are only nonzero when both hinge functions involved in the product are nonzero, allowing the term to operate only over a relatively small subspace of the two covariates.
+MARS has many of the same advantages as CART, in that it requires very little pre-processing of data, it performs variable selection and models interactions as a part of the model building process, and the models produced are quite interpretable. This last point holds even for models with interactions since products of hinge functions are only nonzero when both hinge functions involved in the product are nonzero, allowing the term to operate only over a relatively small subspace of the two covariates.
 
 However, the hinge functions of MARS may not be flexible enough to model smooth functions as accurately as some other methods (this can be addressed by bagging, discussed below). Also, higher order interactions will only enter the model if their lower order interactions improve predictive performance, and this need not be true in practice. As with trees, correlated predictors, while not significantly impacting performance, can complicate interpretation since the choice between two perfectly correlated predictors at any step is essentially random. This could hinder interpretation because the same piece of information may show up in different parts of the model under different names.
 
 % subsection advantages_of_mars (end)
 
 \subsection{Illustrative example} % (fold)
-\label{sub:example}
+\label{sub:mars-ex}
 
 Returning to our change in tumor mass example from above, we fit a regression equation using MARS. Here we stopped adding terms if we reached 21 terms in the model or adding additional terms improved $R^2$ by less than 0.001. Terms were pruned using generalized cross validation as discussed above.
 
-\begin{figure}[h]
-\begin{center}
-\includegraphics[width=\textwidth]{ex-plot-mars.png}
-\end{center}
-\caption[Predicted regression function for example data using MARS]{Predicted regression function for example data using MARS. As in Figure \ref{fig:ex-plot-cart}, the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the Xs represent predicted values for each observation.}
-\label{fig:ex-plot-mars}
+\begin{figure}[!htbp]
+
+{\centering \includegraphics[width=0.75\textwidth]{figure/ex-plot-mars-1} 
+
+}
+
+\caption{Predicted regression function for example data using MARS. As in Figure \ref{fig:ex-plot-cart}, the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the Xs represent predicted values for each observation.}\label{fig:ex-plot-mars}
 \end{figure}
+
 
 The resulting predicted regression function is shown in Figure \ref{fig:ex-plot-mars} as a solid line. Grey dots again represent observations, the dotted line represents the true relationship from which data were simulated, and predicted values for each observation are represented by Xs. The fitted MARS equation is
 \begin{equation}
   \label{eq:mars-eqn}
   \hat{\operatorname{E}}[Y \mid D] \approx -0.24 + 1.24 (0.81 - D)_{+} -1.64 (D - 0.87)_{+}
 \end{equation}
-Note that the hinges don't meet because the paired hinges that entered with each remaning hinge were removed in the pruning/backward pass phase, the gap between hinges is shown in our plot as a horizontal line of $Y = -0.24$ for $0.81 < D < 0.87$. 
+Note that the hinges don't meet because the paired hinges that entered with each remaining hinge were removed in the pruning/backward pass phase, the gap between hinges is shown in our plot as a horizontal line of $Y = -0.24$ for $0.81 < D < 0.87$.
 
-Using this model to predict the testing data yields a root mean squared error of 0.037 and a coefficient of determination ($R^2$) of 0.989. As these measures indicate, MARS does a much better job of capturing the linear nature of the relationship between $Y$ and $D$ than CART does, with many fewer ``splits''. Note also that we can restrict MARS to only consider predictors to enter as linear terms (without splitting into hinge functions), which we would probably do here given that the fitted regression line is nearly linear anyway, and would also then be easier to interpret.
+Using this model to predict the testing data yields a root mean squared error of 0.037 and a coefficient of determination ($R^2$) of 0.99. As these measures indicate, MARS does a much better job of capturing the linear nature of the relationship between $Y$ and $D$ than CART does, with many fewer ``splits''. Note also that we can restrict MARS to only consider predictors to enter as linear terms (without splitting into hinge functions), which we would probably do here given that the fitted regression line is nearly linear anyway, and would also then be easier to interpret.
 
 % subsection example (end)
 
@@ -541,17 +548,17 @@ Using this model to predict the testing data yields a root mean squared error of
 \subsection{Bagging} % (fold)
 \label{sub:bagging}
 
-As mentioned above, single trees tend to have quite high variance (small changes in the data can produce very different trees), however when grown sufficiently deep or bushy, they can have relatively low bias. Bootstrap aggregating (bagging for short) is a general technique that is useful whenever a modelling technique has these properties (high variance, low bias). 
+As mentioned above, single trees tend to have quite high variance (small changes in the data can produce very different trees), however when grown sufficiently deep or bushy, they can have relatively low bias. Bootstrap aggregating (bagging for short) is a general technique that is useful whenever a modelling technique has these properties (high variance, low bias).
 
-Consider a collection of independent and identically distributed random variables, $X_{1}, X_{2}, \ldots, X_{n}$, with variance $\sigma^2$ and sample mean $\bar{X}$. It's easy to show that 
+Consider a collection of independent and identically distributed random variables, $X_{1}, X_{2}, \ldots, X_{n}$, with variance $\sigma^2$ and sample mean $\bar{X}$. It's easy to show that
 \begin{equation}
   \operatorname{Var}[\bar{X}] = \frac{\sigma^2}{n},
 \end{equation}
 the variance of the sample mean is lower by a factor of $n$ than the variance of any single observation. If we could build trees on many different samples then average the results, we could exploit this property to drastically reduce the variance and therefore increase performance.
 
-Typically, however, we only have one sample to work with so we can take $B$ bootstrap samples of our one sample to approximate many different training samples, build a model on each sample, then aggregate the results from each model into a single prediction. In the case of regression problems, we would average the predictions for each test observation from each model. 
+Typically, however, we only have one sample to work with so we can take $B$ bootstrap samples of our one sample to approximate many different training samples, build a model on each sample, then aggregate the results from each model into a single prediction. In the case of regression problems, we would average the predictions for each test observation from each model.
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
 \For{$i$ in 1 to $B$}{
   Take a bootstrap sample of the data \\
   Fit model to this sample (e.g. grow an unpruned tree)
@@ -561,7 +568,7 @@ Typically, however, we only have one sample to work with so we can take $B$ boot
 
 Bagging also provides a built-in way to estimate the test error by only averaging predictions for any given tree using observations that were not in the bootstrap sample used to train that tree (called the out-of-bag sample, about 1/3 of the observations on average). This out-of-bag sample typically approximates the cross validation estimate of error rate quite well, but requires much less computation.
 
-Unfortunately, we can't in practice achieve a $B$ fold decrease in the variance from a single tree because our trees are not independent. Suppose there was a single very strong predictor. For any tree grown from a bootstrap sample, the first few splits would then tend to be made on this strong predictor. This in turn strongly influences the remaining shape of the tree, leading to correlated trees across bootstrap samples. 
+Unfortunately, we can't in practice achieve a $B$ fold decrease in the variance from a single tree because our trees are not independent. Suppose there was a single very strong predictor. For any tree grown from a bootstrap sample, the first few splits would then tend to be made on this strong predictor. This in turn strongly influences the remaining shape of the tree, leading to correlated trees across bootstrap samples.
 
 % subsection bagging (end)
 
@@ -570,7 +577,7 @@ Unfortunately, we can't in practice achieve a $B$ fold decrease in the variance 
 
 Statistically, we can decrease correlation by introducing randomness. So \textcite{rf} suggested that we decrease correlation between trees built on bootstrap samples by only considering a random subset $m_{try}$ of covariates randomly sampled from $p$ total covariates to split upon for each split instead of considering all $p$.
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
 \For{$i$ in 1 to $B$}{
   take a bootstrap sample of the data \\
   Grow a tree on this sample: \\
@@ -580,7 +587,7 @@ Statistically, we can decrease correlation by introducing randomness. So \textci
     split on a covariate in $m_{try}$ causing largest decrease in SSE
    }
   }
-  
+
   (do not prune)
  }
  \caption{Random forest}
@@ -607,27 +614,34 @@ Random forests and bagging give significantly more accurate predictions over a s
 \subsection{Illustrative example} % (fold)
 \label{sub:example}
 
-Returning to our change in tumor mass example from above, let's fit a regression equation using random forest. Actually, in this case since there is only one predictor, random forest is equivalent to bagging and therefore fewer trees will suffice. Here we grow 100 trees each that stop splitting when splitting results in nodes with fewer than 5 observations. 
+Returning to our change in tumor mass example from above, let's fit a regression equation using random forest. Actually, in this case since there is only one predictor, random forest is equivalent to bagging and therefore fewer trees will suffice. Here we grow 100 trees each that stop splitting when splitting results in nodes with fewer than 5 observations.
 
-\begin{figure}[h]
-\begin{center}
-\includegraphics[width=0.9\textwidth]{ex-plot-rf.png}
-\end{center}
-\caption[Predicted regression function for example data using RF]{Predicted regression function for example data using RF. As in Figure \ref{fig:ex-plot-cart} and Figure \ref{fig:ex-plot-mars}, the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the Xs represent predicted values for each observation.}
-\label{fig:ex-plot-rf}
+\begin{figure}[!htbp]
+
+{\centering \includegraphics[width=0.75\textwidth]{figure/ex-plot-rf-1} 
+
+}
+
+\caption[cap]{cap}\label{fig:ex-plot-rf}
 \end{figure}
 
-The predicted regression function averaged over the 100 trees is shown in Figure \ref{fig:ex-plot-rf}. Again, the observations are given by grey dots, the true function from which data were simulated is shown as a dotted line, the predicted observations are shown as Xs which are connected by a solid line. Notice how averaging the bagged trees yields a line much closer to the truth than the single tree shown above, though each tree was grown using similar stopping criteria as the CART example. 
 
-When using this model to predict the test data we obtain a root mean squared error of 0.800 and an $R^2$ of 0.974. This compares much more favorably to MARS than a single tree, however it comes at the cost of a lack of clarity in the relationship between $Y$ and $D$ in the model.
+The predicted regression function averaged over the 100 trees is shown in Figure \ref{fig:ex-plot-rf}. Again, the observations are given by grey dots, the true function from which data were simulated is shown as a dotted line, the predicted observations are shown as Xs which are connected by a solid line. Notice how averaging the bagged trees yields a line much closer to the truth than the single tree shown above, though each tree was grown using similar stopping criteria as the CART example.
+
+When using this model to predict the test data we obtain a root mean squared error of 0.045 and an $R^2$ of 0.984. This compares much more favorably to MARS than a single tree, however it comes at the cost of a lack of clarity in the relationship between $Y$ and $D$ in the model.
 
 % subsection example (end)
 
 % section random_forest (end)
 
-\section{Simulation}
 
-Largely inspired by \textcite{crt} and \textcite{nsclc}, we estimated optimal dynamic treatment regimes chosen from different doses of a single drug in a simulated cancer clinical trial for an advanced generic cancer. Our primary goal was to maximize survival time. To achieve this, we first simulated a trial where at the beginning of each of six months, patients' tumor masses and qualities of life were measured, and each patient was assigned a random dose of the drug. We then applied Q-learning using each of the methods above to estimate the relationship between doses and survival time given different patient histories. In a validation trial of the same design, we chose optimal doses based on the estimated relationships, and observed their effects of survival.
+\section{Simulation} % (fold)
+\label{sec:simulation}
+
+
+
+Largely inspired by \textcite{crt} and \textcite{nsclc}, we estimated optimal dynamic treatment regimes chosen from different doses of a single drug in a simulated cancer clinical trial for an advanced generic cancer. Our primary goal was to maximize survival time. To achieve this, we first simulated a trial where at the beginning of each of three months ($t = 0, 1, 2$), patients' tumor masses and qualities of life were measured, and each patient was assigned a random dose of the drug. 
+With the survival times resulting from these random sequences, we applied Q-learning three times, once using a single regression tree (CART), once using MARS, and once using random forest (RF) to estimate Q-functions. In a validation trial of the same design, we chose optimal doses based on the estimated optimal regimes obtained from Q-learning, and observed their effects on survival.
 
 \subsection{Patient Model} % (fold)
 \label{sub:vpm}
@@ -645,7 +659,7 @@ Largely inspired by \textcite{crt} and \textcite{nsclc}, we estimated optimal dy
 \subsubsection{Transition functions} % (fold)
 \label{ssub:transition_functions}
 
-Patient toxicity at a given month $t$, $W$, which we define as the negative of wellness or quality of life\footnote{For simplicity, we take wellness and quality of life to be equivalent and exactly the opposite of toxicity}, was modelled as a function of tumor mass and dosage of treatment:
+Patient toxicity measured at a given month $t$, $W_{t}$, which we define as the negative of wellness or quality of life\footnote{For simplicity, we take wellness and quality of life to be equivalent and exactly the opposite of toxicity}, was modeled as a function of tumor mass and dosage of treatment:
 %
 \begin{equation}
 W_{t*} = 0.1 M_{t-1} + 1.2 (D_{t-1} - 0.5) + W_{t - 1}
@@ -656,9 +670,9 @@ W_{t} = \begin{cases}
   0 &\text{if } W_{t*} \leq 0
 \end{cases}
 \end{equation}
-This model captures the facts that higher tumor masses at month $t-1$, $M_{t-1}$, increase the measured toxicity at month $t$, $W_{t}$, and doses at month $t-1$, $D_{t -1}$, above 0.5 increase $W_{t}$ and $D_{t -1}$ below 0.5 decrease $W_{t}$ due to fewer toxic effects from treatment. Also $W_{t}$ is bounded by 0, which signfies no toxic effects.
+This model captures the facts that higher tumor masses at month $t-1$, $M_{t-1}$, increase the measured toxicity at month $t$, $W_{t}$, and doses at month $t-1$, $D_{t -1}$, above 0.5 increase $W_{t}$ and $D_{t -1}$ below 0.5 decrease $W_{t}$ due to fewer toxic effects from treatment. Also $W_{t}$ is bounded by 0, which signifies no toxic effects.
 
-Tumor mass at month $t$, $M_{t}$, was modelled as a function of toxicity measured the previous month, $W_{t-1}$, and dose assigned the previous month $D_{t-1}$: 
+Tumor mass at month $t$, $M_{t}$, was modeled as a function of toxicity measured the previous month, $W_{t-1}$, and dose assigned the previous month $D_{t-1}$:
 %
 \begin{equation}
 M_{t*} = [0.15 W_{t-1} - 1.2 (D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
@@ -707,7 +721,7 @@ At each month $t$, the next month's tumor mass, $M_{t + 1}$, and toxicity, $W_{t
   S_{t} \sim \text{Exp}(\exp(-5.5 + W_{t+1} + 1.2 M_{t+1} + 0.75 W_{t+1} M_{t+1}))
 \end{equation}
 
-If $S_{it} \leq 1$ for patient $i$ (i.e. the patient would not survive another month), the reward received was computed as the total log survival time: log of the total number of months the patient had survived (including the fraction of a month before their death, $S_{it}$). If patient $i$ survived up to the final mont of treatment $t = 5$, the rewards were computed as $\log(S_{i5} + 5)$, the log of the simulated survival time after the final treatment plus the the number of months already elapsed. 
+If $S_{it} \leq 1$ for patient $i$ (i.e. the patient would not survive another month), the reward received was computed as the total log survival time: log of the total number of months the patient had survived (including the fraction of a month before their death, $S_{it}$). If patient $i$ survived up to the final month of treatment $t = 5$, the rewards were computed as $\log(S_{i5} + 5)$, the log of the simulated survival time after the final treatment plus the the number of months already elapsed.
 \begin{equation}
   R_{t + 1} = \begin{cases}
     \log(S_{t} + \sum_{j = 0}^{t} j) & \text{if } S_{t} \leq 1 \text{ or } t = 5 \\
@@ -723,7 +737,7 @@ If $S_{it} \leq 1$ for patient $i$ (i.e. the patient would not survive another m
 
 The interaction scenario was identical to the basic scenario just described with the addition of two baseline covariates, $X_{1}$ and $X_{2}$ which were simulated from uniform distributions over 0, 1:
 \begin{equation}
-  X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1) 
+  X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1)
 \end{equation}
 Using the values of these covariates, four approximately equally sized subgroups were constructed:
 \begin{description}
@@ -805,7 +819,7 @@ The interaction and noise scenarios were also combined together, to create the s
 
 With the training data generated from each scenario listed above, Q-learning was applied using each of CART, MARS, and random forest to estimate the Q-functions at each stage. The fitted models for each stage under each scenario were saved for use on the validation set. We estimated the maximum rewards in each stage of Q-learning by generating predicted rewards under a sequence of doses from 0 to 1 with increments of 0.01, choosing the dose that had the highest predicted reward.
 
-To quantify the influence the training data have on the resulting estimated optimal dynamic treatment regimes, the process described in the preceding paragraph was repeated for 20 training sets each with 1000 patients.
+To quantify the influence the training data have on the resulting estimated optimal dynamic treatment regimes, the process described in the preceding paragraph was repeated for 20 training sets each with 2000 patients.
 
 % subsection procedure (end)
 
@@ -816,12 +830,12 @@ Initial tumor masses ($M_{0}$) and toxicities ($W_{0}$) for 1000 new patients, d
 
 \begin{description}
   \item [10 constant dose regimes:] the same doses of $0.1, 0.2, \ldots,$ or 1 given at each stage
-  \item [``One-on-one-off'':] an alternating dose regime starting at the maximum dose (1), switching the dose to 0 for next stage, and repeating through the end of the trial.
-  \item [``greedy'':] the dose that maximizes the expected survival at each month, given complete knowledge of the transition functions and their influence on survival (without considering the effect on survival in future months).
+  % \item [``One-on-one-off'':] an alternating dose regime starting at the maximum dose (1), switching the dose to 0 for next stage, and repeating through the end of the trial.
+  \item [``Best'':] the dose that maximizes the expected survival at each month, given complete knowledge of the transition functions and their influence on survival, considering all possible sequences of three doses (each dose considered from 0 to 1 by 0.01).
   \item [CART, MARS, RF:] The doses that maximize expected survival at each month as estimated from each of the 20 CART, MARS, and random forest models used to estimate the Q-function for each month for each set of training data.
 \end{description}
 
-The transition and survival functions were likewise identical to the training data, with one exception: the 
+The transition and survival functions were likewise identical to the training data, with one exception: to increase the comparability between dosing schemes, the expected survival time was used as the rewards (and the determination of a participant had died), rather than the survival time using random draws from an exponential distribution.
 
 % subsection validation (end)
 
@@ -830,107 +844,150 @@ The transition and survival functions were likewise identical to the training da
 \section{Simulation Results} % (fold)
 \label{sec:simulation_results}
 
-Mean months of survival 
+\begin{figure}[!htbp]
 
-\begin{figure}[!tbp]
-\begin{center}
-\includegraphics[width=\textwidth]{results-plot-no-int.png}
-\end{center}
-\caption[Months of survival under scenarios without interaction]{Months of survival under each regime for the basic scenario. The same 200 patients were simulated under each treatment regime (same initial tumor masses and toxicities). This test simulation was  repeated 25 times and averaged over the 25 repetitions. 
-% Notches extend $1.58 \times IQR / \sqrt{n}$, giving a rough 95\% confidence interval for medians. 
-Upper whisker extends $1.5 \times IQR$ beyond the upper hinge/quartile (top of box), and vice versa for the lower quartile. Observations beyond the whiskers shown as points.}
-\label{fig:results-no-int}
+{\centering \includegraphics[width=\textwidth]{figure/results-no-int-1}}
+
+\caption[Mean months of survival under each regime for the scenarios without interaction]{Mean months of survival under each regime for the scenarios without interaction, log scale. The mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF, CART) for each of the 20 treatment regimes estimated from the 20 training sets are shown in box plots. The constant dose regimes ($1, 0.9, \ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set.}\label{fig:results-no-int}
 \end{figure}
 
-\begin{figure}[!tbp]
-\begin{center}
-\includegraphics[width=\textwidth]{results-plot-int.png}
-\end{center}
-\caption[Months of survival under scenarios with interaction]{Months of survival under each regime for the interaction scenarios.}
-\label{fig:results-int}
-\end{figure}
+\begin{figure}[!htbp]
 
-\begin{figure}[!tbp]
-\begin{center}
-\includegraphics[width=\textwidth]{results-plot-no-int-3.png}
-\end{center}
-\caption[Months of survival under scenarios without interaction]{Months of survival under each regime for the basic scenario for three months of treatment. The same 200 patients were simulated under each treatment regime (same initial tumor masses and toxicities). This test simulation was  repeated 25 times and averaged over the 25 repetitions. 
-% Notches extend $1.58 \times IQR / \sqrt{n}$, giving a rough 95\% confidence interval for medians. 
-Upper whisker extends $1.5 \times IQR$ beyond the upper hinge/quartile (top of box), and vice versa for the lower quartile. Observations beyond the whiskers shown as points.}
-\label{fig:results-no-int}
-\end{figure}
+{\centering \includegraphics[width=\textwidth]{figure/results-int-1}}
 
-\begin{figure}[!tbp]
-\begin{center}
-\includegraphics[width=\textwidth]{results-plot-int-3.png}
-\end{center}
-\caption[Months of survival under scenarios with interaction]{Months of survival under each regime for the interaction scenarios for three months of treatment.}
-\label{fig:results-int}
+\caption[Months of survival under each regime for scenarios with interaction]{Months of survival under each regime for scenarios with interaction, log scale. As in Figure \ref{fig:results-no-int}, mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF, CART) for each of the 20 treatment regimes estimated from the 20 training sets are shown in box plots, and lines represent mean survival under the constant dose and best regimes.}\label{fig:results-int}
 \end{figure}
 
 
-%latex.default(r_tab, file = "", colheads = labs, booktabs = T)%
-\begin{table}[!tbp]
-\caption[Average months of survival under each scenario]{Average months of survival under each scenario, averaged over 5 test sets each with 200 participants for each regime. The fitted B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, IN is the interaction and noise scenario, and IPN is the interaction and predictive noise scenario.}
-\label{tab:results}
+%latex.default(., file = "", dec = 1, caption = cap, caption.lot = cap_toc,     label = "tab:rewards", where = "!htbp", rowname = NULL, colheads = col_heads,     booktabs = T)%
+\begin{table}[!htbp]
+\caption[Average months of survival under each scenario]{Average months of survival under each scenario, averaged over 2000 test patients for each regime each set of 2000 having identical initial tumor masses and toxicities ($M_{0}$, $W_{0}$). Best is the optimal dose sequence obtained from evaluating every possible three dose sequence. MARS, RF (random forest), and CART (regression trees using the CART procedure) represents the average survival times when using optimal dose regime estimated from Q-learning using each method to fit the Q-functions (averaged over the 20 estimated optimal doses from each training set when applied to the test set). B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, IN is the interaction and noise scenario, and IPN is the interaction and predictive noise scenario. Each scenario is described in detail in section \ref{sec:simulation}.\label{tab:rewards}} 
 \begin{center}
-\begin{tabular}{lllllll}
-\toprule
-% \multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{Basic}&\multicolumn{1}{c}{Noise}&\multicolumn{1}{c}{\begin{tabular}{c} Predictive \\ noise \end{tabular}} &\multicolumn{1}{c}{Interaction}&\multicolumn{1}{c}{\begin{tabular}{c} Int. \& \\ noise \end{tabular}}&\multicolumn{1}{c}{\begin{tabular}{c} Int. \& \\ pred. noise \end{tabular}}\tabularnewline
-\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{\begin{tabular}{c} I + N \end{tabular}}&\multicolumn{1}{c}{I + PN}\tabularnewline
-\midrule
-greedy&17.8 (1.4)&17.8 (1.4)&17.9 (1.3)&36.2 (3.2)&36.2 (3.2)&36.3 (3.0)\tabularnewline
-RF&16.2 (2.3)&14.1 (2.3)&13.9 (2.2)&28.1 (5.0)&20.6 (4.2)&19.9 (4.9)\tabularnewline
-MARS&16.6 (3.9)&13.8 (3.0)&10.9 (2.9)&25.1 (10.1)&18.5 (3.7)&16.4 (4.6)\tabularnewline
-CART&6.0 (1.0)&4.7 (0.7)&4.5 (0.5)&5.4 (0.7)&4.4 (0.5)&4.2 (0.5)\tabularnewline
-1on1off&6.6 (0.6)&6.6 (0.6)&6.6 (0.6)&8.0 (0.3)&8.0 (0.3)&8.0 (0.3)\tabularnewline
-1&4.5 (0.4)&4.5 (0.4)&4.5 (0.4)&4.0 (0.1)&4.0 (0.1)&4.0 (0.1)\tabularnewline
-0.9&4.7 (0.5)&4.7 (0.5)&4.7 (0.5)&4.3 (0.1)&4.3 (0.1)&4.4 (0.1)\tabularnewline
-0.8&4.7 (0.5)&4.7 (0.5)&4.8 (0.5)&4.7 (0.2)&4.7 (0.2)&4.7 (0.1)\tabularnewline
-0.7&4.5 (0.4)&4.5 (0.4)&4.5 (0.4)&5.0 (0.3)&5.0 (0.3)&5.1 (0.2)\tabularnewline
-0.6&4.2 (0.4)&4.2 (0.4)&4.2 (0.4)&5.4 (0.3)&5.4 (0.3)&5.5 (0.3)\tabularnewline
-0.5&4.1 (0.4)&4.1 (0.4)&4.1 (0.4)&5.3 (0.2)&5.3 (0.2)&5.3 (0.2)\tabularnewline
-0.4&4.3 (0.4)&4.3 (0.4)&4.4 (0.4)&4.9 (0.3)&4.9 (0.3)&4.9 (0.3)\tabularnewline
-0.3&4.6 (0.5)&4.6 (0.5)&4.6 (0.5)&4.6 (0.3)&4.6 (0.3)&4.7 (0.3)\tabularnewline
-0.2&4.3 (0.4)&4.3 (0.4)&4.4 (0.4)&4.6 (0.3)&4.6 (0.3)&4.6 (0.3)\tabularnewline
-0.1&4.0 (0.3)&4.0 (0.3)&4.0 (0.3)&4.1 (0.3)&4.1 (0.3)&4.1 (0.3)\tabularnewline
-\bottomrule
-\end{tabular}\end{center}
-\end{table}
-
-
-%latex.default(r_tab, file = "", rowname = NULL, colheads = labs,     booktabs = T)%
-\begin{table}[!tbp]
-\begin{center}
-\begin{tabular}{lllllll}
+\begin{tabular}{lrrrrrr}
 \toprule
 \multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
 \midrule
-best&$15.8$&$15.8$&$15.8$&$27.2$&$27.2$&$27.4$\tabularnewline
-BMARS&$10.4$&$7.9$&$ 7.6$&$12.9$&$10.8$&$11.2$\tabularnewline
-MARS&$ 9.5$&$7.4$&$ 7.0$&$12.4$&$ 9.3$&$10.0$\tabularnewline
-RF&$ 9.5$&$7.9$&$ 8.2$&$12.9$&$10.4$&$10.6$\tabularnewline
-CART&$ 6.0$&$5.2$&$ 5.3$&$ 6.3$&$ 5.2$&$ 5.1$\tabularnewline
-1on1off&$ 6.0$&$6.0$&$ 6.0$&$ 6.6$&$ 6.6$&$ 6.6$\tabularnewline
-1&$ 6.8$&$6.8$&$ 6.8$&$ 5.0$&$ 5.0$&$ 5.0$\tabularnewline
-0.9&$ 6.5$&$6.5$&$ 6.6$&$ 5.6$&$ 5.6$&$ 5.6$\tabularnewline
-0.8&$ 6.0$&$6.0$&$ 6.1$&$ 6.1$&$ 6.1$&$ 6.1$\tabularnewline
-0.7&$ 5.3$&$5.3$&$ 5.4$&$ 6.1$&$ 6.1$&$ 6.1$\tabularnewline
-0.6&$ 4.8$&$4.8$&$ 4.9$&$ 5.7$&$ 5.7$&$ 5.8$\tabularnewline
-0.5&$ 4.6$&$4.6$&$ 4.7$&$ 5.2$&$ 5.2$&$ 5.3$\tabularnewline
-0.4&$ 4.8$&$4.8$&$ 4.8$&$ 4.9$&$ 4.9$&$ 4.9$\tabularnewline
-0.3&$ 5.1$&$5.1$&$ 5.2$&$ 4.9$&$ 4.9$&$ 5.0$\tabularnewline
-0.2&$ 5.3$&$5.3$&$ 5.4$&$ 5.2$&$ 5.2$&$ 5.2$\tabularnewline
-0.1&$ 5.3$&$5.3$&$ 5.4$&$ 5.3$&$ 5.3$&$ 5.4$\tabularnewline
+Best&$60.0$&$60.0$&$61.1$&$79.5$&$79.5$&$81.1$\tabularnewline
+MARS&$40.1$&$27.9$&$27.7$&$46.1$&$33.6$&$37.6$\tabularnewline
+RF&$37.0$&$28.1$&$31.4$&$47.5$&$38.5$&$40.6$\tabularnewline
+CART&$13.3$&$11.7$&$12.2$&$14.3$&$12.5$&$13.1$\tabularnewline
+1&$12.5$&$12.5$&$12.7$&$ 9.2$&$ 9.2$&$ 9.4$\tabularnewline
+0.9&$14.5$&$14.5$&$14.8$&$11.8$&$11.8$&$12.0$\tabularnewline
+0.8&$16.2$&$16.2$&$16.5$&$15.0$&$15.0$&$15.3$\tabularnewline
+0.7&$16.6$&$16.6$&$16.9$&$18.0$&$18.0$&$18.4$\tabularnewline
+0.6&$16.2$&$16.2$&$16.5$&$20.1$&$20.1$&$20.5$\tabularnewline
+0.5&$15.5$&$15.5$&$15.8$&$21.1$&$21.1$&$21.5$\tabularnewline
+0.4&$15.6$&$15.6$&$16.0$&$19.8$&$19.8$&$20.2$\tabularnewline
+0.3&$14.7$&$14.7$&$15.0$&$16.8$&$16.8$&$17.2$\tabularnewline
+0.2&$12.7$&$12.7$&$12.9$&$14.1$&$14.1$&$14.4$\tabularnewline
+0.1&$10.5$&$10.5$&$10.6$&$11.0$&$11.0$&$11.2$\tabularnewline
 \bottomrule
 \end{tabular}\end{center}
 \end{table}
-% section simulation_results (end)
+
+The arithmetic mean survival times under each treatment regime are shown in Figure \ref{fig:results-no-int} for the scenarios without covariate by treatment interaction (patient subgroups with differential treatment response) and in Figure \ref{fig:results-int} for the interaction scenarios--those with covariate by treatment interaction. ``Best'' shows the arithmetic mean survival time for the 2000 test patients when following the best possible dose sequence. The optimal regimes estimated using Q-learning are labelled as ``MARS'', ``RF'', and ``CART'' for Q-learning using MARS, random forest, and regression trees using the CART procedure to estimate the Q-functions, respectively. For each of these modelling techniques, we estimated the optimal regime using 20 different training sets, and the mean survival time for the test set obtained when using each of these 20 treatment regimes are displayed in box plots. The comparison regimes are only a single line because they do not require training and are therefore invariant across training set. Table \ref{tab:rewards} displays the arithmetic mean survival times under each regime, averaged over all of the test set survival times for each of the 20 regimes estimated using each Q-learning technique on each training set. 
+
+%latex.default(., file = "", dec = 1, caption = cap, caption.lot = cap_toc,     label = "tab:sd-train-rewards", where = "!htbp", rowname = NULL,     colheads = col_heads, booktabs = T)%
+\begin{table}[!htbp]
+\caption[SD of rewards across training sets]{SD of rewards across training sets. B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, IN is the interaction and noise scenario, and IPN is the interaction and predictive noise scenario. Each scenario is described in detail in section \ref{sec:simulation}. \label{tab:sd-train-rewards}} 
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
+\midrule
+MARS&$10.6$&$9.4$&$8.8$&$9.4$&$5.3$&$9.1$\tabularnewline
+RF&$ 6.0$&$4.4$&$6.8$&$4.8$&$7.4$&$4.3$\tabularnewline
+CART&$ 3.0$&$3.3$&$3.2$&$4.0$&$4.5$&$4.5$\tabularnewline
+\bottomrule
+\end{tabular}\end{center}
+\end{table}
+
+In the basic (B) scenario, MARS and random forest produce similar mean survival times, about two thirds of the best possible survival times. However, as will be repeated throughout scenarios, MARS exhibits more sensitivity to the training set (higher variance) as shown in \ref{fig:results-no-int} and Table \ref{tab:sd-train-rewards}, which shows standard deviations in mean months of survival across training sets. As is also repeated across scenarios, a single regression tree (labelled ``CART'' throughout) performs very poorly, worse overall than many constant dose regimes. When the 100 noise variables are added in the noise (N) scenario, there is approximately a 10 month decrease in mean survival times for MARS and RF, bringing them to about half of the best possible survival times and a 1-2 month decrease for CART. Allowing some of the noise variables to shift survival times up or down in the predictive noise (PN) scenario produces results very similar to the noise scenario without predictive noise.
+
+Results from the interaction scenarios, scenarios with the four treatment subgroups created by $X_{1}$ and $X_{2}$, in Figure \ref{fig:results-int} and Table \ref{tab:rewards} were similar to those in the scenarios without interaction, but shifted towards longer survival. Despite the shift upwards, the trend is very similar to the scenarios without interaction. In the interaction only scenario (I), MARS and random forest produce similar mean survival times around two-thirds of those produced by the best possible regime, with MARS showing greater variability across training sets. Addition of noise variables to the interaction scenario (I+N), results in a reduction of around 10 months of survival time for MARS and random forest, bringing them to about half of the best possible survival time. Allowing 10 of the noise variables to shift survival up or down by a little in the interaction and predictive noise (I+PN) scenario has little effect on the performance of the estimated regimes. CART, however, produces results very similar to those in the scenarios without interaction.
+
+\begin{figure}[!htbp]
+{\centering \includegraphics[width=\textwidth]{figure/var-imps-no-int-1}
+}
+\caption[Variable importances for the scenarios without interaction]{Variable importances for the scenarios without interaction. All of the noise variables in the $Z$ vector are shown under Z as are the variables in the $V$ vector.}\label{fig:var-imps-no-int}
+\end{figure}
+
+
+\begin{figure}[!htbp]
+{\centering 
+\includegraphics[width=\textwidth]{figure/var-imps-int-1}
+}
+\caption[Variable importances for interaction scenarios]{Variable importances for the interaction scenarios}\label{fig:var-imps-int}
+\end{figure}
+
+
+\begin{table}[!htbp]
+\caption[Variable importance averaged across stages and model replicates]{Variable importance averaged across stages and model replicates. Importances are given as a percentage of the most important variable in each model. Standard deviations are shown in parentheses.\label{tab:imp}} 
+\begin{center}
+\begin{tabular}{lllllll}
+\toprule
+\multicolumn{1}{l}{Variable}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
+\midrule
+{\bfseries MARS}&&&&&&\tabularnewline
+~~$M$&98.1 (6.5)&97.3 (7.7)&95.5 (9.5)&99.3 (4.0)&97.5 (6.6)&97.9 (6.8)\tabularnewline
+~~$W$&78.2 (9.2)&83.2 (7.9)&83.9 (9.9)&81.5 (6.4)&86.0 (7.3)&85.4 (6.9)\tabularnewline
+~~$D$&25.3 (12.4)&36.7 (8.4)&38.2 (8.4)&36.3 (13.1)&46.7 (11.3)&44.9 (9.6)\tabularnewline
+~~$X$&&&&32.1 (12.4)&45.6 (12.3)&41.3 (14.3)\tabularnewline
+~~$Z$&&6.1 (11.9)&8.3 (13.1)&&6.2 (12.4)&7.3 (13.2)\tabularnewline
+~~$V$&&5.4 (11.0)&5.6 (11.2)&&6.3 (12.4)&5.6 (11.4)\tabularnewline
+\midrule
+{\bfseries RF}&&&&&&\tabularnewline
+~~$M$&99.8 (0.6)&99.8 (1.2)&99.3 (3.3)&99.3 (2.1)&99.1 (3.1)&99.5 (1.8)\tabularnewline
+~~$W$&78.2 (11.2)&79.8 (12.5)&80.6 (13.4)&85.8 (12.6)&86.6 (10.6)&84.7 (10.9)\tabularnewline
+~~$D$&18.4 (7.4)&1.5 (0.7)&1.7 (0.7)&18.8 (6.7)&3.6 (1.9)&3.6 (2.2)\tabularnewline
+~~$X$&&&&24.7 (6.6)&7.7 (3.4)&7.0 (2.7)\tabularnewline
+~~$Z$&&1.1 (0.5)&1.2 (0.6)&&1.5 (0.8)&1.5 (0.8)\tabularnewline
+~~$V$&&0.7 (0.4)&0.7 (0.4)&&1.0 (0.5)&1.0 (0.5)\tabularnewline
+\midrule
+{\bfseries CART}&&&&&&\tabularnewline
+~~$M$&98.7 (4.0)&98.4 (4.4)&98.1 (5.3)&96.5 (6.4)&96.6 (8.5)&98.2 (4.8)\tabularnewline
+~~$W$&75.8 (16.5)&76.7 (17.5)&78.3 (15.6)&87.1 (13.9)&81.8 (16.2)&83.9 (14.9)\tabularnewline
+~~$D$&6.8 (3.9)&6.1 (3.2)&6.2 (3.3)&8.4 (5.2)&6.8 (3.2)&7.1 (3.3)\tabularnewline
+~~$X$&&&&8.6 (5.0)&5.7 (2.3)&5.6 (2.8)\tabularnewline
+~~$Z$&&4.3 (2.0)&2.0 (1.3)&&3.5 (1.7)&3.5 (1.2)\tabularnewline
+~~$V$&&3.4 (1.7)&2.6 (1.6)&&3.9 (1.8)&4.3 (2.1)\tabularnewline
+\bottomrule
+\end{tabular}\end{center}
+\end{table}
+
+Variable importances as a percentage of the most important variable for each of the 20 models for each stage of each method to fit Q-functions are shown in Figures \ref{fig:var-imps-no-int} and \ref{fig:var-imps-int}. The interaction variables $X_{1}$, $X_{2}$, noise variables with no predictive value, $V_{1}, \ldots, V_{90}$, and noise variables with some predictive value in the scenarios with predictive noise, $Z_{1}, \ldots, Z_{10}$ shown together as $X$, $V$, and $Z$ respectively, i.e. the Z label shows a violin plot of the relative importance that contains all of the variables in the $Z$ vector. Table \ref{tab:imp} shows the average relative importance averaged over the 20 different training models and the three stages, and each variable group vector for each method, and the standard deviation of the relative importances across the variables in the variable group, stages and training sets. For example, the average importance of a $V$ variable for all MARS models (at all stages) in the noise scenario (N) is 5.4, with a standard deviation of 11.0. Average importances were quite similar between stages.
+
+MARS is much better than the other modelling techniques at identifying interacting variables and treatment as important. However, it is also much more prone to identify noise variables as important, and again shows variability across training sets in identifying the treatment and interacting variables as important. Random forest is best as assigning the noise variables less importance, but also has assigns relatively low importance to interacting and treatment variables. A single regression tree (CART) assigns slightly higher importance to dose and interacting variables than noise and is less variable than MARS though less than random forest.
+
+%latex.default(., file = "", dec = 1, caption = cap, caption.lot = cap_toc,     label = "tab:sd-test-rewards", where = "!htbp", rowname = NULL,     colheads = col_heads, booktabs = T)%
+\begin{table}[!htbp]
+\caption[SD of rewards across test sets]{SD of rewards across test sets\label{tab:sd-test-rewards}} 
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
+\midrule
+best&$4.7$&$4.7$&$5.0$&$4.9$&$4.9$&$5.4$\tabularnewline
+MARS&$4.2$&$3.1$&$3.5$&$3.7$&$3.1$&$3.6$\tabularnewline
+RF&$3.5$&$2.9$&$3.7$&$3.6$&$2.8$&$3.1$\tabularnewline
+CART&$0.5$&$0.4$&$0.5$&$0.6$&$0.4$&$0.5$\tabularnewline
+1&$0.4$&$0.4$&$0.5$&$0.4$&$0.4$&$0.4$\tabularnewline
+0.9&$0.7$&$0.7$&$0.8$&$0.5$&$0.5$&$0.6$\tabularnewline
+0.8&$1.2$&$1.2$&$1.3$&$0.8$&$0.8$&$1.0$\tabularnewline
+0.7&$1.5$&$1.5$&$1.7$&$1.2$&$1.2$&$1.4$\tabularnewline
+0.6&$2.0$&$2.0$&$2.2$&$1.5$&$1.5$&$1.6$\tabularnewline
+0.5&$1.8$&$1.8$&$2.0$&$1.8$&$1.8$&$1.9$\tabularnewline
+0.4&$1.6$&$1.6$&$1.9$&$2.0$&$2.0$&$2.2$\tabularnewline
+0.3&$1.2$&$1.2$&$1.4$&$1.6$&$1.6$&$1.8$\tabularnewline
+0.2&$0.9$&$0.9$&$0.9$&$1.0$&$1.0$&$1.1$\tabularnewline
+0.1&$0.6$&$0.6$&$0.6$&$0.6$&$0.6$&$0.7$\tabularnewline
+\bottomrule
+\end{tabular}\end{center}
+\end{table}
+
 
 \section{Discussion} % (fold)
 \label{sec:discussion}
-
-This makes subgroup identification difficult, relegating the endeavor to simply examining variable importance measures, which indicate the importance in terms of predictive accuracy, not necessarily that a variable identifies a subgroup with differential treatment effects.
 
 % point out that these types of trials are fundamentally exploratory
 % methods not designed to find interactions
@@ -940,78 +997,25 @@ This makes subgroup identification difficult, relegating the endeavor to simply 
 % censoring ignored
 
 % Main results
+Q-learning using random forest and Multivariate Adaptive Regression Splines modified to only interact variables with treatment can increase survival times in our simulation compared to constant dose regimes, by large margins. However, using single regression trees grown using the CART procedure with Q-learning often performs worse than many constant dose regimes.
+
 % Relation to other literature/previous research
+We replicated the results of \textcite{crt} and showed that the more interpretable MARS models can produce comparable results to more complex ``black box'' models. We also showed this performance in context with the best possible sequence, and gave inklings of the variability in performance due to differences in training data.
+
 % biological rationale/possible explanation/mechanisms
 % strengths and limitations: address limitations but then try to minimize impact
-% Implications/take home message 
+While restricting MARS to only interact covariates with the treatment gave comparable performance to random forest on average, the survival times produced were more variable, and for some training data were quite low. This most likely due to the restriction on interactions with treatment, and could be minimized by bagging. Bagging, of course, would negate much of the interpretably from using MARS.
+
+Using these methods, subgroup identification is difficult. With MARS, although the interacting variables are often important, but so may be spurious variables for any given training data. Random forest works well despite low importances for dose and interacting variables, which while a little larger on average than noise variables, would be hard to identify in practice.
+
+Due to constraints in computing resources, we cannot get more precise estimates of the sensitivity of the results to different training sets.
+
+% Implications/take home message
 % Directions for future research
+Can get better idea of subgroup identification by modifying techniques to use magnitude of interaction as criterion for performance and variable importance. 
 
 % section discussion (end)
 
 \printbibliography
 
 \end{document}
-
-% \begin{equation}
-% \hat{Q}_{t} = R_{t} + \max_{a_{t + 1}} \hat{Q}_{t+1}(S_{t+1}, a_{t+1})
-% \end{equation}
-
-% \begin{equation}
-% R_{t} = R_{t, 1} + R_{t, 2} + R_{t, 3}
-% \end{equation}
-%
-% First, a large negative reward of -60 was given if the patient died, since a primary endpoint is typically overall survival:
-%
-% \begin{equation}
-% R_{t, 1}(M_{t-1}, H_{t-1}, D_{t-1}) =
-% \begin{cases}
-%   -60 & \text{patient died} \\
-%   0 & \text{otherwise}
-% \end{cases}
-% \end{equation}
-%
-% Second, a small negative reward of -5 was given for an decrease in patient health above 0.5 and a small positive reward of 5 if patient health increased by more than 0.5:
-%
-% \begin{equation}
-% R_{t, 2}(M_{t-1}, H_{t-1}, D_{t-1}) =
-% \begin{cases}
-%   5 & \dot{H} > 0.5 \\
-%   0 & -0.5 \leq \dot{H} \leq 0.5 \\
-%   -5 & \dot{H} < -0.5
-% \end{cases}
-% \end{equation}
-%
-% Third, similar to the rewards for toxicity, a small negative reward of -5 was given for an increase in tumor mass above 0.5, no reward if the tumor mass did not increase or decrease by more than 0.5, a small positive reward of 5 if the tumor mass decreased by more than 0.5, and a moderate positive reward of 15 was given if the patient was cured (the resulting tumor mass was less than or equal to zero):
-%
-% \begin{equation}
-% R_{t, 3}(M_{t-1}, H_{t-1}, D_{t-1}) =
-% \begin{cases}
-%   -5 & \dot{M} > 0.5 \\
-%   0 & -0.5 \leq \dot{M} \leq 0.5 \\
-%   5 & \dot{M} < -0.5 \\
-%   15 & \dot{M} + M \leq 0
-% \end{cases}
-% \end{equation}
-%
-% 
-%
-% \subsection{death} % (fold)
-% \label{sub:death}
-%
-% \begin{equation}
-% \lambda(t) = -7 + H_{t} + M_{t}
-% \end{equation}
-%
-% \begin{equation}
-% \Delta F(t) = e^{-\lambda}
-% \end{equation}
-%
-% \begin{equation}
-% p = 1 - \Delta F
-% \end{equation}
-%
-% \begin{equation}
-% \text{patient died} \sim B(p)
-% \end{equation}
-%
-% % subsection death (end)
