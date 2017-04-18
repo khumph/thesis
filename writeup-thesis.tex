@@ -50,7 +50,7 @@
 \maketitle
 
 \begin{abstract}
-In a simulation of an advanced generic cancer trial, we use Q-learning, a reinforcement learning method, to develop dynamic treatment regimes for a continuous treatment, the dose of a single drug, tailored to changing patient characteristics and to patient subgroups with differential treatment effects. This approach allows estimation of optimal dynamic treatment regimes without accurate models of disease processes. Using observed patient characteristics and outcomes from the simulated trial, we estimate Q-functions using a single regression tree grown using the Classification And Regression Trees (CART) method, random forests, and a slightly modified version of Multivariate Adaptive Regression Splines (MARS). We then compare the survival times of an independent group of simulated patients under treatment regimes estimated using Q-learning with each of the three methods, 10 constant dose regimes, and the best possible treatment regime chosen with complete knowledge of disease processes and their effects on survival. We also make these comparisons in scenarios with and without spurious high dimensional covariates and with and without patient subgroups with differential treatment effects. Treatment regimes estimated using Q-learning with MARS and random forests greatly increased survival times when compared to the constant dose regimes, but not when using Q-learning with a single regression tree. These results hold across high dimensional and subgroup scenarios. While MARS produces much more interpretable models than random forests, and therefore has more promise for patient subgroup identification, it is more sensitive to variations in training data. Further, none of the methods approach the survival times obtained from the best possible treatment sequence in any scenario, so further research in this area may be fruitful.
+In a simulation of an advanced generic cancer trial, I use Q-learning, a reinforcement learning method, to develop dynamic treatment regimes for a continuous treatment, the dose of a single drug, tailored to time-varying patient characteristics and to patient subgroups with differential treatment effects. This approach allows estimation of optimal dynamic treatment regimes without a model of the disease process or a priori hypotheses about subgroup membership. Using observed patient characteristics and outcomes from the simulated trial, I estimate Q-functions using a single regression tree grown using the Classification And Regression Trees (CART) method, random forests, and a slightly modified version of Multivariate Adaptive Regression Splines (MARS). I then compare the survival times of an independent group of simulated patients under treatment regimes estimated using Q-learning with each of the three methods, 10 constant dose regimes, and the best possible treatment regime chosen with complete knowledge of disease processes and their effects on survival. I also make these comparisons in scenarios with and without spurious high dimensional covariates and with and without patient subgroups with differential treatment effects. Treatment regimes estimated using Q-learning with MARS and random forests greatly increased survival times when compared to the constant dose regimes, but not when using Q-learning with a single regression tree. These results hold across high dimensional and subgroup scenarios. While MARS produces much more interpretable models than random forests, and therefore has more promise for patient subgroup identification, it is more sensitive to variations in training data. Further, none of the methods approach the survival times obtained from the best possible treatment sequence in any scenario, so further research in this area may be fruitful.
 \end{abstract}
 
 \tableofcontents
@@ -70,9 +70,9 @@ Patients often show significant differences in their responses to treatment. Adv
 
 This is the idea of \emph{personalized medicine}\footnote{Personalized medicine is also called precision medicine, stratified medicine, and P4 medicine}, which is the commonsensical notion that the best treatment for a given patient depends upon that patients' characteristics (\cite{pm-defn}). The term is most often used today to when the patient characteristics are biomarkers, perhaps whether metastatic breast cancer cells  over-express human epidermal growth factor receptor 2 (are HER2-positive), and these biomarkers are used to determine the best treatment for a particular individual, and when to use it. In the case of the patients with HER2-positive cells, they should receive a different treatment (trastuzumab) from those with HER2-negative cells (\cite{Baselga2006}).
 % When/where did personalized medicine start?
-However, the general idea goes back at least as far as Hippocrates\footnote{Hippocrates is attributed with saying “It is more important to know what sort of person has a disease than to know what sort of disease a person has.” \cite{Fischer2015}} and is implemented in principle whenever a physician tries to inform a treatment decision by determining whether the cause of an infection is bacterial or viral.
+However, the general idea goes back at least as far as Hippocrates\footnote{Hippocrates is attributed with saying ``It is more important to know what sort of person has a disease than to know what sort of disease a person has.'' (\cite{Fischer2015})} and is implemented in principle whenever a physician tries to inform a treatment decision by determining whether the cause of an infection is bacterial or viral.
 
-While personalized medicine in principle has a long history and shows considerable promise, there are numerous challenges in identifying these subgroups of patients and the optimal treatment for each. Chief among them is the question of how to select from what is often a multitude of plausible subgroups. Narrowing down these subgroups is hindered by disease processes which are usually quite complicated and not well understood. Furthermore, optimal treatments can change over time with the ebb and flow of changing disease processes.
+While personalized medicine in principle has a long history and shows considerable promise, there are numerous challenges in identifying these subgroups of patients and the optimal treatment for each. Chief among them is the question of how to select from what is often a multitude of plausible subgroups. Narrowing down these subgroups is hindered by disease processes which are usually quite complicated and not well understood. Furthermore, optimal treatments can change over time with the ebb and flow of changing disease.
 
 % subsection personalized_medicine (end)
 
@@ -86,11 +86,11 @@ While personalized medicine in principle has a long history and shows considerab
 
 % traditional methods: ad hoc subgroup analyses, or searching for treatment by subgroups interactions
 
-Statistically, the personalization of medicine involves the identification of patient subgroups which respond to treatment differently. Traditionally, this is accomplished by investigation of (often ad hoc) treatment by covariate interactions, where different values of a covariate identify subgroups (\cite{Byar1985}). Using the HER2 breast cancer example above, we could encapsulate our knowledge of a patient's HER2 status into a binary covariate which indicates whether she was HER2 positive or negative, then statistically test if the coefficient on an interaction term with the indicator of HER2 status and treatment is significantly different from 0.
+Statistically, the personalization of medicine involves the identification of patient subgroups which respond to treatment differently. Traditionally, this is accomplished by investigation of (often ad hoc) treatment by covariate interactions, where different values of a covariate identify subgroups (\cite{Byar1985}). Using the HER2 breast cancer example above, we could encapsulate our knowledge of a patient's HER2 status into a binary covariate which indicates whether she was HER2 positive or negative, then statistically test if the coefficient on an interaction term with this indicator of HER2 status and treatment assignment is significantly different from 0.
 
 % Problems: Curse of dimensionality, multiple comparisons
 
-While straightforward, this approach has several problems. First, which subgroups to examine is often a subjective judgement made by the researcher (as is which cutoff to use to create subgroups from continuous covariates). Second, since the number of plausible subgroups can be quite large in typical problems, the number of interaction terms required must also be large. In addition to issues with multiple comparison, this requires a much greater growth of sample size (i.e., it suffers from the curse of dimensionality).
+While straightforward, this approach has several problems. First, which subgroups to examine is often a subjective judgement made by the researcher (as is which cutoff to use to create subgroups from continuous covariates). Second, since the number of plausible subgroups can be quite large in typical problems, the number of interaction terms required must also be large. In addition to issues with multiple comparison, this requires a much greater growth of sample size (i.e. it suffers from the curse of dimensionality).
 
 \subsubsection{Algorithms for detecting interactions} % (fold)
 \label{ssub:algorithms_for_detecting_interactions}
@@ -143,13 +143,11 @@ In response to the above problems with the traditional approach, several novel a
 \subsection{Overview of paper contents} % (fold)
 \label{sub:overview_of_contents}
 
-This paper intends to demonstrate how the obstacles to identifying optimal treatment regimes for a given individual can be addressed using Q-learning, a method from reinforcement learning, in conjunction with statistical learning models. We will see how these methods can dramatically increase survival times in a simulated cancer clinical trial where doses are chosen at each month of treatment, without a model of the disease process or a priori hypotheses about subgroup membership. The simulation was inspired by \textcite{crt} who achieved similar results using extremely randomized trees and support vector regression to estimate Q-functions. We will replicate and extend their results to more scenarios (e.g. situations with lots of meaningless covariates and patient subgroups) and contrast results using more interpretable models.
+In this paper, we will see how the obstacles to identifying optimal treatment regimes for a given individual can be addressed using Q-learning, a method from reinforcement learning, in conjunction with statistical learning models. We will see how these methods can dramatically increase survival times in a simulated cancer clinical trial where doses of a single drug are chosen at each month of treatment, without a model of the disease process or a priori hypotheses about subgroup membership. The simulation was inspired by \textcite{crt} who achieved similar results using extremely randomized trees and support vector regression to estimate Q-functions. We will replicate and extend their results to more scenarios (e.g. situations with many meaningless covariates and patient subgroups), contrast results using more interpretable models, and compare to the best possible treatment sequence chosen with complete knowledge of disease process and its effects on survival.
 
-We will first overview the field of reinforcement learning, then describe its relevance for personalized medicine and the reinforcement learning technique utilized in this study, Q-learning. We will then describe the supervised learning methods that we will use in conjunction with Q-learning to estimate optimal dosing strategies: regression tress constructed using the classification and regression trees (CART) method, Multivariate adaptive regression splines (MARS), bagged MARS, and random forests (RF), the latter two serving as less interpretable comparison analogous to the extremely randomized trees used by \textcite{crt}.
+We will first briefly explore the field of reinforcement learning, its relevance for personalized medicine, and Q-learning specifically. We will then discuss the supervised learning methods that I used in conjunction with Q-learning to estimate optimal dosing strategies: regression tress constructed using the classification and regression trees (CART) method, Multivariate adaptive regression splines (MARS), and random forests (RF), with random forests serving as a less interpretable comparison similar to the extremely randomized trees used by \textcite{crt}. Each technique will be illustrated with a simple example taken from the simulation. We will then discuss the details of the simulation setup, followed by the simulation results and discussion.
 
 For our purposes, trees (and MARS, which shares many of their desirable properties) have several particularly appealing features. First, the tree and MARS model building procedure conducts covariate selection as part of the model building process. This will help us screen non-informative variables. Second, we need not specify of the form of the relationship between the covariates and the outcome, or limit ourselves to linear or additive relationships. This will allow us to choose optimal actions without prior knowledge of disease mechanisms, which are often complicated and not well understood. Third, since single trees and MARS models are quite interpretable, we can in principle inspect them to see which variables interact with treatment.
-
-We will illustrate each technique with a simple example taken from the simulation. We will then discuss the details of the simulation setup, followed by the simulation results and discussion.
 
 % subsection overview_of_contents (end)
 
@@ -163,7 +161,7 @@ Reinforcement learning is a branch of machine learning distinct from the two mai
 
 A learning \emph{agent}, who has goals related to its \emph{environment}, loosely defined as everything outside the agent's direct control. Features of the environment are represented to the agent through \emph{states}. Given a state representation, an agent can take an \emph{action} to affect the environment in order to achieve some goal. A goal is defined to the agent in such a way that maximizing a scalar quantity called the \emph{reward} would achieve the goal. Given a state representation, an agent follows a \emph{policy}, roughly a guide to which actions to take (or which ones to favor) given a state signal. An optimal policy therefore, is a policy that achieves the largest reward over the long run.
 
-The basic process of reinforcement learning involves a learning agent being presented with states, trying a sequence of actions, recording the consequences (rewards) of those actions in each state, estimating the relationship between the actions and their consequences, and choosing a next action that leads to the best consequences (the action that maximizes the reward, so far as the agent can tell). This is where the ``reinforcement'' in reinforcement learning comes from: actions with favorable consequences (large rewards) tend to be repeated.
+The basic process of reinforcement learning involves a learning agent being presented with states, trying a sequence of actions, recording the consequences (rewards) of those actions in each state, estimating the relationship between the actions and their consequences, and choosing a next action that leads to the best consequences (the action that maximizes the reward, so far as the agent can tell). This is where the ``reinforcement'' in reinforcement learning comes from: actions with favorable consequences (large rewards) tend to be repeated (\cite{Sutton2016}).
 
 % subsection basic_process (end)
 
@@ -188,7 +186,7 @@ We can think of a personalized treatment as a decision rule, or a \emph{treatmen
 \section{Q-learning} % (fold)
 \label{sec:q_learning}
 
-Following the notation in \textcite{dtr-book}, suppose patients are recruited into a clinical trial and covariates (states) are measured before the trial begins are recorded in a vector, $X_{1}$. These covariates will be referred to as the patient history at stage 1: $H_{1} \equiv X_{1}$, which may include the baseline level of the outcome. A first treatment, $A_{1}$, is randomly assigned to each patient and each patient is measured again for the same covariates as before, $X_{2}$ and a reward is received, $R_{1}$. As mentioned above, this reward can be any scalar, which if maximized, would achieve the goals of the study (\cite{Sutton2016}). Most often rewards are simply set to be a continuous outcome of interest (e.g. kg of weight lost in a weight loss study). The treatment and second observation of covariates (which may include the first stage outcome) are incorporated into each patients' history at stage 2: $H_{2} \equiv (X_{1}, A_{1}, X_{2})$. A second treatment, $A_{2}$ is then assigned to each patient at random (potentially depending on $R_{1}$ and/or $H_{2}$) and is followed by another outcome/reward, $R_{2}$. This process can be repeated through as many stages as desired. Note that this scheme can easily be modified for a single terminal outcome by setting $R_{1}, \ldots, R_{K-1} \equiv 0$ for a sequence of $K$ stages (as we do in the simulation below). The Q-functions (Q for quality--i.e. quality of treatment decisions) are defined as the expected rewards at each stage $k$ given that treatment(s) $A_{k}$ was assigned and patient histories/characteristics up to stage $k$ were $H_{k}$:
+Suppose patients are recruited into a clinical trial and covariates (states) are measured before the trial begins are recorded in a vector, $X_{1}$. These covariates will be referred to as the patient history at stage 1: $H_{1} \equiv X_{1}$, which may include the baseline level of the outcome. A first treatment, $A_{1}$, is randomly assigned to each patient and each patient is measured again for the same covariates as before, $X_{2}$ and a reward is received, $R_{1}$. As mentioned above, this reward can be any scalar, which if maximized, would achieve the goals of the study. Most often rewards are simply set to be a continuous outcome of interest (e.g. kg of weight lost in a weight loss study). The treatment and second observation of covariates (which may include the first stage outcome) are incorporated into each patients' history at stage 2: $H_{2} \equiv (X_{1}, A_{1}, X_{2})$. A second treatment, $A_{2}$ is then assigned to each patient at random (potentially depending on $R_{1}$ and/or $H_{2}$) and is followed by another outcome/reward, $R_{2}$. This process can be repeated through as many stages as desired. Note that this scheme can easily be modified for a single terminal outcome by setting $R_{1}, \ldots, R_{K-1} \equiv 0$ for a sequence of $K$ stages (as we do in the simulation below). The Q-functions (Q for quality--i.e. quality of treatment decisions) are defined as the expected rewards at each stage $k$ given that treatment(s) $A_{k}$ was assigned and patient histories/characteristics up to stage $k$ were $H_{k}$:
 \begin{equation}
    Q_{k}(A_{k}, H_{k})  = \operatorname{E}[r_{k} \mid A_{k}, H_{k}], \quad k = 1, \ldots, K
 \end{equation}
@@ -207,10 +205,10 @@ Following the notation in \textcite{dtr-book}, suppose patients are recruited in
 
 Since Q-functions are conditional expectations, standard regression techniques are applicable and hence the most popular method for estimating Q-functions in the health sciences is ordinary least squares (\cite{dtr-review}).
 
-That being said, any modelling method can be used, and as mentioned above recently \textcite{crt} have used extremely randomized trees and support vector regression to fit Q-functions. Note that Q-functions may differ across stages of treatment. The steps of Q-learning are as follows:
+That being said, any modelling method can be used, and as mentioned above recently \textcite{crt} have used extremely randomized trees and support vector regression to fit Q-functions. Note that Q-functions may differ across stages of treatment. The steps of Q-learning are as follows (\cite{dtr-book}):
 
 \begin{enumerate}
-  \item Set the Q-function after the final stage to be 0, $\hat{Q}_{K+1} \doteq 0$ (though any value will do)
+  \item Set the Q-function after the final stage to be 0, $\hat{Q}_{K+1} \doteq 0$ (though any value will do).
   \item Create a pseudo-outcome for the last stage, $K$, by adding the rewards actually received at that stage to the estimated rewards that would have been obtained if the optimal dynamic treatment regime was followed after stage $K$:
   \begin{align}
     \hat{r}_{K} &= r_{K} + \max_{a_{K+1}} \hat{Q}_{K+1}(A_{K+1}, H_{K+1}) \\
@@ -227,7 +225,7 @@ That being said, any modelling method can be used, and as mentioned above recent
   \item Repeat until you've estimated the Q-function for the first stage
 \end{enumerate}
 
-The full recursive form of Q-learning can be then written on a single line as:
+The full recursive form of Q-learning can be written as:
   \begin{equation}
      \hat{Q}_{k}(A_{k}, H_{k})  = \operatorname{E}[r_{k} + \max_{a_{k+1}} \hat{Q}_{k+1}(A_{k+1}, H_{k+1}) \mid A_{k}, H_{k}], \quad k = 1, \ldots, K
   \end{equation}
@@ -236,7 +234,7 @@ The full recursive form of Q-learning can be then written on a single line as:
 
 % subsubsection estimating_q_functions (end)
 
-With the Q-functions in hand, the optimal treatment for each participant $i \in 1, \ldots, n$ at each stage $k$ is then the treatment which maximizes the corresponding stage's Q-function:
+The optimal treatment for each participant $i \in 1, \ldots, n$ at each stage $k$ is the treatment which maximizes the corresponding stage's Q-function:
 \begin{equation}
   \hat{a}^{opt}_{ik} = \argmax_{a_{ik}} \hat{Q}_{k}(a_{ik}, h_{ik}), \enspace i = 1, \ldots, n; \enspace k = 1, \ldots, K
 \end{equation}
@@ -274,9 +272,8 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 \section{Regression Trees using CART} % (fold)
 \label{sec:rpart}
 
-Since in reinforcement learning rewards are defined to be continuous, we focus on regression trees constructed using the CART procedure of \textcite{CART}.
 
-A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statement is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node). Unlike trees in nature, decision trees grow from the root node downward, as shown in the illustrative example below.
+A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statement is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once we've decided we've done enough splits, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node). Unlike trees in nature, decision trees grow from the root node downward, as shown in the illustrative example below. Since in reinforcement learning rewards are defined to be continuous, we focus on regression trees constructed using the CART procedure of \textcite{CART}. 
 
 % For example, a simple regression tree could be constructed with the following rules (adapted from \cite{apm}):
 % \begin{verbatim}
@@ -327,7 +324,7 @@ Where $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$ a
 \subsection{Tree pruning} % (fold)
 \label{sub:tree_pruning}
 
-The large tree resulting from the tree building/growing phase, $T_{0}$, typically overfits the data. To combat this, we prune back $T_{0}$ using a technique called cost complexity pruning.
+The large tree resulting from the tree growing phase, $T_{0}$, typically overfits the data. To combat this, we prune back $T_{0}$ using a technique called cost complexity pruning.
 
 The goal in cost-complexity pruning is to find, for each value of a complexity parameter $\alpha \geq 0$, the subtree $T \subset T_{0}$ created by collapsing any of $T_{0}$'s internal (non-terminal) nodes, which minimizes the cost complexity criterion:
 %
@@ -335,7 +332,7 @@ The goal in cost-complexity pruning is to find, for each value of a complexity p
     C_{\alpha}(T) = \sum_{m = 1}^{\abs{T}} \sum_{x_{i} \in \text{node}_{m}} (y_{i} - \bar{y}_{m})^2 + \alpha \abs{T}
 \end{equation}
 %
-where $N_{m}$ is the number of observations in node $m$, $\bar{y}_{m}$ is the average outcome, $y_{i}$ in node $m$, and $Q_{m}(T) = \frac{1}{N_{m}} $, the average mean squared error in node $m$ and $\abs{T}$ is the number of terminal nodes in subtree $T$. One can show that there is a unique subtree $T_{\alpha}$ that minimizes $C_{\alpha}(T)$ for each given $\alpha$.
+where $y_{i}$ is the outcome value for an observation in node $m$, $\bar{y}_{m}$ is the average outcome in node $m$, and $\abs{T}$ is the number of terminal nodes in subtree $T$. One can show that there is a unique subtree $T_{\alpha}$ that minimizes $C_{\alpha}(T)$ for each given $\alpha$ (\cite{esl}).
 
 In order to find $T_{\alpha}$ for each $\alpha$, we use weakest link pruning. As the name implies, in weakest link pruning, we test out collapsing each internal node, choosing to actually collapse the the weakest link: the node that, if collapsed, produces the smallest increase in $\sum_{m = 1}^{\abs{T}} \sum_{x_{i} \in \text{node}_{m}} (y_{i} - \bar{y}_{m})^2$, the sum of squares of the whole tree. We continue in this fashion until we've returned to the root node. This sequence contains each $T_{\alpha}$.
 
@@ -362,10 +359,10 @@ Or pick the smallest $T_{\hat{\alpha}}$ within one standard error of the $T_{\ha
 
 % subsubsection tree_pruning (end)
 
-% \subsection{Variable importance} % (fold)
-% \label{sub:variable_importance_in_cart}
-%
-% Variable importance in trees can be measured by summing the overall reduction in the optimization criteria for each prediction (\cite{CART}). In regression trees, the optimization criteria is typically SSE, so we could sum the reductions in SSE from each splits made based on a particular covariate, repeating the process for every covariate.
+\subsection{Variable importance} % (fold)
+\label{sub:variable_importance_in_cart}
+
+Variable importance in trees can be measured by summing the overall reduction in the optimization criteria for each prediction (\cite{CART}). In regression trees, the optimization criteria is typically SSE, so we could sum the reductions in SSE from each splits made based on a particular covariate, repeating the process for every covariate.
 %
 % % subsection variable_importance_in_cart (end)
 
@@ -386,7 +383,7 @@ Trees however, tend to have lower predictive performance compared to other metho
 
 Let's examine CART, MARS, and random forest (below) using a simple sub-problem from the simulation described in detail below. Suppose we want to predict the change in the mass of the $i$th cancer patient's tumor from month one to month two, $Y_{i} \equiv M_{i1} - M_{i0}$, given the dose of a drug, $D_{i}$, which they were (randomly) assigned. The true relationship is given by
 \begin{equation}
-  Y_{i} = 0.15 - 1.2 (D_{i} - 0.5) + \epsilon_{i}
+  Y_{i} = 0.75 - 1.2 D_{i} + \epsilon_{i}, \quad i = 1, \ldots, 50
 \end{equation}
 Where $\epsilon_{i} \sim N(0, 0.05)$. 50 patients were simulated with random starting tumor masses sampled from a uniform distribution from 1 to 2, $M_{0} \overset{iid}{\sim} \text{Unif}(1, 2)$, and doses were sampled from a uniform distribution between 0 (none) and 1 (the maximum tolerable dose), $D \overset{iid}{\sim} \text{Unif}(0, 1)$. 50 additional patients were simulated in the same fashion as test data.
 
@@ -398,7 +395,7 @@ In this example we used stopping criteria of (1) terminal nodes had to have at l
 
 }
 
-\caption[Regression tree fit to example data]{Regression tree fit to example data. For each split, the variable split upon is shown as a circle representing an internal node (with a numbered box giving the node a number). The values of the splitting variable that define resulting node membership are shown breaking the line connecting nodes (e.g. observations with $D \geq 0.585$ end up in node 2, while observations with $D < 0.585$ end up in node 5). Boxplots show the distribution of responses in each terminal node (nodes 3, 4, 6, and 7, shown at the bottom of the tree)}\label{fig:ex-cart-tree}
+\caption[Regression tree fit to example data]{Regression tree fit to example data. For each split, the variable split upon is shown as a circle representing an internal node (with a numbered box giving the node a number). The values of the splitting variable that define resulting node membership are shown breaking the line connecting nodes (e.g. observations with $D \geq 0.585$ end up in node 2, while observations with $D < 0.585$ end up in node 5). Box plots show the distribution of responses in each terminal node (nodes 3, 4, 6, and 7, shown at the bottom of the tree)}\label{fig:ex-cart-tree}
 \end{figure}
 
 This produces the tree in Figure \ref{fig:ex-cart-tree}. Since the regression function is actually linear, the splits are intuitive: first we split the root node (node 1) at around the midpoint of the distribution of doses ($D = 0.585$), then we split the observations with doses higher than 0.585 (node 2) at about their median dose, 0.759, producing the terminal nodes 3 and 4. Similarly with doses less than 0.585 (node 5), we split at approximately the median dose (0.317), yielding terminal nodes 6 and 7.
@@ -409,13 +406,13 @@ This produces the tree in Figure \ref{fig:ex-cart-tree}. Since the regression fu
 
 }
 
-\caption[Predicted regression function for example data using CART]{Predicted regression function for example data using CART. The grey dots are the observations and the dotted line is the true relationship from which they were generated. The solid line connects the predicted values, which are shown with Xs.}\label{fig:ex-plot-cart}
+\caption[Predicted regression function for example data using CART]{Predicted regression function for example data using CART. The grey dots are the observations and the dotted line is the true relationship from which they were generated. The solid line connects the predicted values, which are shown with $\times$s.}\label{fig:ex-plot-cart}
 \end{figure}
 
 
-The resulting predicted regression function is shown as a solid line in Figure \ref{fig:ex-plot-cart}, with Xs showing the predicted value for each observation in the training data. The grey dots are the actual observations and the dotted line represents the true function from the observations were simulated. Note the piecewise constant form of the function, where all observations in a terminal node receive the same predicted value.
+The resulting predicted regression function is shown as a solid line in Figure \ref{fig:ex-plot-cart}, with $\times$s showing the predicted value for each observation in the training data. The grey dots are the actual observations and the dotted line represents the true function from the observations were simulated. Note the piecewise constant form of the function, where all observations in a terminal node receive the same predicted value.
 
-Using this model to predict the change in tumor masses, $Y$, for the test data results in an root mean squared error of about 0.117 and a coefficient of determination ($R^2$) of about 0.93. In practice, we would relax our stopping criteria to allow smaller terminal nodes in this setting since we have a relatively small number of observations. In general, one only loses computing time by setting stopping criteria that allow very complicated trees in the growing phase, since branches that aren't predictive will be pruned (we did not here to keep the tree simple for the purposes of illustration).
+Using this model to predict the change in tumor masses, $Y$, for the test data results in an root mean squared error of about 0.117 and a coefficient of determination ($R^2$) of about 0.93. In practice, we would be well advised to relax our stopping criteria to allow smaller terminal nodes in this setting. In general, one only loses computing time by setting stopping criteria that allow very complicated trees in the growing phase, since branches that aren't predictive will be pruned (we did not here to keep the tree simple for the purposes of illustration).
 
 % subsection example (end)
 
@@ -425,7 +422,7 @@ Using this model to predict the change in tumor masses, $Y$, for the test data r
 \section{Multivariate adaptive regression splines (MARS)} % (fold)
 \label{sec:mars}
 
-MARS (\cite{mars}) can be viewed as a generalization of stepwise regression methods that incorporates automatic modelling of interactions. MARS accomplishes this through modelling covariates as piecewise linear basis functions and their products. These piecewise linear basis functions are of the form
+MARS (\cite{mars}) can be viewed as a modification of the CART procedure to improve performance in the regression setting, or as a generalization of stepwise regression methods that incorporates automatic modelling of interactions. MARS accomplishes this through modelling covariates as piecewise linear basis functions and their products. These piecewise linear basis functions are of the form
 %
 \begin{equation} \label{eq:bases}
   (x - t)_{+} \text{ and } (t - x)_{+}
@@ -442,7 +439,7 @@ The set in equation \ref{eq:bases} is sometimes called a \emph{reflected pair} b
 \subsection{Forward pass} % (fold)
 \label{sub:forward_pass}
 
-As in forward selection methods, in MARS,  we begin with only a constant:
+As in forward selection methods, in MARS, we begin with only a constant:
 \begin{equation}
   f(X) = \beta_{0}
 \end{equation}
@@ -450,13 +447,13 @@ Then, we consider adding a pair of piecewise linear functions made by splitting 
 \begin{equation}
 \beta_{1} (X_{j} - t)_{+} + \beta_{2}(t - X_{j})_{+}, \ i = 1, 2, \ldots, n; \ j = 1, 2, \ldots, p.
 \end{equation}
-To determine which predictor split at which knot to add, each of the $j$ predictors, split at each observed value $x_{ij}$ is evaluated in turn by adding each pair to the model and calculating the training error, e.g. the SSE. The covariate and split point that cause the greatest reduction in error are added to the model.
+To determine which predictor to add and which knot to split upon, each of the $j$ predictors, split at each observed value $x_{ij}$ is evaluated in turn by adding each pair to the model and calculating the training error, e.g. the SSE. The covariate and split point that cause the greatest reduction in error are added to the model.
 
-Henceforth we consider the addition of a pair piecewise linear functions with general form
+Henceforth, we consider adding a pair piecewise linear functions with general form
 \begin{equation} \label{eq:gen-pairs-add}
   \beta_{M + 1} h_{\ell}(X) \cdot (X_{j} - t)_{+} + \beta_{M + 2} h_{\ell}(X) \cdot (t - X_{j})_{+}, \ h_{\ell}(X) \in \mathcal{M}, \ t \in \{x_{ij}\}.
 \end{equation}
-Where $\mathcal{M}$ is the set of hinge functions already in the model. Note that this equation also holds for the first step, in which case $h_{\ell}(X) = h_{0}(X) = 1$. As before, we add the pair that causes the greatest reduction in training error. To simplify the set of models considered, we may provide limit the degree, or order of interactions we are interested in considering. For example with degree = 1, we only consider an additive model (all $h_{\ell}(X) = h_{0}(X) = 1$), with degree = 2, we consider a maximum of two-way interactions, and so on.
+Where $\mathcal{M}$ is the set of hinge functions (or products of hinge functions) already in the model. Note that this equation also holds for the first step, in which case $h_{\ell}(X) = h_{0}(X) = 1$. As before, we add the pair that causes the greatest reduction in training error. To simplify the set of models considered, we may provide limit the degree, or order of interactions we are interested in considering. For example with degree = 1, we only consider an additive model (all $h_{\ell}(X) = h_{0}(X) = 1$), with degree = 2, we consider a maximum of two-way interactions, and so on.
 Pairs are added until a user-defined limit on the number of terms in the model is reached, or the reduction in training error is smaller than some predefined threshold.
 
 The resulting MARS regression function is of the form
@@ -470,9 +467,9 @@ where $M$ is the number of terms in the model, and $h_{m}(X)$ is a hinge functio
 \subsection{Backward pass} % (fold)
 \label{sub:backward_pass}
 
-Usually, the function produced by the forward pass is too large and overfits the data, so we use a pruning (backward deletion) procedure. For each term $h_{m}(X)$ in the model, we estimate how much the error would increase by removing it, then remove the term for which removal increases the error the least. Once we've removed one term, we repeat this procedure and delete another term. At each stage of this procedure we obtain $\hat{f}_{\lambda}(X)$, the best model of size $\lambda$ (best model with $\lambda$ terms). Note that we do not proceed backwards along the path through which the covariates were added (indeed we add pairs of hinge functions on at a time, but remove them one by one).
+Usually, the function produced by the forward pass is too large and overfits the data, we use a pruning (backward deletion) procedure analogous to backward selection methods. For each term $h_{m}(X)$ in the model, we estimate how much the error would increase by removing it, then remove the term for which removal increases the error the least. Once we've removed one term, we repeat this procedure and delete another term. At each stage of this procedure we obtain $\hat{f}_{\lambda}(X)$, the best model of size $\lambda$ (best model with $\lambda$ terms). Note that we do not proceed backwards along the path through which the covariates were added (indeed we add pairs of hinge functions on at a time, but remove them one by one).
 
-To determine the optimal number of terms, $\lambda$, we can use a resampling technique (e.g. cross validation) but for computationally efficiency, we often generalized cross validation (GCV).
+To determine the optimal number of terms, $\lambda$, we can use a resampling technique (e.g. cross validation) but for computationally efficiency, we often use generalized cross validation (GCV).
 
 % subsection backward_pass (end)
 
@@ -488,7 +485,7 @@ Generalized cross validation is a computational shortcut for linear regression m
       (1 - M(\lambda)/N)^2
     }
 \end{equation}
-where $M(\lambda)$ is the effective number of parameters in the model, accounting for both the actual parameters and parameters used in selecting knot positions. Simulations and mathematical results tell us that $M(\lambda)$ should be set to $r + 3K$, the number of terms plus three times the number of knots, but can be set to $r + 2K$ when the model is restricted to be additive (degree = 1).
+where $M(\lambda)$ is the effective number of parameters in the model, accounting for both the actual parameters and parameters used in selecting knot positions. Simulations and mathematical results tell us that $M(\lambda)$ should be set to $r + 3K$, the number of terms plus three times the number of knots, but can be set to $r + 2K$ when the degree = 1; when the model is restricted to be additive (\cite{esl}).
 
 % subsection generalized_cross_validation (end)
 
@@ -518,26 +515,24 @@ However, the hinge functions of MARS may not be flexible enough to model smooth 
 \subsection{Illustrative example} % (fold)
 \label{sub:mars-ex}
 
-Returning to our change in tumor mass example from above, we fit a regression equation using MARS. Here we stopped adding terms if we reached 21 terms in the model or adding additional terms improved $R^2$ by less than 0.001. Terms were pruned using generalized cross validation as discussed above.
+Returning to our change in tumor mass example from above, let's fit a regression equation using MARS. Here, no further terms were added if there were already 21 terms in the model or adding additional terms improved $R^2$ by less than 0.001. Terms were pruned using generalized cross validation as discussed above.
 
 \begin{figure}[!htbp]
-
-{\centering \includegraphics[width=0.75\textwidth]{figure/ex-plot-mars-1} 
-
-}
-
-\caption{Predicted regression function for example data using MARS. As in Figure \ref{fig:ex-plot-cart}, the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the Xs represent predicted values for each observation.}\label{fig:ex-plot-mars}
+\begin{center}
+\includegraphics[width=0.75\textwidth]{figure/ex-plot-mars-1}
+\end{center}
+\caption[Predicted regression function for example data using MARS.]{Predicted regression function for example data using MARS. As in Figure \ref{fig:ex-plot-cart}, the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the $\times$s represent predicted values for each observation.}\label{fig:ex-plot-mars}
 \end{figure}
 
 
-The resulting predicted regression function is shown in Figure \ref{fig:ex-plot-mars} as a solid line. Grey dots again represent observations, the dotted line represents the true relationship from which data were simulated, and predicted values for each observation are represented by Xs. The fitted MARS equation is
+The resulting predicted regression function is shown in Figure \ref{fig:ex-plot-mars} as a solid line. Grey dots again represent observations, the dotted line represents the true relationship from which data were simulated, and predicted values for each observation are represented by $\times$s. The fitted MARS equation is
 \begin{equation}
   \label{eq:mars-eqn}
   \hat{\operatorname{E}}[Y \mid D] \approx -0.24 + 1.24 (0.81 - D)_{+} -1.64 (D - 0.87)_{+}
 \end{equation}
-Note that the hinges don't meet because the paired hinges that entered with each remaining hinge were removed in the pruning/backward pass phase, the gap between hinges is shown in our plot as a horizontal line of $Y = -0.24$ for $0.81 < D < 0.87$.
+Note that the hinges don't meet because the paired hinges that entered with each remaining hinge were removed in the pruning/backward pass phase. The gap between hinges is shown in our plot as a horizontal line of $Y = -0.24$ for $0.81 < D < 0.87$.
 
-Using this model to predict the testing data yields a root mean squared error of 0.037 and a coefficient of determination ($R^2$) of 0.99. As these measures indicate, MARS does a much better job of capturing the linear nature of the relationship between $Y$ and $D$ than CART does, with many fewer ``splits''. Note also that we can restrict MARS to only consider predictors to enter as linear terms (without splitting into hinge functions), which we would probably do here given that the fitted regression line is nearly linear anyway, and would also then be easier to interpret.
+Using this model to predict the testing data yields a root mean squared error of 0.037 and a coefficient of determination ($R^2$) of 0.99. As these measures indicate, MARS does a much better job of capturing the linear nature of the relationship between $Y$ and $D$ than CART does, with many fewer ``splits''. Note also that we can restrict MARS to only consider predictors to enter as linear terms (without splitting into hinge functions), which we would probably do here given that the fitted regression line is nearly linear anyway, and would then be easier to interpret.
 
 % subsection example (end)
 
@@ -549,15 +544,15 @@ Using this model to predict the testing data yields a root mean squared error of
 \subsection{Bagging} % (fold)
 \label{sub:bagging}
 
-As mentioned above, single trees tend to have quite high variance (small changes in the data can produce very different trees), however when grown sufficiently deep or bushy, they can have relatively low bias. Bootstrap aggregating (bagging for short) is a general technique that is useful whenever a modelling technique has these properties (high variance, low bias).
+As mentioned above, single trees tend to have quite high variance (small changes in the data can produce very different trees), however when grown sufficiently deep or bushy, they can have relatively low bias. Bootstrap aggregating, or \emph{bagging} for short, is a general technique that is useful whenever a modelling technique has these properties (high variance, low bias).
 
-Consider a collection of independent and identically distributed random variables, $X_{1}, X_{2}, \ldots, X_{n}$, with variance $\sigma^2$ and sample mean $\bar{X}$. It's easy to show that
+Consider a collection of independent and identically distributed random variables, $X_{1}, X_{2}, \ldots, X_{n}$, each with variance $\sigma^2$ and sample mean $\bar{X}$. It's easy to show that
 \begin{equation}
   \operatorname{Var}[\bar{X}] = \frac{\sigma^2}{n},
 \end{equation}
 the variance of the sample mean is lower by a factor of $n$ than the variance of any single observation. If we could build trees on many different samples then average the results, we could exploit this property to drastically reduce the variance and therefore increase performance.
 
-Typically, however, we only have one sample to work with so we can take $B$ bootstrap samples of our one sample to approximate many different training samples, build a model on each sample, then aggregate the results from each model into a single prediction. In the case of regression problems, we would average the predictions for each test observation from each model.
+Typically, however, we only have one sample to work with, but we can take $B$ bootstrap samples of our one sample to approximate many different training samples. We could then build a model on each sample, then aggregate the results from each model into a single prediction. In the case of regression problems, we would average the predicted outcome for each test observation from each model.
 
 \begin{algorithm}[ht]
 \For{$i$ in 1 to $B$}{
@@ -567,7 +562,7 @@ Typically, however, we only have one sample to work with so we can take $B$ boot
  \caption{Bagging}
 \end{algorithm}
 
-Bagging also provides a built-in way to estimate the test error by only averaging predictions for any given tree using observations that were not in the bootstrap sample used to train that tree (called the out-of-bag sample, about 1/3 of the observations on average). This out-of-bag sample typically approximates the cross validation estimate of error rate quite well, but requires much less computation.
+Bagging also provides a built-in way to estimate the test error by only averaging predictions for any given tree using the \emph{out-of-bag sample}, the observations that were not in the bootstrap sample used to train that tree (about 1/3 of the observations on average). This out-of-bag sample typically approximates the cross validation estimate of error rate well, but requires much less computation.
 
 Unfortunately, we can't in practice achieve a $B$ fold decrease in the variance from a single tree because our trees are not independent. Suppose there was a single very strong predictor. For any tree grown from a bootstrap sample, the first few splits would then tend to be made on this strong predictor. This in turn strongly influences the remaining shape of the tree, leading to correlated trees across bootstrap samples.
 
@@ -594,7 +589,7 @@ Statistically, we can decrease correlation by introducing randomness. So \textci
  \caption{Random forest}
 \end{algorithm}
 
-There is little danger of overfitting by growing more trees in random forest, so $B$ is typically set at a large enough number for the error rate to level off, \textcite{apm} recommend starting at 1000. Recommendations for $m_{try}$ are often set at a default of $\sqrt{p}$ or $p/3$, the latter specifically recommended for regression problems, though in practice $m_{try}$ should be chosen using resampling techniques. In the case of bagging, there is typically little gained after $B = 10$ or so \textcite{apm} recommend $B = 50$.
+There is little danger of overfitting by growing more trees in random forest, so $B$ is typically set at a large enough number for the error rate to level off, \textcite{apm} recommend starting at 1000. Recommendations for $m_{try}$ are often set at a default of $\sqrt{p}$ or $p/3$, the latter specifically recommended for regression problems, though in practice $m_{try}$ should be chosen using resampling techniques. In the case of bagging, there is typically little gained after $B = 10$ or so. \textcite{apm} recommend setting $B = 50$.
 
 % subsection random_forest (end)
 
@@ -619,15 +614,14 @@ Returning to our change in tumor mass example from above, let's fit a regression
 
 \begin{figure}[!htbp]
 
-{\centering \includegraphics[width=0.75\textwidth]{figure/ex-plot-rf-1} 
+\begin{center} \includegraphics[width=0.75\textwidth]{figure/ex-plot-rf-1}
+\end{center}
 
-}
-
-\caption[cap]{cap}\label{fig:ex-plot-rf}
+\caption[Predicted regression function for example data using Random Forest]{Predicted regression function for example data using Random Forest}\label{fig:ex-plot-rf}
 \end{figure}
 
 
-The predicted regression function averaged over the 100 trees is shown in Figure \ref{fig:ex-plot-rf}. Again, the observations are given by grey dots, the true function from which data were simulated is shown as a dotted line, the predicted observations are shown as Xs which are connected by a solid line. Notice how averaging the bagged trees yields a line much closer to the truth than the single tree shown above, though each tree was grown using similar stopping criteria as the CART example.
+The predicted regression function averaged over the 100 trees is shown in Figure \ref{fig:ex-plot-rf}. Again, the observations are given by grey dots, the true function from which data were simulated is shown as a dotted line, the predicted observations are shown as $\times$s which are connected by a solid line. Notice how averaging the bagged trees yields a line much closer to the truth than the single tree shown above, though each tree was grown using similar stopping criteria as the CART example.
 
 When using this model to predict the test data we obtain a root mean squared error of 0.045 and an $R^2$ of 0.984. This compares much more favorably to MARS than a single tree, however it comes at the cost of a lack of clarity in the relationship between $Y$ and $D$ in the model.
 
@@ -639,10 +633,9 @@ When using this model to predict the test data we obtain a root mean squared err
 \section{Simulation} % (fold)
 \label{sec:simulation}
 
+Largely inspired by \textcite{crt} and \textcite{nsclc}, I estimated optimal dynamic treatment regimes chosen from different doses of a single drug in a simulated cancer clinical trial for an advanced generic cancer. Our primary goal was to maximize survival time. To achieve this, I first simulated a trial where at the beginning of each of three months ($t = 0, 1, 2$), patients' tumor masses and qualities of life were measured, and each patient was assigned a random dose of the drug. 
 
-
-Largely inspired by \textcite{crt} and \textcite{nsclc}, we estimated optimal dynamic treatment regimes chosen from different doses of a single drug in a simulated cancer clinical trial for an advanced generic cancer. Our primary goal was to maximize survival time. To achieve this, we first simulated a trial where at the beginning of each of three months ($t = 0, 1, 2$), patients' tumor masses and qualities of life were measured, and each patient was assigned a random dose of the drug. 
-With the survival times resulting from these random sequences, we applied Q-learning three times, once using a single regression tree (CART), once using MARS, and once using random forest (RF) to estimate Q-functions. In a validation trial of the same design, we chose optimal doses based on the estimated optimal regimes obtained from Q-learning, and observed their effects on survival.
+With the survival times resulting from these random dose sequences, we applied Q-learning three times, once using a single regression tree (CART), once using MARS, and once using random forest (RF) to estimate Q-functions. In a validation trial of the same design, we chose optimal doses based on the estimated optimal regimes obtained from Q-learning, and observed their effects on survival.
 
 \subsection{Patient Model} % (fold)
 \label{sub:vpm}
@@ -849,14 +842,14 @@ The transition and survival functions were likewise identical to the training da
 
 {\centering \includegraphics[width=\textwidth]{figure/results-no-int-1}}
 
-\caption[Mean months of survival under each regime for the scenarios without interaction]{Mean months of survival under each regime for the scenarios without interaction, log scale. The mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF, CART) for each of the 20 treatment regimes estimated from the 20 training sets are shown in box plots. The constant dose regimes ($1, 0.9, \ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set.}\label{fig:results-no-int}
+\caption[Mean months of survival under each regime for scenarios without interaction]{Mean months of survival under each regime for the scenarios without interaction, log scale. The mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF, CART) for each of the 20 treatment regimes estimated from the 20 training sets are shown in box plots. The constant dose regimes ($1, 0.9, \ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set.}\label{fig:results-no-int}
 \end{figure}
 
 \begin{figure}[!htbp]
 
 {\centering \includegraphics[width=\textwidth]{figure/results-int-1}}
 
-\caption[Months of survival under each regime for scenarios with interaction]{Months of survival under each regime for scenarios with interaction, log scale. As in Figure \ref{fig:results-no-int}, mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF, CART) for each of the 20 treatment regimes estimated from the 20 training sets are shown in box plots, and lines represent mean survival under the constant dose and best regimes.}\label{fig:results-int}
+\caption[Mean months of survival under each regime for scenarios with interaction]{Mean months of survival under each regime for scenarios with interaction, log scale. As in Figure \ref{fig:results-no-int}, mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF, CART) for each of the 20 treatment regimes estimated from the 20 training sets are shown in box plots, and lines represent mean survival under the constant dose and best regimes.}\label{fig:results-int}
 \end{figure}
 
 
