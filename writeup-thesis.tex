@@ -35,9 +35,6 @@
 
 \DeclareMathOperator*{\argmax}{argmax}
 
-
-
-
 %--------------------------------------------------------------------------
 %  TITLE SECTION
 %--------------------------------------------------------------------------
@@ -51,6 +48,10 @@
 \begin{document}
 
 \maketitle
+
+\begin{abstract}
+In a simulation of an advanced generic cancer, we use Q-learning, a flexible approach from reinforcement learning, to develop dynamic treatment regimes using a continuous treatment, the dose of a single drug, tailored to changing patient characteristics and to patient subgroups with differential treatment effects. This approach allows estimation of optimal dynamic treatment regimes without accurate models of disease processes. Using observed patient characteristics and outcomes, we estimate Q-functions using a single regression tree grown using the Classification And Regression Trees (CART) method, random forest, and a slightly modified version of Multivariate Adaptive Regression Splines (MARS). We compare survival times produced by each method on an independent group of simulated patients in scenarios with and without high dimensional covariates and with and without patient subgroups with differential treatment effects. We also present rough estimates of the sensitivity of the methods to variations in training data, their potential for patient subgroup identification, and a comparison of the methods to the survival time obtained from the best possible treatment sequence chosen with complete knowledge of disease processes.
+\end{abstract}
 
 \tableofcontents
 \listoffigures
