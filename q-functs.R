@@ -1,3 +1,32 @@
+makeForm <- function(dat_long, int, noise){
+  if (int & !noise) {
+    nms <- dat_long %>%
+      select(tumor_mass, toxicity, dose, Qhat, starts_with("X")) %>% names()
+  } else if (noise & !int) {
+    nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
+                               starts_with("Z"),
+                               starts_with("V")) %>% names()
+  } else if (noise & int) {
+    nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
+                               starts_with("X"),
+                               starts_with("Z"),
+                               starts_with("V")) %>% names()
+  } else {
+    nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat) %>% names()
+  }
+  response <- "Qhat"
+  treatment <- "dose"
+  pred_nms <- nms[!(nms %in% c(response, treatment))]
+  form <- paste(response,
+                "~",
+                paste0(c(pred_nms, treatment), collapse = " + ")) %>%
+    as.formula()
+  list(
+    form = form,
+    pred_nms = pred_nms
+  )
+}
+
 max_df <- function(dat, model, truth, pred, nested = F) {
   dat <- ungroup(dat)
   if (!pred) {
@@ -24,8 +53,7 @@ max_df <- function(dat, model, truth, pred, nested = F) {
   
   if (!nested) {
     dat <- dat %>% group_by(ID) %>%
-      filter(preds == max(preds)) %>% 
-      slice(1)
+      filter(preds == max(preds)) %>% slice(1)
     if (!pred) {
       dat <- dat %>% bind_rows(deads) %>% arrange(ID) %>% ungroup() 
     }
@@ -33,23 +61,25 @@ max_df <- function(dat, model, truth, pred, nested = F) {
   dat %>% ungroup()
 }
 
-Qlearn <- function(form, dat_long, nstages = 6, ...) {
+Qlearn <- function(form, dat_long, nstages = 6, method, ...) {
   mod_list <- list()
   for (i in (nstages - 1):0) {
     dat <- filter(dat_long, month == i)
-    mod <- train(form, dat, na.action = na.omit, ...)
+    if (method == "rpart") {
+      mod <- rpart(form, dat, ...)
+      mod <- prune(mod, cp = mod$cptable[which.min(mod$cptable[, "xerror"]), "CP"])
+    } else {
+      mod <- train(form, dat, method = method, na.action = na.omit, ...)
+    }
     new_dat <- max_df(dat, mod, truth = F, pred = F)
     mod_list[[i + 1]] <- mod
     bestR <- new_dat$preds
-    bestD <- new_dat$dose
     if (i > 0) {
       dat_long <- dat_long %>% mutate(
         Qhat = ifelse(month == i - 1,
                       reward + ifelse(!is.na(bestR), bestR, 0),
                       Qhat))
     }
-    dat_long <- dat_long %>%
-      mutate(best = ifelse(month == i, bestD, best))
   }
   list(
     mod_list = mod_list
