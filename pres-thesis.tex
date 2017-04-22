@@ -1,17 +1,21 @@
-\documentclass[10pt]{beamer}
+\RequirePackage[l2tabu, orthodox]{nag}
+\documentclass[handout]{beamer}
 \usetheme{metropolis}
 \usepackage{appendixnumberbeamer}
 
 \usepackage{booktabs}
-% \usepackage[scale=2]{ccicons}
+\usepackage[scale=2]{ccicons}
 
 % makes table of contents and such hyperlinks
 \usepackage{hyperref}
 
-% \usepackage[style=authoryear, hyperref = true]{biblatex}
-% \addbibresource{library.bib}
+\usepackage[style=authoryear, hyperref = true]{biblatex}
+\addbibresource{library.bib}
 
-% \usepackage{xspace}
+\setbeamercolor{background canvas}{bg=white}
+
+\usepackage{xspace}
+\usepackage{commath}
 
 \title{Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data}
 \subtitle{\sl or: how I learned to stop worrying and love creating billion-observation data frames}
@@ -31,10 +35,10 @@
 
 \section{Introduction}
 
-\begin{frame}[c]{Personalized medicine}
+\begin{frame}{Personalized medicine}
 
 Patients often show significant differences in their responses to treatment.
-\begin{itemize}%[<+->]
+\begin{itemize}[<+->]
   \item Adverse drug reactions alone are a significant burden 
   \begin{itemize}
     \item Accounted for 6.5\% of hospital admissions at two hospitals in England  (\cite{Pirmohamed2004})
@@ -83,6 +87,14 @@ Goal: find the sequence of doses of a single treatment that maximizes survival t
 
 \section{Reinforcement learning} % (fold)
 \label{sec:reinforcement_learning}
+
+\begin{frame}[t]{Reinforcement learning}
+  All about sequential decision making
+  
+  <David Silver's venn diagram>
+  
+\end{frame}
+%--- Next Frame ---%
 
 \begin{frame}[c]{Reinforcement learning: basic elements}
 
@@ -170,29 +182,449 @@ Reinforcement learning:
 \end{frame}
 %--- Next Frame ---%
 
-% \begin{frame}[allowframebreaks]{References}
-%
-% \printbibliography[heading=none]
-%
-% \end{frame}
-
 
 % section reinforcement_learning (end)
 
 \section{Methods to fit Q-functions} % (fold)
 \label{sec:methods_to_fit_q_functions}
 
+\begin{frame}{Regression trees (CART) example}
+  For 50 patients with $M_{0} \overset{iid}{\sim} \text{Unif}(1, 2)$,
+  \begin{itemize}%[<+->]
+    \item Try to predict change in tumor mass: $Y_{i} \equiv M_{i1} - M_{i0}$
+    \item Knowing what dose of treatment $D_{i}$ is assigned
+    \item True relationship:
+    \begin{align*}
+      Y_{i} &= 0.75 - 1.2 D_{i} + \epsilon_{i}, \quad i = 1, \ldots, 50 \\
+      & \epsilon_{i} \sim N(0, 0.05)
+    \end{align*}
+     
+  \end{itemize}
+  
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Regression trees (CART) example tree}
+  \begin{figure}[!htbp]
+  \begin{center}
+    \includegraphics[width=\textwidth]{figure/ex-cart-tree-1}
+  \end{center}
+  \end{figure}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Regression trees (CART)}
+  Goal: make nodes as homogeneous in outcome as possible
+  \begin{enumerate}
+    \item What covariate to use to define a split and what value of the covariate to split on
+    \item When to stop splitting
+    \item How to assign an outcome to each terminal node
+  \end{enumerate}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Regression trees (CART)}
+  \begin{enumerate}
+    \item Try splitting each unique value of each covariate, and calculate the resulting $SSE$:
+  \begin{equation}
+    SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2
+  \end{equation}
+  $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$, and $\bar{y}_{R}$ is the average outcome in the right node, $\text{node}_{R}$.
+  
+  Pick split that minimizes $SSE$. Repeat for resulting nodes.
+  \item Stop splitting once e.g. resulting nodes would be too small
+  \item Assign average outcome in each terminal node as predicted outcome 
+  \end{enumerate}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Regression trees (CART) example function}
+  \begin{figure}[!htbp]
+  \begin{center}
+    \includegraphics[width=0.9\textwidth]{figure/ex-plot-cart-1}
+  \end{center}
+  \end{figure}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Regression trees (CART)}
+  Why we like trees:
+  \begin{enumerate}
+    \item Easy to interpret
+    \item Feature selection and modelling of interactions part of process
+    \item Easy to handle many types of covariates without pre-processing 
+  \end{enumerate}
+  
+  Why we don't like trees:
+  \begin{enumerate}
+    \item Generally have lower performance than other methods, particularly in regression setting
+  \end{enumerate}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{MARS}
+  Multivariate Adaptive Regression Splintes (\cite{mars}) can be viewed as generalization of stepwise linear regression methods that incorporates automatic modelling of interactions. 
+  
+  Achieved by modelling covariates as piecewise linear basis functions and their products:
+  
+  \begin{equation*} \label{eq:bases}
+    (x - t)_{+} \text{ and } (t - x)_{+}
+  \end{equation*} where
+  
+  \begin{equation*}
+    (Z)_{+} = \max(Z, 0) = \begin{cases}
+    Z, & \text{if } Z > 0 \\
+    0, & \text{otherwise}
+    \end{cases}
+  \end{equation*}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{MARS: Model building (forward pass)}
+  Like in forward selection methods start with a constant:
+  \begin{equation*}
+    f(X) = \beta_{0}
+  \end{equation*}
+  
+  Consider adding a pair of piecewise linear functions made by splitting some covariate $X_{j}$ at a knot placed at one of the observed values of $X_{j}$, $x_{ij}$:
+  \begin{equation*}
+  \beta_{1} (X_{j} - t)_{+} + \beta_{2}(t - X_{j})_{+}, \ i = 1, 2, \ldots, n; \ j = 1, 2, \ldots, p.
+  \end{equation*}
+  
+  Adding each possible pair to the model, calculate the $SSE$, add the pair that minimizes $SSE$
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{MARS: Model building (forward pass)}
+  Then consider adding pairs with general form:
+  \begin{equation*} \label{eq:gen-pairs-add}
+    \beta_{M + 1} h_{\ell}(X) \cdot (X_{j} - t)_{+} + \beta_{M + 2} h_{\ell}(X) \cdot (t - X_{j})_{+}, \ h_{\ell}(X) \in \mathcal{M}, \ t \in \{x_{ij}\}.
+  \end{equation*}
+  
+  $\mathcal{M}$ is set of hinge functions (or products of hinge functions) already in the model. As before add the pair that minimizes $SSE$.\footnote{Note that this equation also holds for the first step, in which case $h_{\ell}(X) = h_{0}(X) = 1$}
+  
+  Repeat until change in $SSE$ is too small, or upper limit on number of terms in model reached.
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{MARS: Backward pass}
+  Resulting model usually overfits, so like in backward selection, we remove terms from model one by one:
+  
+  \begin{enumerate}
+    \item Estimate how much $SSE$ would increase by removing each term
+    \item Remove term that increases $SSE$ the least
+    \item Repeat until no terms left
+  \end{enumerate}
+  
+  At each stage of this procedure we obtain $\hat{f}_{\lambda}(X)$, the best model of size $\lambda$ (best model with $\lambda$ terms)
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{MARS: Backward pass}
+  Pick $\lambda$ (and hence final model) using generalized cross validation (GCV):
+  %
+  \begin{equation*}
+    GCV(\lambda) =
+      \frac{
+        \sum_{i = 1}^{N}(y_{i} - \hat{f}_{\lambda}(x_{i}))^2
+      }{
+        (1 - M(\lambda)/N)^2
+      }
+  \end{equation*}
+  
+  $M(\lambda) = r + 3K$, the number of terms plus three times the number of knots, but can be set to $r + 2K$ when the degree = 1 (restricted to be additive)
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{MARS: Relationship to CART}
+  
+  MARS can also be viewed as a modification of CART to improve performance in the regression setting.
+  
+  MARS forward pass is equivalent to CART tree growing algorithm if we:
+  \begin{enumerate}
+    \item Change hinge functions to step functions:
+    \begin{equation*}
+      I(x - t > 0) \text{ and } I(t - x > 0)
+    \end{equation*}
+    \item Replace terms already in the model involved in a new interaction term by the new interaction term (making original term unavailable for future interactions)
+  \end{enumerate}
+\end{frame}
+%--- Next Frame ---%
+
+
+\begin{frame}[t]{MARS: example}
+
+\begin{figure}[!htbp]
+\begin{center}
+  \includegraphics[width=0.9\textwidth]{figure/ex-plot-mars-1}
+\end{center}
+\end{figure}
+%
+\begin{equation*}
+  \label{eq:mars-eqn}
+  \hat{f}(D) \approx -0.24 + 1.24 (0.81 - D)_{+} -1.64 (D - 0.87)_{+}
+\end{equation*}
+
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Bagging}
+  
+  \begin{itemize}
+    \item Single trees tend to have quite high variance (small changes in the data can produce very different trees)
+    \item When grown sufficiently deep or bushy, they can have relatively low bias 
+  \end{itemize}
+  
+  Bootstrap aggregating (\emph{bagging}) is a general technique that is useful whenever a modelling technique has high variance and low bias.
+  
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Bagging}
+  
+  Consider a collection of independent and identically distributed random variables, $X_{1}, X_{2}, \ldots, X_{n}$, each with variance $\sigma^2$ and sample mean $\bar{X}$. It's easy to show that
+  \begin{equation*}
+    \operatorname{Var}[\bar{X}] = \frac{\sigma^2}{n},
+  \end{equation*}
+  
+  Thus, if we could build trees on many different samples then average the results, we could reduce the variance and therefore increase performance.
+  
+  But we don't have many different samples
+  
+  So take bootstrap samples of the sample we do have
+  fit a model to each sample 
+  (build a tree, don't prune) 
+  then average the resulted predictions.
+  
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Random forest}
+  
+  \begin{itemize}%[<+->]
+    \item Can't in practice achieve a $B$ fold decrease in the variance from a single tree because trees are correlated
+    \item \textcite{rf}: decrease correlation by
+    \begin{itemize}
+      \item consider a random subset of $m_{try} \subset p$ predictors for splitting at each split
+    \end{itemize}
+    \item Choose $m_{try}$ using resampling techniques (e.g. cross validation)
+    \item Requires more resamples than bagging (due to introduced randomness)
+    \item Performance much better than single tree, but also much less interpretable 
+  \end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Random forest (bagging) example}
+  
+  \begin{figure}[!htb]
+  \begin{center}
+    \includegraphics[width=0.9\textwidth]{figure/ex-plot-rf-1}
+  \end{center}
+  \end{figure}
+  
+\end{frame}
+%--- Next Frame ---%
+
 % section methods_to_fit_q_functions (end)
 
 \section{Simulation} % (fold)
 \label{sec:simulation}
 
+\begin{frame}[c]{Setup}
+  Generated three random doses for 1000 patients each dose between none and maximum tolerable:
+  \begin{align*}
+    D_{t} &\overset{iid}{\sim} \text{Unif}(0, 1), \quad t = 0, 1, 2
+  \end{align*}
+  Each patient starts with random initial values of toxicity ($W$)\footnote{For simplicity, I take wellness and quality of life to be equivalent and exactly the opposite of toxicity} and tumor mass ($M$) over $(0,2)$
+  \begin{align*}
+    W_{0} &\overset{iid}{\sim} \text{Unif}(0, 2) \\
+    M_{0} &\overset{iid}{\sim} \text{Unif}(0, 2)
+  \end{align*}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Patient model: transition functions}
+  
+  Toxicity:
+  \begin{equation*}
+  W^{*}_{t} = 0.1 M_{t-1} + 1.2 (D_{t-1} - 0.5) + W_{t - 1}
+  \end{equation*}
+  \begin{equation*}
+  W_{t} = \begin{cases}
+    W^{*}_{t} &\text{if } W^{*}_{t} > 0 \\
+    0 &\text{if } W^{*}_{t} \leq 0
+  \end{cases}
+  \end{equation*}
+  
+  Tumor mass:
+  \begin{equation*}
+  M^{*}_{t} = [0.15 W_{t-1} - 1.2 (D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+  \end{equation*}
+  \begin{equation*}
+  M_{t} = \begin{cases}
+    M^{*}_{t} &\text{if } M^{*}_{t} > 0 \\
+    0 &\text{if } M^{*}_{t} \leq 0
+  \end{cases}
+  \end{equation*}
+  
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Patient model: survival}
+  \begin{align*}
+    S^{*}_{it} &\sim \operatorname{exponential}(\beta_{it}(M_{it + 1}, W_{it + 1})) \\[1em]
+    \beta_{it}(M_{it+1}, W_{it+1}) &= \exp(5.5 - W_{it+1} - 1.2 M_{it+1} - 0.75 W_{it+1} M_{it+1}) \\[1em]
+    S_{it} &= \begin{cases}
+      S^{*}_{it} + \sum_{j = 0}^{t} j & \text{if } S_{it} \leq 1 \text{ or } t = 2 \\
+      \text{undefined} & \text{otherwise}
+    \end{cases} \\[1em]
+    R_{it + 1} &=\begin{cases}
+          \log(S_{it}) & \text{if } S_{it} \leq 1 \text{ or } t = 2 \\
+          0 & \text{otherwise\footnotemark}
+        \end{cases}
+  \end{align*}  
+  \footnotetext{log of the survival time taken as continuous reward (and hence outcome), not as a censored time-to-event outcome}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Interaction (I) scenario}
+  Two additional baseline covariates for each patient:
+  \begin{equation*}
+    X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1)
+  \end{equation*}
+  
+  $X_{1} < 0.5 \ \& \ X_{2} < 0.5$: same as before
+  
+  
+  $X_{1} > 0.5 \ \& \ X_{2} < 0.5$: 50\% more sensitive to drug effects:
+  \begin{equation*}
+  W^{*}_{t} = W'_{t} = 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1}
+  \end{equation*}
+  %
+  $X_{1} < 0.5 \ \& \ X_{2} > 0.5$: drug 50\% more effective:
+  \begin{equation*}
+  M^{*}_{t} =  M'_{t} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+  \end{equation*}
+  % 
+  $X_{1} > 0.5 \ \& \ X_{2} > 0.5$: 50\% more effective and 50\% more sensitive:
+  \begin{align*}
+  W^{*}_{t} = W'_{t} &= 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1} \\
+  M^{*}_{t} = M'_{t} &= [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+  \end{align*}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Noise scenarios}
+  
+  Noise (N) scenario: 100 additional baseline covariates with no effect:
+  \begin{align*}
+    Z_{1}, \ldots, Z_{5} &\overset{iid}{\sim} N(1, 1) \\
+    Z_{6}, \ldots, Z_{10} &\overset{iid}{\sim} N(-1, 1) \\
+    V_{1}, \ldots, V_{90} &\overset{iid}{\sim} N(0, 1)
+  \end{align*}
+  
+  Predictive noise (PN) scenario: same 100 baseline covariates, but
+  %
+  \begin{align*}
+    \beta'_{it}&(M_{it+1}, W_{it+1}) = \\
+    &\exp\del{5.5 + W_{it+1} + 1.2 M_{it+1} + 0.75 W_{it+1} M_{it+1} + 0.05 \sum_{j = 1}^{10} Z_{ij}}
+  \end{align*}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Interaction + noise scenarios}
+  Interaction + noise scenario (I+N):
+  
+  four subgroups as in interaction scenario plus the 100 noise variables from noise scenario
+  
+  \bigskip
+  
+  Interaction + predictive noise scenario (I+PN):
+  
+  four subgroups as in interaction scenario plus the 100 noise variables from noise scenario, but $Z$ variables shift expected survival up or down
+\end{frame}
+%--- Next Frame ---%
+
 % section simulation (end)
+
+\begin{frame}[c]{Training procedure}
+  
+  Q-learning applied using:
+  \begin{itemize}
+    \item CART: trees that minimized 10 fold cross validation error\footnote{\label{tree} Splits creating terminal nodes with $\leq$ 5 observations not considered}
+    \item MARS: restricted to second degree interactions with $D$ only
+    \item Random forest: bagging turned out to be best under each scenario\textsuperscript{\ref{tree}}
+  \end{itemize}
+  
+  Fitted models for each stage under each scenario saved for estimating optimal treatments for patients in the validation set
+  
+  Repeated 100 times with different simulated patients
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[t]{Validation procedure}
+  
+  2000 new patients simulated identically to those in each scenario, copies of the 2000 underwent:
+  \begin{itemize}
+    \item 10 constant dose regimes: doses of $0.1, 0.2, \ldots,$ or 1 given at each stage
+    \item Best: dose sequence out of all all possible sequences with each dose $\{0, 0.01, 0.02, \ldots, 1\}$ that maximizes expected survival given complete knowledge of the transition functions and their influence on survival, as long as $S_{it} \leq 1$, $t = 0, 1 \enspace \forall i$.
+    \item CART, MARS, RF: Doses from $\{0, 0.01, 0.02, \ldots, 1\}$, corresponding to the maximum predicted rewards for each of the 100 models for each stage
+  \end{itemize}
+\end{frame}
+%--- Next Frame ---%
 
 \section{Results} % (fold)
 \label{sec:results}
 
 % section results (end)
 
+\begin{frame}[standout]
+  Thanks
+\end{frame}
+
+\appendix
+
+\begin{frame}[t]{Variable importance averaged over models \& stages}
+  \begin{table}[!ht]
+      \scriptsize
+\begin{center}
+\begin{tabular}{lllllll}
+\toprule
+\multicolumn{1}{l}{Variable}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
+\midrule
+{\bfseries MARS}&&&&&&\tabularnewline
+~~$M$&98.0 (6.5)&97.0 (7.7)&95.0 (9.5)&99.0 (4.0)&98.0 (6.6)&98.0 (6.8)\tabularnewline
+~~$W$&78.0 (9.2)&83.0 (7.9)&84.0 (9.9)&82.0 (6.4)&86.0 (7.3)&85.0 (6.9)\tabularnewline
+~~$D$&25.0 (12.4)&37.0 (8.4)&38.0 (8.4)&36.0 (13.1)&47.0 (11.3)&45.0 (9.6)\tabularnewline
+~~$X$&&&&32.0 (12.4)&46.0 (12.3)&41.0 (14.3)\tabularnewline
+~~$Z$&&6.0 (11.9)&8.0 (13.1)&&6.0 (12.4)&7.0 (13.2)\tabularnewline
+~~$V$&&5.0 (11.0)&6.0 (11.2)&&6.0 (12.4)&6.0 (11.4)\tabularnewline
+\midrule
+{\bfseries RF}&&&&&&\tabularnewline
+~~$M$&100.0 (0.6)&100.0 (1.2)&99.0 (3.3)&99.0 (2.1)&99.0 (3.1)&100.0 (1.8)\tabularnewline
+~~$W$&78.0 (11.2)&80.0 (12.5)&81.0 (13.4)&86.0 (12.6)&87.0 (10.6)&85.0 (10.9)\tabularnewline
+~~$D$&18.0 (7.4)&2.0 (0.7)&2.0 (0.7)&19.0 (6.7)&4.0 (1.9)&4.0 (2.2)\tabularnewline
+~~$X$&&&&25.0 (6.6)&8.0 (3.4)&7.0 (2.7)\tabularnewline
+~~$Z$&&1.0 (0.5)&1.0 (0.6)&&1.0 (0.8)&2.0 (0.8)\tabularnewline
+~~$V$&&1.0 (0.4)&1.0 (0.4)&&1.0 (0.5)&1.0 (0.5)\tabularnewline
+\midrule
+{\bfseries CART}&&&&&&\tabularnewline
+~~$M$&99.0 (4.0)&98.0 (4.4)&98.0 (5.3)&96.0 (6.4)&97.0 (8.5)&98.0 (4.8)\tabularnewline
+~~$W$&76.0 (16.5)&77.0 (17.5)&78.0 (15.6)&87.0 (13.9)&82.0 (16.2)&84.0 (14.9)\tabularnewline
+~~$D$&7.0 (3.9)&6.0 (3.2)&6.0 (3.3)&8.0 (5.2)&7.0 (3.2)&7.0 (3.3)\tabularnewline
+~~$X$&&&&9.0 (5.0)&6.0 (2.3)&6.0 (2.8)\tabularnewline
+~~$Z$&&4.0 (2.0)&2.0 (1.3)&&3.0 (1.7)&4.0 (1.2)\tabularnewline
+~~$V$&&3.0 (1.7)&3.0 (1.6)&&4.0 (1.8)&4.0 (2.1)\tabularnewline
+\bottomrule
+\end{tabular}\end{center}
+\end{table}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[allowframebreaks]{References}
+
+\printbibliography[heading=none]
+
+\end{frame}
 
 \end{document}
