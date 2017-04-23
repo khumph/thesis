@@ -16,6 +16,7 @@
 
 \usepackage{xspace}
 \usepackage{commath}
+\usepackage{graphics}
 
 \title{Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data}
 \subtitle{\sl or: how I learned to stop worrying and love creating billion-observation data frames}
@@ -487,6 +488,11 @@ Reinforcement learning:
 \end{frame}
 %--- Next Frame ---%
 
+\begin{frame}[c]{Example}
+  \includegraphics[width=\textwidth]{figure/ind-plot-1} 
+\end{frame}
+%--- Next Frame ---%
+
 \begin{frame}[c]{Interaction (I) scenario}
   Two additional baseline covariates for each patient:
   \begin{equation*}
@@ -576,6 +582,33 @@ Reinforcement learning:
 \section{Results} % (fold)
 \label{sec:results}
 
+
+\begin{frame}[c]{Survival times: scenarios without interaction}
+\centering
+  \includegraphics[width=0.98\textwidth]{figure/pres-results-no-int-1} 
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Survival times: scenarios without interaction}
+  \centering
+  \includegraphics[width=0.98\textwidth]{figure/pres-results-int-1} 
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Variable importance: scenarios without interaction}
+\centering
+  \includegraphics[width=0.95\textwidth]{figure/pres-var-imps-no-int-1} 
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Variable importance: scenarios with interaction}
+  \centering
+  \includegraphics[width=0.95\textwidth]{figure/pres-var-imps-int-1} 
+\end{frame}
+%--- Next Frame ---%
+
+
+
 % section results (end)
 
 \begin{frame}[standout]
@@ -584,10 +617,54 @@ Reinforcement learning:
 
 \appendix
 
-\begin{frame}[t]{Variable importance averaged over models \& stages}
-  \begin{table}[!ht]
-      \scriptsize
-\begin{center}
+\begin{frame}[c]{Mean survival times}
+  \begin{table}
+  \small
+  \centering
+  \begin{tabular}{lrrrrrr}
+  \toprule \multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
+  \midrule
+  Best&$60.0$&$60.0$&$61.1$&$79.5$&$79.5$&$81.1$\tabularnewline
+  MARS&$39.8$&$29.1$&$27.7$&$43.9$&$35.8$&$37.0$\tabularnewline
+  RF&$36.3$&$30.0$&$30.7$&$45.8$&$41.2$&$42.1$\tabularnewline
+  CART&$12.5$&$ 9.9$&$10.0$&$12.8$&$10.0$&$ 9.9$\tabularnewline
+  1&$12.5$&$12.5$&$12.7$&$ 9.2$&$ 9.2$&$ 9.4$\tabularnewline
+  0.9&$14.5$&$14.5$&$14.8$&$11.8$&$11.8$&$12.0$\tabularnewline
+  0.8&$16.2$&$16.2$&$16.5$&$15.0$&$15.0$&$15.3$\tabularnewline
+  0.7&$16.6$&$16.6$&$16.9$&$18.0$&$18.0$&$18.4$\tabularnewline
+  0.6&$16.2$&$16.2$&$16.5$&$20.1$&$20.1$&$20.5$\tabularnewline
+  0.5&$15.5$&$15.5$&$15.8$&$21.1$&$21.1$&$21.5$\tabularnewline
+  0.4&$15.6$&$15.6$&$16.0$&$19.8$&$19.8$&$20.2$\tabularnewline
+  0.3&$14.7$&$14.7$&$15.0$&$16.8$&$16.8$&$17.2$\tabularnewline
+  0.2&$12.7$&$12.7$&$12.9$&$14.1$&$14.1$&$14.4$\tabularnewline
+  0.1&$10.5$&$10.5$&$10.6$&$11.0$&$11.0$&$11.2$\tabularnewline
+  \bottomrule
+  \end{tabular}
+  \end{table}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Standard deviations of survival times across training sets}
+  \begin{table}[!htbp]
+  \centering
+  \begin{tabular}{lrrrrrr}
+  \toprule \multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
+  \midrule
+  MARS&$9.8$&$8.8$&$8.3$&$9.6$&$7.9$&$9.0$\tabularnewline
+  RF&$5.2$&$5.2$&$5.8$&$6.0$&$6.4$&$6.5$\tabularnewline
+  CART&$3.0$&$2.5$&$2.2$&$4.0$&$3.2$&$2.7$\tabularnewline
+  \bottomrule
+  \end{tabular}
+  \end{table}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{}
+  \begin{columns}
+    \column{\dimexpr\paperwidth}
+\begin{table}
+\scriptsize
+\centering
 \begin{tabular}{lllllll}
 \toprule
 \multicolumn{1}{l}{Variable}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
@@ -616,10 +693,13 @@ Reinforcement learning:
 ~~$Z$&&4.0 (2.0)&2.0 (1.3)&&3.0 (1.7)&4.0 (1.2)\tabularnewline
 ~~$V$&&3.0 (1.7)&3.0 (1.6)&&4.0 (1.8)&4.0 (2.1)\tabularnewline
 \bottomrule
-\end{tabular}\end{center}
+\end{tabular}
 \end{table}
+  \end{columns}
 \end{frame}
 %--- Next Frame ---%
+
+
 
 \begin{frame}[allowframebreaks]{References}
 
