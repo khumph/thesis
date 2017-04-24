@@ -1,5 +1,6 @@
 \RequirePackage[l2tabu, orthodox]{nag}
 \documentclass[handout]{beamer}
+% \documentclass{beamer}
 \usetheme{metropolis}
 \usepackage{appendixnumberbeamer}
 
@@ -13,10 +14,20 @@
 \addbibresource{library.bib}
 
 \setbeamercolor{background canvas}{bg=white}
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+\setlength{\leftmargini}{12pt}
 
 \usepackage{xspace}
 \usepackage{commath}
 \usepackage{graphics}
+\usepackage{algorithm2e}
+\DeclareMathOperator*{\argmax}{argmax}
 
 \title{Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data}
 \subtitle{\sl or: how I learned to stop worrying and love creating billion-observation data frames}
@@ -29,17 +40,17 @@
 
 \maketitle
 
-% \begin{frame}{Table of contents}
-%   \setbeamertemplate{section in toc}[sections numbered]
-%   \tableofcontents[hideallsubsections]
-% \end{frame}
+\begin{frame}[c]{Table of contents}
+  \setbeamertemplate{section in toc}[sections numbered]
+  \tableofcontents
+\end{frame}
 
 \section{Introduction}
 
-\begin{frame}{Personalized medicine}
+\begin{frame}[c]{Personalized medicine}
 
-Patients often show significant differences in their responses to treatment.
-\begin{itemize}[<+->]
+Patients often show significant differences in their responses to treatment
+\begin{itemize}[<+(1)->]
   \item Adverse drug reactions alone are a significant burden 
   \begin{itemize}
     \item Accounted for 6.5\% of hospital admissions at two hospitals in England  (\cite{Pirmohamed2004})
@@ -47,16 +58,18 @@ Patients often show significant differences in their responses to treatment.
   \end{itemize}
   \item Other factors increase patient response to treatment
   \begin{itemize}
-    \item Whether metastatic breast cancer cells over-express human epidermal growth factor receptor 2 (are HER2-positive)\footnote{Usually, ``personalized medicine'' refers to this type of biomarker-based personalization}
+    \item Whether metastatic breast cancer cells over-express human epidermal growth factor receptor 2 (are HER2-positive)\footnotemark 
   \end{itemize}
 \end{itemize}
+
+\only<5->{\footnotetext{Usually, ``personalized medicine'' refers to this type of biomarker-based personalization}}
 
 \end{frame}
 
 \begin{frame}[c]{How to personalized medicine?}
 
 Typically requires identifying patient subgroups with differential treatment responses
-\begin{itemize}[<+->]
+\begin{itemize}[<+(1)->]
   \item Statistically, has traditionally required treatment by covariate interactions
   \begin{itemize}
     \item Often there are lots of potential subgroups (lots of interactions) - need lots of data and method to avoid inflating type I error rate
@@ -71,16 +84,15 @@ Typically requires identifying patient subgroups with differential treatment res
 
 \begin{frame}[c]{Broad overview}
 
-Goal: find the sequence of doses of a single treatment that maximizes survival time in an adaptive simulated cancer clinical trial\footnote{setup inspired by \textcite{crt}} 
-\begin{itemize}
-    \item Use Q-learning a technique from reinforcement learning
+Goal: find sequence of doses of a single treatment that maximize survival time in a simulated cancer clinical trial\footnote{setup inspired by \textcite{crt}} with and without high dimensional covariates and patient subgroups
+\begin{itemize}[<+(1)->]
+    \item Use Q-learning, a technique from reinforcement learning
     \item Use flexible methods from statistical learning to fit Q-functions: 
-    \begin{itemize}
-      \item regression trees (CART)
-      \item Multivariate adaptive regression splines
-      \item Random forest
-    \end{itemize}
-    \item Idea is to  
+    \begin{itemize}[<+->]
+      \item Regression trees (CART--\cite{CART})
+      \item Multivariate adaptive regression splines (MARS--\cite{mars})
+      \item Random forest (RF--\cite{rf})
+    \end{itemize} 
 \end{itemize}
 
 \end{frame}
@@ -89,11 +101,11 @@ Goal: find the sequence of doses of a single treatment that maximizes survival t
 \section{Reinforcement learning} % (fold)
 \label{sec:reinforcement_learning}
 
-\begin{frame}[t]{Reinforcement learning}
-  All about sequential decision making
-  
-  <David Silver's venn diagram>
-  
+\begin{frame}[c]{Reinforcement learning: sequential decision making}
+  \begin{figure}
+    \centering
+    \includegraphics[width = 0.6\textwidth]{figure/rl-venn-silver}\blfootnote{\scriptsize Image by \href{http://www0.cs.ucl.ac.uk/staff/D.Silver/web/Teaching.html}{David Silver}}
+  \end{figure}
 \end{frame}
 %--- Next Frame ---%
 
@@ -108,9 +120,9 @@ Goal: find the sequence of doses of a single treatment that maximizes survival t
   \item The agent follows a \emph{policy} which dictates what 
   \item \emph{action} to take given a state signal to affect the environment in order to achieve some goal
   \begin{itemize}
-    \item goals defined to agent so that maximizing a scalar quantity called the \emph{reward} would achieve the goal
+    \item goal defined to agent so that maximizing a scalar quantity called the \emph{reward} would achieve the goal
   \end{itemize}
-  \item Goal of reinforcement learning is to find an \emph{optimal policy}: a policy that achieves the largest reward over the long run. 
+  \item Goal of reinforcement learning to find an \emph{optimal policy}: a policy that achieves the largest reward over the long run 
 \end{itemize}
 
 \end{frame}
@@ -119,7 +131,7 @@ Goal: find the sequence of doses of a single treatment that maximizes survival t
 \begin{frame}[c]{Reinforcement learning: basic process}
 
 The agent:
-\begin{itemize}[<+->]
+\begin{enumerate}[<+->]
   \item is presented with states
   \item tries a sequence of actions
   \item records the consequences (rewards)
@@ -128,73 +140,135 @@ The agent:
   \begin{itemize}
     \item Actions with large rewards tend to be repeated, hence ``reinforcement''
   \end{itemize}
-\end{itemize}
+\end{enumerate}
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}[c]{Reinforcement learning: example}
+% \begin{frame}[c]{Reinforcement learning: example}
+%
+% Board games offer quintessential example, take chess:
+% \begin{itemize}
+%     \item States: the positions of the pieces on the board
+%     \item Actions: any of the legal moves with any given piece
+%     \item Rewards: e.g. \\
+%     if win $reward \gets 1$ \\
+%     if lose $reward \gets 0$
+%     \item Policy: ``strategy''
+% \end{itemize}
+%
+% AlphaGo uses reinforcement learning and neural networks
+%
+% \end{frame}
+% %--- Next Frame ---%
 
-Board games offer quintessential example, take chess:
-\begin{itemize}
-    \item States: the positions of the pieces on the board
-    \item Actions: any of the legal moves with any given piece
-    \item Rewards: e.g. \\
-    if win $reward \gets 1$ \\
-    if lose $reward \gets 0$
-    \item Policy: ``strategy''
-\end{itemize}
-
-AlphaGo uses reinforcement learning and neural networks
-
-\end{frame}
-%--- Next Frame ---%
-
-\begin{frame}[t]{Reinforcement learning: differences to other areas of machine learning}
-  
-Supervised learning: learning agent given a list of correct example actions to taken in given situations, agent extrapolates correct example behavior to new situations
-
-Unsupervised learning: agent finds hidden structure in collections of example actions and situations where the correct action is unknown.
-
-Reinforcement learning: 
+\begin{frame}[c]{Reinforcement learning: relationship to other areas of machine learning}
+\begin{itemize}[<+->]
+  \item Supervised learning
+  \begin{itemize}
+    \item learning agent given a list of correct example actions to taken in given situations
+    \item goal: agent extrapolates correct example behavior to new situations
+  \end{itemize}
+  \item Unsupervised learning
+  \begin{itemize}
+    \item learning agent given a list of example actions and situations where the correct action is unknown
+    \item goal: agent finds hidden structure
+  \end{itemize} 
+  \item Reinforcement learning
 \begin{itemize}
   \item No correct example actions required
-  \item Goal is to maximize rewards, not find hidden structure
+  \item goal: maximize rewards, not find hidden structure
+  \item Feedback is delayed 
   \item Problems are closed loop: actions taken now affect available actions and rewards later
+\end{itemize} 
 \end{itemize}
-  
 \end{frame}
 %--- Next Frame ---%
 
 
 \begin{frame}[c]{Reinforcement learning: connection to personalized medicine}
   
-  \begin{itemize}
+  \begin{itemize}[<+->]
       \item States: patient histories and characteristics
       \item Actions: possible treatment options
-      \item Rewards: e.g. kg weight lost in weight loss study 
+      \item Rewards: goal dependent (e.g. kg weight lost in weight loss study)
       \item Policy: \emph{dynamic treatment regime} 
   \end{itemize}
 
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}[t]{Q-learning}
-  
+\subsection{Q-learning} % (fold)
+\label{sub:q_learning}
+
+
+
+\begin{frame}{Q-learning: setup}
+  Patients recruited into a trial,
+  \begin{enumerate}[<+(1)->]
+    \item covariates measured, stored in $O_{1}$; defined as patient history at stage 1: $H_{1} \equiv O_{1}$
+    \item treatment, $A_{1}$ randomly assigned
+    \item covariates measured again, stored in $O_{2}$, reward $R_{1}$ received, everything recorded into patient history at stage 2: $H_{2} \equiv (O_{1}, A_{1}, O_{2})$
+    \item second treatment $A_{2}$ randomly assigned (could depend on $H_{2}$)
+    \item covariates measured again ($O_{3}$) and another reward $R_{2}$ received, $H_{3} \equiv (H_{2}, A_{2}, O_{3})$, process repeated over $K$ stages
+  \end{enumerate}
+    \pause
+Q-function at stage $k$ defined as:
+  \begin{equation*}
+     Q_{k}(A_{k}, H_{k})  = \operatorname{E}[r_{k} \mid A_{k}, H_{k}], \quad k = 1, \ldots, K
+  \end{equation*}
 \end{frame}
 %--- Next Frame ---%
 
+\begin{frame}[c]{Q-learning}
+\begin{algorithm}[H]
+  $\hat{Q}_{K + 1} \gets 0$
+
+  \medskip
+
+ \For{$k$ in $K, \ldots, 1$}{
+  Estimate rewards that would occur if optimal policy followed after $k$:
+
+$ \hat{r}_{k} \gets r_{k} + \max_{A_{k+1}} \hat{Q}_{k+1}(A_{k+1}, H_{k+1})$
+
+\medskip
+
+Estimate Q-function, $Q_{k}(A_{k}, H_{k})$, for preceding stage using this reward as outcome (e.g. with ordinary least squares).
+
+\medskip
+
+Estimate the optimal treatment for each patient at stage $k$:
+
+$\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
+}
+\end{algorithm}
+\end{frame}
+%--- Next Frame ---%
+
+% subsection q_learning (end)
 
 % section reinforcement_learning (end)
 
 \section{Methods to fit Q-functions} % (fold)
 \label{sec:methods_to_fit_q_functions}
 
-\begin{frame}{Regression trees (CART) example}
-  For 50 patients with $M_{0} \overset{iid}{\sim} \text{Unif}(1, 2)$,
-  \begin{itemize}%[<+->]
-    \item Try to predict change in tumor mass: $Y_{i} \equiv M_{i1} - M_{i0}$
-    \item Knowing what dose of treatment $D_{i}$ is assigned
-    \item True relationship:
+\begin{frame}[c]{Why trees (and MARS)?}
+  \begin{itemize}[<+->]
+    \item ``Automatically'' conduct variable selection and interaction modelling
+    \item Not restricted to linear relationships between $X$ and $Y$
+    \item Produces interpretable models 
+  \end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+\subsection{Regression trees (CART)} % (fold)
+\label{sub:cart}
+
+\begin{frame}{Regression trees (CART): example}
+  For 50 patients with initial tumor mass $M_{0} \overset{iid}{\sim} \text{Unif}(1, 2)$,
+  \begin{itemize}[<+->]
+    \item try to predict change in tumor mass: $Y_{i} \equiv M_{i1} - M_{i0}$
+    \item given what dose of treatment $D_{i}$ is assigned
+    \item true relationship:
     \begin{align*}
       Y_{i} &= 0.75 - 1.2 D_{i} + \epsilon_{i}, \quad i = 1, \ldots, 50 \\
       & \epsilon_{i} \sim N(0, 0.05)
@@ -205,7 +279,7 @@ Reinforcement learning:
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}[c]{Regression trees (CART) example tree}
+\begin{frame}[c]{Regression trees (CART): example tree}
   \begin{figure}[!htbp]
   \begin{center}
     \includegraphics[width=\textwidth]{figure/ex-cart-tree-1}
@@ -214,28 +288,73 @@ Reinforcement learning:
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}{Regression trees (CART)}
+\begin{frame}{Regression trees (CART): tree growing}
   Goal: make nodes as homogeneous in outcome as possible
-  \begin{enumerate}
-    \item What covariate to use to define a split and what value of the covariate to split on
-    \item When to stop splitting
-    \item How to assign an outcome to each terminal node
+  
+  \pause
+  Need to decide:
+  \begin{enumerate}[<+->]
+    \item what covariate to use to define a split and what value of the covariate to split on
+    \item when to stop splitting
+    \item how to assign an outcome to each terminal node
   \end{enumerate}
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}{Regression trees (CART)}
-  \begin{enumerate}
-    \item Try splitting each unique value of each covariate, and calculate the resulting $SSE$:
-  \begin{equation}
-    SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2
-  \end{equation}
-  $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$, and $\bar{y}_{R}$ is the average outcome in the right node, $\text{node}_{R}$.
+\begin{frame}{Regression trees (CART): tree growing}
+  Start with root node
   
-  Pick split that minimizes $SSE$. Repeat for resulting nodes.
+  \begin{enumerate}[<+(1)->]
+  \item Try splitting each unique value $x_{ij}$ of each covariate $X_{j}$
+  \item calculate the resulting $SSE$
+  \begin{equation*}
+    SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2
+  \end{equation*}
+  $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$, and $\bar{y}_{R}$ is the average outcome in the right node, $\text{node}_{R}$.
+  \item Pick split that minimizes $SSE$
+    \end{enumerate}
+  \pause
+  Repeat for resulting nodes 
+    
+  \begin{itemize}[<+(1)->]
   \item Stop splitting once e.g. resulting nodes would be too small
   \item Assign average outcome in each terminal node as predicted outcome 
-  \end{enumerate}
+  \end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Regression trees (CART): tree pruning}
+  \begin{itemize}[<+->]
+    \item Tree growing algorithm usually produces a bushy/deep tree $T_{0}$ that overfits
+    \item So use cost-complexity pruning: goal to find subtrees $T \subset T_{0}$ which minimize
+    \begin{equation*}
+        C_{\alpha}(T) = \sum_{m = 1}^{\abs{T}} \sum_{x_{i} \in \text{node}_{m}} (y_{i} - \bar{y}_{m})^2 + \alpha \abs{T}
+    \end{equation*}
+    \item Unique subtree $T_{\alpha}$ that minimizes $C_{\alpha}(T)$ for each $\alpha \geq 0$.
+  \end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Regression trees (CART): tree pruning}
+  To find $T_{\alpha}$, use weakest link pruning
+      \begin{enumerate}[<+->]
+        \item Try collapsing each internal node in turn
+        \item actually collapse weakest link (node that if collapsed produces smallest increase in $SSE$), save tree
+        \item repeat until you're at root node 
+          \pause
+          
+          in results: sequence of $T_{\alpha}$s  
+        \item choose best $\alpha$/$T_{\alpha}$ from sequence using resampling technique (e.g. 10-fold cross validation)
+      \end{enumerate}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Regression trees (CART): example tree}
+  \begin{figure}[!htbp]
+  \begin{center}
+    \includegraphics[width=\textwidth]{figure/ex-cart-tree-1}
+  \end{center}
+  \end{figure}
 \end{frame}
 %--- Next Frame ---%
 
@@ -248,83 +367,105 @@ Reinforcement learning:
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}{Regression trees (CART)}
-  Why we like trees:
-  \begin{enumerate}
-    \item Easy to interpret
-    \item Feature selection and modelling of interactions part of process
-    \item Easy to handle many types of covariates without pre-processing 
-  \end{enumerate}
-  
-  Why we don't like trees:
-  \begin{enumerate}
-    \item Generally have lower performance than other methods, particularly in regression setting
-  \end{enumerate}
-\end{frame}
-%--- Next Frame ---%
+% \begin{frame}{Regression trees (CART)}
+%   Why we like trees:
+%   \begin{enumerate}
+%     \item Easy to interpret
+%     \item Feature selection and modelling of interactions part of process
+%     \item Easy to handle many types of covariates without pre-processing
+%   \end{enumerate}
+%
+%   Why we don't like trees:
+%   \begin{enumerate}
+%     \item Generally have lower performance than other methods, particularly in regression setting
+%   \end{enumerate}
+% \end{frame}
+% %--- Next Frame ---%
 
-\begin{frame}{MARS}
-  Multivariate Adaptive Regression Splintes (\cite{mars}) can be viewed as generalization of stepwise linear regression methods that incorporates automatic modelling of interactions. 
-  
-  Achieved by modelling covariates as piecewise linear basis functions and their products:
-  
+% subsection cart (end)
+
+\subsection{MARS} % (fold)
+\label{ssub:mars}
+
+\begin{frame}{Multivariate Adaptive Regression Splintes}
+  \begin{itemize}[<+->]
+    \item Generalization of stepwise linear regression methods that incorporates modelling interactions
+    \item achieved by modelling covariates as piecewise linear basis functions and their products:
+  %
   \begin{equation*} \label{eq:bases}
     (x - t)_{+} \text{ and } (t - x)_{+}
   \end{equation*} where
-  
+  %
   \begin{equation*}
     (Z)_{+} = \max(Z, 0) = \begin{cases}
     Z, & \text{if } Z > 0 \\
     0, & \text{otherwise}
     \end{cases}
   \end{equation*}
+  
+  \item Each half of the pair is called a \emph{hinge function}, or linear spline
+  \item $t$ is a \emph{knot}
+  \end{itemize}
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}{MARS: Model building (forward pass)}
-  Like in forward selection methods start with a constant:
+  
+  \begin{itemize}[<+->]
+    \item Like in forward selection, start with a constant:
+    \begin{equation*}
+      f(X) = \beta_{0}
+    \end{equation*}
+    \item Consider adding pairs of piecewise linear functions:
   \begin{equation*}
-    f(X) = \beta_{0}
+  \beta_{1} (X_{j} - x_{ij})_{+} + \beta_{2}(x_{ij} - X_{j})_{+}, \ i = 1, 2, \ldots, n; \ j = 1, 2, \ldots, p.
   \end{equation*}
-  
-  Consider adding a pair of piecewise linear functions made by splitting some covariate $X_{j}$ at a knot placed at one of the observed values of $X_{j}$, $x_{ij}$:
-  \begin{equation*}
-  \beta_{1} (X_{j} - t)_{+} + \beta_{2}(t - X_{j})_{+}, \ i = 1, 2, \ldots, n; \ j = 1, 2, \ldots, p.
-  \end{equation*}
-  
-  Adding each possible pair to the model, calculate the $SSE$, add the pair that minimizes $SSE$
-\end{frame}
-%--- Next Frame ---%
-
-\begin{frame}{MARS: Model building (forward pass)}
-  Then consider adding pairs with general form:
-  \begin{equation*} \label{eq:gen-pairs-add}
-    \beta_{M + 1} h_{\ell}(X) \cdot (X_{j} - t)_{+} + \beta_{M + 2} h_{\ell}(X) \cdot (t - X_{j})_{+}, \ h_{\ell}(X) \in \mathcal{M}, \ t \in \{x_{ij}\}.
-  \end{equation*}
-  
-  $\mathcal{M}$ is set of hinge functions (or products of hinge functions) already in the model. As before add the pair that minimizes $SSE$.\footnote{Note that this equation also holds for the first step, in which case $h_{\ell}(X) = h_{0}(X) = 1$}
-  
-  Repeat until change in $SSE$ is too small, or upper limit on number of terms in model reached.
-\end{frame}
-%--- Next Frame ---%
-
-\begin{frame}{MARS: Backward pass}
-  Resulting model usually overfits, so like in backward selection, we remove terms from model one by one:
-  
+   made by splitting some covariate $X_{j}$ at one of the observed values of $X_{j}$, $x_{ij}$
   \begin{enumerate}
-    \item Estimate how much $SSE$ would increase by removing each term
-    \item Remove term that increases $SSE$ the least
-    \item Repeat until no terms left
+    \item Try adding each possible pair to the model
+    \item calculate the $SSE$
+    \item add the pair that minimizes $SSE$
   \end{enumerate}
-  
-  At each stage of this procedure we obtain $\hat{f}_{\lambda}(X)$, the best model of size $\lambda$ (best model with $\lambda$ terms)
+  \end{itemize}
+
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{MARS: Model building (forward pass)}
+  \begin{itemize}[<+->]
+    \item Then consider adding pairs with general form:
+  \begin{equation*} \label{eq:gen-pairs-add}
+    \beta_{M + 1} h_{\ell}(X) \cdot (X_{j} - x_{ij})_{+} + \beta_{M + 2} h_{\ell}(X) \cdot (x_{ij} - X_{j})_{+}
+  \end{equation*}
+  $h_{\ell}(X)$ is a hinge function (or product of hinge functions) already in the model\footnote{Also holds for the first step where $h_{\ell}(X) = h_{0}(X) = 1$}
+  \item As before, add pair that minimizes $SSE$
+  \item Repeat until 
+  \begin{itemize}
+    \item change in $SSE$ too small and/or
+    \item upper limit on number of terms in model reached
+  \end{itemize}
+  \end{itemize}
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}{MARS: Backward pass}
-  Pick $\lambda$ (and hence final model) using generalized cross validation (GCV):
-  %
-  \begin{equation*}
+  \begin{itemize}[<+->]
+    \item Resulting model usually overfits
+    \item So like in backward selection, remove terms from model one by one:
+    \begin{enumerate}
+      \item Estimate how much $SSE$ would increase by removing each term in turn
+      \item Remove term that increases $SSE$ the least
+      \item Repeat until no terms left
+    \end{enumerate}
+    \item At each stage, we obtain $\hat{f}_{\lambda}(X)$, best model with $\lambda$ terms
+  \end{itemize}
+
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{MARS: Backward pass}
+Pick $\lambda$ (and hence final model) using generalized cross validation (GCV) 
+    \begin{equation*}
     GCV(\lambda) =
       \frac{
         \sum_{i = 1}^{N}(y_{i} - \hat{f}_{\lambda}(x_{i}))^2
@@ -332,8 +473,11 @@ Reinforcement learning:
         (1 - M(\lambda)/N)^2
       }
   \end{equation*}
-  
-  $M(\lambda) = r + 3K$, the number of terms plus three times the number of knots, but can be set to $r + 2K$ when the degree = 1 (restricted to be additive)
+  $M(\lambda) = \lambda + 3K$ (number of terms plus three times the number of knots)
+  \begin{itemize}
+    \item<+-> can be set to $\lambda + 2K$ when degree = 1 (restricted to be additive)
+  \end{itemize}
+
 \end{frame}
 %--- Next Frame ---%
 
@@ -369,6 +513,11 @@ Reinforcement learning:
 \end{frame}
 %--- Next Frame ---%
 
+% subsubsection mars (end)
+
+\subsection{Bagging and Random Forest} % (fold)
+\label{sub:bagging_and_random}
+
 \begin{frame}{Bagging}
   
   \begin{itemize}
@@ -383,31 +532,28 @@ Reinforcement learning:
 
 \begin{frame}{Bagging}
   
-  Consider a collection of independent and identically distributed random variables, $X_{1}, X_{2}, \ldots, X_{n}$, each with variance $\sigma^2$ and sample mean $\bar{X}$. It's easy to show that
+  \begin{itemize}[<+->]
+    \item Consider iid random variables, $X_{1}, X_{2}, \ldots, X_{n}$, each with variance $\sigma^2$ and sample mean $\bar{X}$.
   \begin{equation*}
-    \operatorname{Var}[\bar{X}] = \frac{\sigma^2}{n},
+    \operatorname{Var}[\bar{X}] = \frac{\sigma^2}{n}
   \end{equation*}
-  
-  Thus, if we could build trees on many different samples then average the results, we could reduce the variance and therefore increase performance.
-  
-  But we don't have many different samples
-  
-  So take bootstrap samples of the sample we do have
-  fit a model to each sample 
-  (build a tree, don't prune) 
-  then average the resulted predictions.
+  \item Thus, can improve tree performance by building trees on many different samples then averaging results
+  \item But we don't have many different samples (only have one), so
+  \begin{enumerate}
+    \item take $B$ bootstrap samples of sample
+    \item fit a model to each sample (grow a tree, don't prune)
+    \item average the resulted predictions 
+  \end{enumerate}
+  \end{itemize}
   
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}{Random forest}
   
-  \begin{itemize}%[<+->]
+  \begin{itemize}[<+->]
     \item Can't in practice achieve a $B$ fold decrease in the variance from a single tree because trees are correlated
-    \item \textcite{rf}: decrease correlation by
-    \begin{itemize}
-      \item consider a random subset of $m_{try} \subset p$ predictors for splitting at each split
-    \end{itemize}
+    \item \textcite{rf}: decrease correlation by considering a random subset of $m_{try} \subset p$ predictors for splitting at each split
     \item Choose $m_{try}$ using resampling techniques (e.g. cross validation)
     \item Requires more resamples than bagging (due to introduced randomness)
     \item Performance much better than single tree, but also much less interpretable 
@@ -425,6 +571,8 @@ Reinforcement learning:
   
 \end{frame}
 %--- Next Frame ---%
+
+% subsection bagging_and_random (end)
 
 % section methods_to_fit_q_functions (end)
 
@@ -571,9 +719,9 @@ Reinforcement learning:
 \begin{frame}[t]{Validation procedure}
   
   2000 new patients simulated identically to those in each scenario, copies of the 2000 underwent:
-  \begin{itemize}
+  \begin{itemize}[<+(1)->]
     \item 10 constant dose regimes: doses of $0.1, 0.2, \ldots,$ or 1 given at each stage
-    \item Best: dose sequence out of all all possible sequences with each dose $\{0, 0.01, 0.02, \ldots, 1\}$ that maximizes expected survival given complete knowledge of the transition functions and their influence on survival, as long as $S_{it} \leq 1$, $t = 0, 1 \enspace \forall i$.
+    \item Best: dose sequence out of all possible sequences with $D_{t} \in \{0, 0.01, 0.02, \ldots, 1\}$ that maximizes expected survival given complete knowledge of the transition functions and their influence on survival, as long as $S_{it} \leq 1$, $t = 0, 1 \enspace \forall i$.
     \item CART, MARS, RF: Doses from $\{0, 0.01, 0.02, \ldots, 1\}$, corresponding to the maximum predicted rewards for each of the 100 models for each stage
   \end{itemize}
 \end{frame}
@@ -607,6 +755,19 @@ Reinforcement learning:
 \end{frame}
 %--- Next Frame ---%
 
+
+\begin{frame}[t]{Discussion}
+  \begin{itemize}[<+->]
+    \item Q-learning using random forest (bagging) and MARS (only treatment interactions allowed) increased average survival substantially over constant doses
+    \item Single regression tree (CART) did not
+    \begin{itemize}
+      \item Predictive accuracy was splitting and pruning criterion: dose and interacting variables (less important in overall survival) often pruned off 
+    \end{itemize}
+    \item MARS gives comparable performance to random forest, but has higher variance in both performance on test set and variable importances 
+    \item As implemented subgroup identification is difficult, likely need to modify techniques to split upon magnitude of (qualitative) interaction with treatment 
+  \end{itemize}
+\end{frame}
+%--- Next Frame ---%
 
 
 % section results (end)
