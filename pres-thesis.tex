@@ -144,18 +144,26 @@ Goal: find sequence of doses of a single treatment that maximize survival time i
 %--- Next Frame ---%
 
 \begin{frame}[c]{Reinforcement learning: basic process}
-
-Agent:
-\begin{enumerate}[<+->]
-  \item Presented with states
-  \item Tries sequence of actions
-  \item Records consequences (rewards)
-  \item Statistically estimates relationship between actions, states, and rewards
-  \item Chooses next action that leads to largest rewards
-  \begin{itemize}
-    \item Actions with large rewards repeated, hence ``reinforcement''
-  \end{itemize}
-\end{enumerate}
+\begin{columns}%[<options>]
+  \begin{column}{0.54\textwidth}
+        \centering
+    \includegraphics[width=\textwidth]{figure/rl-process} \\*
+        \vspace{-6pt}
+        \hrulefill \\*
+        \vspace{-6pt}
+        {\scriptsize Image by \href{http://www0.cs.ucl.ac.uk/staff/D.Silver/web/Teaching.html}{David Silver}}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    Agent:
+    \begin{enumerate}[<+->]
+      \item Presented with states $O_{t}$
+      \item Tries action $A_{t}$
+      \item Gets reward $R_{t}$
+      \item Estimates relationship between $A_{t}$, $O_{t}$, and $R_{t}$
+      \item Chooses $A_{t+1}$ that leads to largest rewards
+    \end{enumerate}
+  \end{column}
+\end{columns}
 \end{frame}
 %--- Next Frame ---%
 
@@ -174,6 +182,12 @@ Agent:
 %
 % \end{frame}
 % %--- Next Frame ---%
+
+
+\begin{frame}[t]{Reinforcement learning: basic process}
+
+\end{frame}
+%--- Next Frame ---%
 
 \begin{frame}[c]{Reinforcement learning: relationship to other areas of machine learning}
 \begin{itemize}[<+->]
@@ -451,7 +465,7 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 
 \begin{frame}[c]{Regression trees (CART): tree pruning}
   \begin{itemize}[<+->]
-    \item Bushy/deep tree $T_{0}$ that overfits
+    \item Result is bushy/deep tree $T_{0}$ that overfits
     \item Cost-complexity pruning: find subtrees $T \subset T_{0}$ that minimize
     \begin{equation*}
         C_{\alpha}(T) = \sum_{m = 1}^{\abs{T}} \sum_{x_{i} \in \text{node}_{m}} (y_{i} - \bar{y}_{m})^2 + \alpha \abs{T}
@@ -636,7 +650,7 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 
 \begin{frame}{MARS: Backward pass}
   \begin{itemize}[<+->]
-    \item Model usually overfits
+    \item Resulting model usually overfits
     \item As in backward selection, remove terms from model one by one:
     \begin{enumerate}
       \item Record $SSE$ increase by removing each term in turn
@@ -651,7 +665,9 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 
 \begin{frame}{MARS: Backward pass}
 Pick final model ($\lambda$) using generalized cross validation (GCV) 
+    
     \pause
+    
     \begin{equation*}
     GCV(\lambda) =
       \frac{
