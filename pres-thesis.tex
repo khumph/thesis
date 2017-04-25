@@ -48,47 +48,60 @@
 
 \section{Introduction}
 
+\subsection{Personalized medicine} % (fold)
+\label{sub:personalized_medicine}
+
 \begin{frame}[c]{Personalized medicine}
 
-Patients often show significant differences in their responses to treatment
+Patients often have different responses to treatment
 \begin{itemize}[<+(1)->]
-  \item Adverse drug reactions alone are a significant burden 
+  \item Adverse drug reactions alone are significant burden 
   \begin{itemize}
-    \item Accounted for 6.5\% of hospital admissions at two hospitals in England  (\cite{Pirmohamed2004})
-    \item Projected \$850 million cost to NHS annually 
+    \item 6.5\% of hospital admissions at two hospitals in England  (\cite{Pirmohamed2004})
+    \item Projected to cost NHS \$850 million annually 
   \end{itemize}
-  \item Other factors increase patient response to treatment
+  \item Other factors increase patient response
   \begin{itemize}
-    \item Whether metastatic breast cancer cells over-express human epidermal growth factor receptor 2 (are HER2-positive)\footnotemark 
+    \item Whether breast cancer cells over-express human epidermal growth factor receptor 2 (are HER2-positive)\footnotemark 
   \end{itemize}
 \end{itemize}
 
-\only<5->{\footnotetext{Usually, ``personalized medicine'' refers to this type of biomarker-based personalization}}
+\only<6->{\footnotetext{Usually, ``personalized medicine'' refers to this type of biomarker-based personalization}}
 
 \end{frame}
 
 \begin{frame}[c]{How to personalized medicine?}
 
-Typically requires identifying patient subgroups with differential treatment responses
+Identify subgroups who respond to treatment differently
 \begin{itemize}[<+(1)->]
-  \item Statistically, has traditionally required treatment by covariate interactions
+  \item Treatment by covariate interactions
   \begin{itemize}
-    \item Often there are lots of potential subgroups (lots of interactions) - need lots of data and method to avoid inflating type I error rate
+    \item Problem: Lots of potential subgroups/interactions
+    \begin{itemize}
+      \item Need lots of data (and)
+      \item Method for multiple comparisons
+    \end{itemize}
   \end{itemize}
-  \item Lots of novel methods have been proposed
+  \item Lots of novel methods
   \begin{itemize}
-    \item Problem (for our purposes) treatments always categorical (usually binary), only a single stage considered
+    \item Problems (in our setting): 
+    \begin{itemize}
+      \item Treatments always categorical
+      \item \textbf{Only single stage considered}
+    \end{itemize}
   \end{itemize}
 \end{itemize}
 
 \end{frame}
 
+% subsection personalized_medicine (end)
+
 \begin{frame}[c]{Broad overview}
 
 Goal: find sequence of doses of a single treatment that maximize survival time in a simulated cancer clinical trial\footnote{setup inspired by \textcite{crt}} with and without high dimensional covariates and patient subgroups
 \begin{itemize}[<+(1)->]
-    \item Use Q-learning, a technique from reinforcement learning
-    \item Use flexible methods from statistical learning to fit Q-functions: 
+    \item Use Q-learning, an algorithm from reinforcement learning
+    \item To fit Q-functions: 
     \begin{itemize}[<+->]
       \item Regression trees (CART--\cite{CART})
       \item Multivariate adaptive regression splines (MARS--\cite{mars})
@@ -113,17 +126,17 @@ Goal: find sequence of doses of a single treatment that maximize survival time i
 \begin{frame}[c]{Reinforcement learning: basic elements}
 
 \begin{itemize}[<+->]
-  \item learning \emph{agent} who has goals related to its
-  \item \emph{environment} (everything outside the agent's direct control)
+  \item \emph{Agent} who has goal(s) regarding
+  \item \emph{Environment} (everything outside agent's direct control)
   \begin{itemize}
-    \item Features of the environment are represented to the agent through \emph{states}
+    \item Features of environment represented via \emph{states}
   \end{itemize}
-  \item The agent follows a \emph{policy} which dictates what 
-  \item \emph{action} to take given a state signal to affect the environment in order to achieve some goal
+  \item Agent follows \emph{policy}: 
   \begin{itemize}
-    \item goal defined to agent so that maximizing a scalar quantity called the \emph{reward} would achieve the goal
+    \item \emph{Action} to take in a given state to achieve goal(s)
+    \item (Reward hypothesis): maximizing scalar, \emph{reward}, achieves goal(s) 
   \end{itemize}
-  \item Goal of reinforcement learning to find an \emph{optimal policy}: a policy that achieves the largest reward over the long run 
+  \item Reinforcement learning: find \emph{optimal policy}--policy achieves largest reward over long run 
 \end{itemize}
 
 \end{frame}
@@ -131,55 +144,54 @@ Goal: find sequence of doses of a single treatment that maximize survival time i
 
 \begin{frame}[c]{Reinforcement learning: basic process}
 
-The agent:
+Agent:
 \begin{enumerate}[<+->]
-  \item is presented with states
-  \item tries a sequence of actions
-  \item records the consequences (rewards)
-  \item statistically estimates the relationship between actions, states, and rewards
-  \item chooses next action that leads to largest rewards
+  \item Presented with states
+  \item Tries sequence of actions
+  \item Records consequences (rewards)
+  \item Statistically estimates relationship between actions, states, and rewards
+  \item Chooses next action that leads to largest rewards
   \begin{itemize}
-    \item Actions with large rewards tend to be repeated, hence ``reinforcement''
+    \item Actions with large rewards repeated, hence ``reinforcement''
   \end{itemize}
 \end{enumerate}
 \end{frame}
 %--- Next Frame ---%
 
-% \begin{frame}[c]{Reinforcement learning: example}
-%
-% Board games offer quintessential example, take chess:
-% \begin{itemize}
-%     \item States: the positions of the pieces on the board
-%     \item Actions: any of the legal moves with any given piece
-%     \item Rewards: e.g. \\
-%     if win $reward \gets 1$ \\
-%     if lose $reward \gets 0$
-%     \item Policy: ``strategy''
-% \end{itemize}
-%
-% AlphaGo uses reinforcement learning and neural networks
-%
-% \end{frame}
-% %--- Next Frame ---%
+\begin{frame}[c]{Reinforcement learning: example}
+
+\begin{itemize}
+    \item States: the positions of the pieces on the board
+    \item Actions: any of the legal moves with any given piece
+    \item Rewards: e.g. \\
+    if win $reward \gets 1$ \\
+    if lose $reward \gets 0$
+    \item Policy: ``strategy''
+\end{itemize}
+
+AlphaGo uses reinforcement learning and neural networks
+
+\end{frame}
+%--- Next Frame ---%
 
 \begin{frame}[c]{Reinforcement learning: relationship to other areas of machine learning}
 \begin{itemize}[<+->]
   \item Supervised learning
   \begin{itemize}
-    \item learning agent given a list of correct example actions to taken in given situations
-    \item goal: agent extrapolates correct example behavior to new situations
+    \item Agent given correct example actions to take
+    \item Goal: agent extrapolates correct behavior to new situations
   \end{itemize}
   \item Unsupervised learning
   \begin{itemize}
-    \item learning agent given a list of example actions and situations where the correct action is unknown
-    \item goal: agent finds hidden structure
+    \item Agent given example actions where correct action unknown
+    \item Goal: agent finds hidden structure
   \end{itemize} 
   \item Reinforcement learning
 \begin{itemize}
   \item No correct example actions required
-  \item goal: maximize rewards, not find hidden structure
-  \item Feedback is delayed 
-  \item Problems are closed loop: actions taken now affect available actions and rewards later
+  \item Goal: maximize rewards, not find hidden structure
+  \item Feedback delayed 
+  \item Problems closed loop: actions taken now affect available actions and rewards later
 \end{itemize} 
 \end{itemize}
 \end{frame}
@@ -201,8 +213,27 @@ The agent:
 \subsection{Q-learning} % (fold)
 \label{sub:q_learning}
 
-\begin{frame}{Q-learning: my simulation}
-\resizebox{1.1\textwidth}{!}{
+\begin{frame}{Q-learning: setup (\cite{dtr-review})}
+  Patients recruited into a trial,
+  \begin{enumerate}[<+(1)->]
+    \item Covariates measured $\rightarrow O_{0}$ \\*
+    Patient history stage 0: $H_{0} \doteq O_{0}$
+    \item Treatment $A_{0}$ randomly assigned
+    \item Covariates measured $\rightarrow O_{1}$ \\*
+    Reward $R_{1}$ received \\*
+    Patient history stage 1: $H_{1} \doteq (O_{0}, A_{0}, O_{1})$
+    \item Treatment $A_{1}$ randomly assigned (could depend on $H_{1}$)
+    \item Covariates measured $\rightarrow O_{2}$ \\*
+    Reward $R_{2}$ received \\*
+    $H_{2} \doteq (H_{1}, A_{1}, O_{2})$
+  \end{enumerate}
+    \pause
+    process repeated over $K$ stages
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Example setup: my simulation}
+\resizebox{\textwidth}{!}{
      \begin{tikzpicture}[->, >=stealth', auto, node distance=1.5cm, minimum size=1pt,
     pt node/.style={rounded corners, draw},
     pt node img/.style={rounded corners, dashed, draw},
@@ -243,6 +274,69 @@ The agent:
     \node[surv node]  (S3) [right of = M2, xshift = 0.8cm] {$S_{3}$};
     \node[r node]     (R3) [right of = S3] {$R_{3}$};
     \path (M2) edge (S3) (S3) edge (R3);
+  \end{tikzpicture}
+  }
+\end{frame}
+
+\begin{frame}[c]{Q-learning}
+  Q-function at stage $k$
+    \begin{equation*}
+       Q_{k}(A_{k}, H_{k})  = \operatorname{E}[R_{k} \mid A_{k}, H_{k}], \quad k = 0, \ldots, K
+    \end{equation*}
+        %
+        \pause
+        %
+\begin{algorithm}[H]
+  $\hat{Q}_{K + 1} \gets 0$
+
+  \medskip
+
+ \For{$k$ in $K, \ldots, 0$}{
+  Make outcome rewards if optimal policy followed after $k$:
+
+$\hat{R}_{k} \gets R_{k} + \max_{A_{k+1}} \hat{Q}_{k+1}(A_{k+1}, H_{k+1})$
+
+\medskip
+
+Estimate Q-function, $Q_{k}(A_{k}, H_{k})$, for stage $k$ using $\hat{R}_{k}$
+
+\medskip
+
+Estimate the optimal treatment for each patient at stage $k$:
+
+$\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
+}
+\end{algorithm}
+\end{frame}
+%--- Next Frame ---%
+
+
+\begin{frame}{Q-learning example: my simulation}
+\resizebox{1.1\textwidth}{!}{
+     \begin{tikzpicture}[->, >=stealth', auto, node distance=1.5cm, minimum size=1pt,
+    pt node/.style={rounded corners, draw},
+    pt node img/.style={rounded corners, dashed, draw},
+    dose node/.style={circle, draw},
+    surv node/.style={diamond, draw},
+    r node/.style={star, draw}]
+
+    \node[pt node]    (M0) {$M_{0}$, $W_{0}$};
+    \node[dose node]  (D0) [above of = M0] {$D_{0}$};
+    \path (D0) edge (M0);
+    \node[pt node]    (M1) [right of = M0, xshift = 1cm] {$M_{1}$, $W_{1}$};
+    \node[r node]     (R1) [below of = M1, inner sep = -4pt, yshift = -0.5cm] {$R_{1} = 0$};
+    \path (M0) edge (M1) (M1) edge (R1);
+    \node[dose node]  (D1) [above of = M1] {$D_{1}$};
+    \path (D1) edge (M1);
+    \node[pt node] (M2) [right of = M1, xshift = 1cm] {$M_{2}$, $W_{2}$};
+    \path (M1) edge (M2);
+    \node[r node]     (R2) [below of = M2, inner sep = -4pt, yshift = -0.5cm] {$R_{2} = 0$};
+    \path (M2) edge (R2);
+    \node[dose node]  (D2) [above of = M2] {$D_{2}$};
+    \path (D2) edge (M2);
+    \node[surv node]  (S3) [right of = M2, xshift = 0.8cm] {$S_{3}$};
+    \node[r node]     (R3) [right of = S3] {$R_{3}$};
+    \path (M2) edge (S3) (S3) edge (R3);
     
     \pause
     \draw [->, dashed] (R3) edge (Q3);
@@ -277,49 +371,6 @@ The agent:
   }
 \end{frame}
 
-
-\begin{frame}{Q-learning: setup}
-  Patients recruited into a trial,
-  \begin{enumerate}[<+(1)->]
-    \item covariates measured, stored in $O_{1}$; defined as patient history at stage 1: $H_{1} \equiv O_{1}$
-    \item treatment, $A_{1}$ randomly assigned
-    \item covariates measured again, stored in $O_{2}$, reward $R_{1}$ received, everything recorded into patient history at stage 2: $H_{2} \equiv (O_{1}, A_{1}, O_{2})$
-    \item second treatment $A_{2}$ randomly assigned (could depend on $H_{2}$)
-    \item covariates measured again ($O_{3}$) and another reward $R_{2}$ received, $H_{3} \equiv (H_{2}, A_{2}, O_{3})$, process repeated over $K$ stages
-  \end{enumerate}
-    \pause
-Q-function at stage $k$ defined as:
-  \begin{equation*}
-     Q_{k}(A_{k}, H_{k})  = \operatorname{E}[r_{k} \mid A_{k}, H_{k}], \quad k = 1, \ldots, K
-  \end{equation*}
-\end{frame}
-%--- Next Frame ---%
-
-\begin{frame}[c]{Q-learning}
-\begin{algorithm}[H]
-  $\hat{Q}_{K + 1} \gets 0$
-
-  \medskip
-
- \For{$k$ in $K, \ldots, 1$}{
-  Estimate rewards that would occur if optimal policy followed after $k$:
-
-$ \hat{r}_{k} \gets r_{k} + \max_{A_{k+1}} \hat{Q}_{k+1}(A_{k+1}, H_{k+1})$
-
-\medskip
-
-Estimate Q-function, $Q_{k}(A_{k}, H_{k})$, for preceding stage using this reward as outcome (e.g. with ordinary least squares).
-
-\medskip
-
-Estimate the optimal treatment for each patient at stage $k$:
-
-$\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
-}
-\end{algorithm}
-\end{frame}
-%--- Next Frame ---%
-
 % subsection q_learning (end)
 
 % section reinforcement_learning (end)
@@ -331,7 +382,8 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
   \begin{itemize}[<+->]
     \item ``Automatically'' conduct variable selection and interaction modelling
     \item Not restricted to linear relationships between $X$ and $Y$
-    \item Produces interpretable models 
+    \item Produce interpretable models 
+    \item Are similar to each other and easier for me to explain 
   \end{itemize}
 \end{frame}
 %--- Next Frame ---%
@@ -341,17 +393,14 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 
 \begin{frame}{Regression trees (CART): example}
   For 50 patients with initial tumor mass $M_{0} \overset{iid}{\sim} \text{Unif}(1, 2)$,
-  \begin{itemize}[<+->]
-    \item try to predict change in tumor mass: $Y_{i} \equiv M_{i1} - M_{i0}$
-    \item given what dose of treatment $D_{i}$ is assigned
-    \item true relationship:
+  \begin{itemize}[<+(1)->]
+    \item Predict change in tumor mass: $Y_{i} \doteq M_{i1} - M_{i0}$ \\* given dose of treatment $D_{i}$ assigned
+    \item True relationship:
     \begin{align*}
       Y_{i} &= 0.75 - 1.2 D_{i} + \epsilon_{i}, \quad i = 1, \ldots, 50 \\
       & \epsilon_{i} \sim N(0, 0.05)
     \end{align*}
-     
   \end{itemize}
-  
 \end{frame}
 %--- Next Frame ---%
 
@@ -370,9 +419,9 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
   \pause
   Need to decide:
   \begin{enumerate}[<+->]
-    \item what covariate to use to define a split and what value of the covariate to split on
-    \item when to stop splitting
-    \item how to assign an outcome to each terminal node
+    \item What covariate to use to define split and what value of the covariate to split on
+    \item When to stop splitting
+    \item How to assign outcomes to terminal nodes
   \end{enumerate}
 \end{frame}
 %--- Next Frame ---%
@@ -382,27 +431,27 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
   
   \begin{enumerate}[<+(1)->]
   \item Try splitting each unique value $x_{ij}$ of each covariate $X_{j}$
-  \item calculate the resulting $SSE$
+  \item Calculate the resulting $SSE$
   \begin{equation*}
     SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2
   \end{equation*}
-  $\bar{y}_{L}$ is the average outcome in the left node, $\text{node}_{L}$, and $\bar{y}_{R}$ is the average outcome in the right node, $\text{node}_{R}$.
+  $\bar{y}_{L} = $ average outcome in left node, $\text{node}_{L}$, and \\*   $\bar{y}_{R} = $ average outcome in right node, $\text{node}_{R}$.
   \item Pick split that minimizes $SSE$
     \end{enumerate}
   \pause
   Repeat for resulting nodes 
     
   \begin{itemize}[<+(1)->]
-  \item Stop splitting once e.g. resulting nodes would be too small
-  \item Assign average outcome in each terminal node as predicted outcome 
+  \item Stop splitting once e.g. resulting nodes too small
+  \item Average outcome in each terminal node predicted outcome 
   \end{itemize}
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}[c]{Regression trees (CART): tree pruning}
   \begin{itemize}[<+->]
-    \item Tree growing algorithm usually produces a bushy/deep tree $T_{0}$ that overfits
-    \item So use cost-complexity pruning: goal to find subtrees $T \subset T_{0}$ which minimize
+    \item Bushy/deep tree $T_{0}$ that overfits
+    \item Cost-complexity pruning: find subtrees $T \subset T_{0}$ that minimize
     \begin{equation*}
         C_{\alpha}(T) = \sum_{m = 1}^{\abs{T}} \sum_{x_{i} \in \text{node}_{m}} (y_{i} - \bar{y}_{m})^2 + \alpha \abs{T}
     \end{equation*}
@@ -412,16 +461,21 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 %--- Next Frame ---%
 
 \begin{frame}[c]{Regression trees (CART): tree pruning}
-  To find $T_{\alpha}$, use weakest link pruning
-      \begin{enumerate}[<+->]
+  Find $T_{\alpha}$ using weakest link pruning
+      \begin{enumerate}[<+(1)->]
         \item Try collapsing each internal node in turn
-        \item actually collapse weakest link (node that if collapsed produces smallest increase in $SSE$), save tree
-        \item repeat until you're at root node 
-          \pause
-          
-          in results: sequence of $T_{\alpha}$s  
-        \item choose best $\alpha$/$T_{\alpha}$ from sequence using resampling technique (e.g. 10-fold cross validation)
+        \item Actually collapse weakest link \\*
+        (collapsing node $\rightarrow$ smallest increase in $SSE$) \\*
+         save tree
+        \item Repeat to root node 
       \end{enumerate}
+      
+      \begin{itemize}[<+(1)->]
+        \item In saved trees: sequence of $T_{\alpha}$s (best trees of given size)
+        \item Choose final tree from $T_{\alpha}$s using resampling technique
+      \end{itemize}
+      
+
 \end{frame}
 %--- Next Frame ---%
 
@@ -463,10 +517,10 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 \subsection{MARS} % (fold)
 \label{ssub:mars}
 
-\begin{frame}{Multivariate Adaptive Regression Splintes}
+\begin{frame}{Multivariate Adaptive Regression Splines}
   \begin{itemize}[<+->]
     \item Generalization of stepwise linear regression methods that incorporates modelling interactions
-    \item achieved by modelling covariates as piecewise linear basis functions and their products:
+    \item Model covariates as piecewise linear basis functions:
   %
   \begin{equation*} \label{eq:bases}
     (x - t)_{+} \text{ and } (t - x)_{+}
@@ -478,9 +532,64 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
     0, & \text{otherwise}
     \end{cases}
   \end{equation*}
-  
-  \item Each half of the pair is called a \emph{hinge function}, or linear spline
-  \item $t$ is a \emph{knot}
+  \end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Multivariate Adaptive Regression Splintes}
+  \begin{itemize}
+    \item Generalization of stepwise linear regression methods that incorporates modelling interactions
+    \item Model covariates as piecewise linear basis functions:
+  %
+  \begin{equation*} \label{eq:bases}
+    \underbrace{(x - t)_{+}}_\text{hinge function} \text{ and } \underbrace{(t - x)_{+}}_\text{hinge function}
+  \end{equation*} where
+  %
+  \begin{equation*}
+    (Z)_{+} = \max(Z, 0) = \begin{cases}
+    Z, & \text{if } Z > 0 \\
+    0, & \text{otherwise}
+    \end{cases}
+  \end{equation*}
+  \end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}{Multivariate Adaptive Regression Splintes}
+  \begin{itemize}
+    \item Generalization of stepwise linear regression methods that incorporates modelling interactions
+    \item Model covariates as piecewise linear basis functions:
+  %
+  \begin{equation*} \label{eq:bases}
+    \underbrace{(x - t)_{+}}_\text{linear spline} \text{ and } \underbrace{(t - x)_{+}}_\text{linear spline}
+  \end{equation*} where
+  %
+  \begin{equation*}
+    (Z)_{+} = \max(Z, 0) = \begin{cases}
+    Z, & \text{if } Z > 0 \\
+    0, & \text{otherwise}
+    \end{cases}
+  \end{equation*}
+  \end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+
+\begin{frame}{Multivariate Adaptive Regression Splintes}
+  \begin{itemize}
+    \item Generalization of stepwise linear regression methods that incorporates modelling interactions
+    \item Model covariates as piecewise linear basis functions:
+  %
+  \begin{equation*} \label{eq:bases}
+    (x - \overbrace{t}^\text{knot})_{+} \text{ and } (\overbrace{t}^\text{knot} - x)_{+}
+  \end{equation*} where
+  %
+  \begin{equation*}
+    (Z)_{+} = \max(Z, 0) = \begin{cases}
+    Z, & \text{if } Z > 0 \\
+    0, & \text{otherwise}
+    \end{cases}
+  \end{equation*}
   \end{itemize}
 \end{frame}
 %--- Next Frame ---%
@@ -488,7 +597,7 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 \begin{frame}{MARS: Model building (forward pass)}
   
   \begin{itemize}[<+->]
-    \item Like in forward selection, start with a constant:
+    \item As in forward selection, start with constant
     \begin{equation*}
       f(X) = \beta_{0}
     \end{equation*}
@@ -496,11 +605,11 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
   \begin{equation*}
   \beta_{1} (X_{j} - x_{ij})_{+} + \beta_{2}(x_{ij} - X_{j})_{+}, \ i = 1, 2, \ldots, n; \ j = 1, 2, \ldots, p.
   \end{equation*}
-   made by splitting some covariate $X_{j}$ at one of the observed values of $X_{j}$, $x_{ij}$
+   For each covariate $X_{j}$ split at an observed value, $x_{ij}$
   \begin{enumerate}
     \item Try adding each possible pair to the model
-    \item calculate the $SSE$
-    \item add the pair that minimizes $SSE$
+    \item Calculate the $SSE$
+    \item Add pair that minimizes $SSE$
   \end{enumerate}
   \end{itemize}
 
@@ -513,12 +622,12 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
   \begin{equation*} \label{eq:gen-pairs-add}
     \beta_{M + 1} h_{\ell}(X) \cdot (X_{j} - x_{ij})_{+} + \beta_{M + 2} h_{\ell}(X) \cdot (x_{ij} - X_{j})_{+}
   \end{equation*}
-  $h_{\ell}(X)$ is a hinge function (or product of hinge functions) already in the model\footnote{Also holds for the first step where $h_{\ell}(X) = h_{0}(X) = 1$}
-  \item As before, add pair that minimizes $SSE$
+  $h_{\ell}(X) = $ hinge function (or product of hinge functions) already in model\footnote{Also holds for the first step where $h_{\ell}(X) = h_{0}(X) = 1$}
+  \item Add pair that minimizes $SSE$
   \item Repeat until 
   \begin{itemize}
-    \item change in $SSE$ too small and/or
-    \item upper limit on number of terms in model reached
+    \item Change in $SSE$ too small and/or
+    \item Too many terms in model
   \end{itemize}
   \end{itemize}
 \end{frame}
@@ -526,21 +635,22 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 
 \begin{frame}{MARS: Backward pass}
   \begin{itemize}[<+->]
-    \item Resulting model usually overfits
-    \item So like in backward selection, remove terms from model one by one:
+    \item Model usually overfits
+    \item As in backward selection, remove terms from model one by one:
     \begin{enumerate}
-      \item Estimate how much $SSE$ would increase by removing each term in turn
+      \item Record $SSE$ increase by removing each term in turn
       \item Remove term that increases $SSE$ the least
       \item Repeat until no terms left
     \end{enumerate}
-    \item At each stage, we obtain $\hat{f}_{\lambda}(X)$, best model with $\lambda$ terms
+    \item Result of each stage: $\hat{f}_{\lambda}(X)$, best model with $\lambda$ terms
   \end{itemize}
 
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}{MARS: Backward pass}
-Pick $\lambda$ (and hence final model) using generalized cross validation (GCV) 
+Pick final model ($\lambda$) using generalized cross validation (GCV) 
+    \pause
     \begin{equation*}
     GCV(\lambda) =
       \frac{
@@ -549,28 +659,29 @@ Pick $\lambda$ (and hence final model) using generalized cross validation (GCV)
         (1 - M(\lambda)/N)^2
       }
   \end{equation*}
-  $M(\lambda) = \lambda + 3K$ (number of terms plus three times the number of knots)
-  \begin{itemize}
-    \item<+-> can be set to $\lambda + 2K$ when degree = 1 (restricted to be additive)
-  \end{itemize}
-
+  %
+  \begin{align*}
+    M(\lambda) &= \lambda + 3(\text{\# knots}) \\
+     &=\lambda + 2(\text{\# knots}) \quad \text{when restricted to additive}
+  \end{align*}
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}{MARS: Relationship to CART}
-  
-  MARS can also be viewed as a modification of CART to improve performance in the regression setting.
-  
-  MARS forward pass is equivalent to CART tree growing algorithm if we:
-  \begin{enumerate}
-    \item Change hinge functions to step functions:
-    \begin{equation*}
-      I(x - t > 0) \text{ and } I(t - x > 0)
-    \end{equation*}
-    \item Replace terms already in the model involved in a new interaction term by the new interaction term (making original term unavailable for future interactions)
-  \end{enumerate}
-\end{frame}
-%--- Next Frame ---%
+% \begin{frame}{MARS: Relationship to CART}
+%   \begin{itemize}[<+->]
+%     \item MARS: modification of CART to improve regression performance
+%     \item MARS forward pass $\equiv$ CART tree growing if:
+%     \begin{enumerate}[<+->]
+%       \item Change hinge functions to step functions:
+%       \begin{equation*}
+%         I(x - t > 0) \text{ and } I(t - x > 0)
+%       \end{equation*}
+%       \item Replace term in model involved in new interaction by new interaction \\*
+%       (original term unavailable for future interactions)
+%     \end{enumerate}
+%   \end{itemize}
+% \end{frame}
+% %--- Next Frame ---%
 
 
 \begin{frame}[t]{MARS: example}
@@ -596,43 +707,47 @@ Pick $\lambda$ (and hence final model) using generalized cross validation (GCV)
 
 \begin{frame}{Bagging}
   
-  \begin{itemize}
-    \item Single trees tend to have quite high variance (small changes in the data can produce very different trees)
-    \item When grown sufficiently deep or bushy, they can have relatively low bias 
+  \begin{itemize}[<+->]
+    \item Single trees: high variance \\* 
+    (small changes in data $\rightarrow$ very different trees)
+    \item When trees deep/bushy $\rightarrow$ relatively low bias 
   \end{itemize}
-  
-  Bootstrap aggregating (\emph{bagging}) is a general technique that is useful whenever a modelling technique has high variance and low bias.
-  
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}{Bagging}
   
   \begin{itemize}[<+->]
-    \item Consider iid random variables, $X_{1}, X_{2}, \ldots, X_{n}$, each with variance $\sigma^2$ and sample mean $\bar{X}$.
+    \item Consider iid random variables, $X_{1}, X_{2}, \ldots, X_{n}$, each with variance $\sigma^2$ and sample mean $\bar{X}$:
   \begin{equation*}
     \operatorname{Var}[\bar{X}] = \frac{\sigma^2}{n}
   \end{equation*}
-  \item Thus, can improve tree performance by building trees on many different samples then averaging results
-  \item But we don't have many different samples (only have one), so
-  \begin{enumerate}
-    \item take $B$ bootstrap samples of sample
-    \item fit a model to each sample (grow a tree, don't prune)
-    \item average the resulted predictions 
-  \end{enumerate}
+  \item Improve tree performance by building trees on many different samples then averaging results!
+  \item Problem: only have one sample
   \end{itemize}
-  
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Bagging}
+  Do bootstrap aggregating (\emph{bagging}):
+  \begin{enumerate}[<+->]
+    \item Take $B$ bootstrap resamples of sample
+    \item Fit model to each resample (grow a tree, don't prune)
+    \item Average the resulting predictions
+    \item Make profit 
+  \end{enumerate}
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}{Random forest}
-  
+  Problem: trees are correlated: can't reduce variance $B$ fold
   \begin{itemize}[<+->]
-    \item Can't in practice achieve a $B$ fold decrease in the variance from a single tree because trees are correlated
-    \item \textcite{rf}: decrease correlation by considering a random subset of $m_{try} \subset p$ predictors for splitting at each split
-    \item Choose $m_{try}$ using resampling techniques (e.g. cross validation)
-    \item Requires more resamples than bagging (due to introduced randomness)
-    \item Performance much better than single tree, but also much less interpretable 
+    \item \textcite{rf}: decrease correlation by 
+    \begin{itemize}
+      \item only consider random $m_{try} \subset p$ predictors for splitting at each split
+    \end{itemize}
+    \item Choose $m_{try}$ using resampling techniques
+    \item Performance much better than single tree, \\* but also much less interpretable
   \end{itemize}
 \end{frame}
 %--- Next Frame ---%
@@ -656,21 +771,31 @@ Pick $\lambda$ (and hence final model) using generalized cross validation (GCV)
 \label{sec:simulation}
 
 \begin{frame}[c]{Setup}
-  Generated three random doses for 1000 patients each dose between none and maximum tolerable:
+  \begin{itemize}[<+->]
+    \item 1000 patients
+    
+  \item Initial toxicity, $W_{0} \equiv$ -wellness $\equiv$ -quality of life
+  \begin{equation*}
+    W_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
+  \end{equation*}
+  
+  \item Initial tumor mass, $M_{0}$
+  \begin{align*}
+    M_{0} &\overset{iid}{\sim} \text{Unif}(0, 2)
+  \end{align*}
+  
+  \item Treatment: three random doses, one each month
   \begin{align*}
     D_{t} &\overset{iid}{\sim} \text{Unif}(0, 1), \quad t = 0, 1, 2
   \end{align*}
-  Each patient starts with random initial values of toxicity ($W$)\footnote{For simplicity, I take wellness and quality of life to be equivalent and exactly the opposite of toxicity} and tumor mass ($M$) over $(0,2)$
-  \begin{align*}
-    W_{0} &\overset{iid}{\sim} \text{Unif}(0, 2) \\
-    M_{0} &\overset{iid}{\sim} \text{Unif}(0, 2)
-  \end{align*}
+  ($D = 0$: none; $D = 1$: maximum tolerable)
+  \end{itemize}
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}[c]{Patient model: transition functions}
-  
-  Toxicity:
+  \begin{itemize}[<+->]
+    \item Toxicity:
   \begin{equation*}
   W^{*}_{t} = 0.1 M_{t-1} + 1.2 (D_{t-1} - 0.5) + W_{t - 1}
   \end{equation*}
@@ -681,7 +806,7 @@ Pick $\lambda$ (and hence final model) using generalized cross validation (GCV)
   \end{cases}
   \end{equation*}
   
-  Tumor mass:
+  \item Tumor mass:
   \begin{equation*}
   M^{*}_{t} = [0.15 W_{t-1} - 1.2 (D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
   \end{equation*}
@@ -691,28 +816,41 @@ Pick $\lambda$ (and hence final model) using generalized cross validation (GCV)
     0 &\text{if } M^{*}_{t} \leq 0
   \end{cases}
   \end{equation*}
-  
+  \end{itemize}
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}[c]{Patient model: survival}
   \begin{align*}
-    S^{*}_{it} &\sim \operatorname{exponential}(\beta_{it}(M_{it + 1}, W_{it + 1})) \\[1em]
-    \beta_{it}(M_{it+1}, W_{it+1}) &= \exp(5.5 - W_{it+1} - 1.2 M_{it+1} - 0.75 W_{it+1} M_{it+1}) \\[1em]
-    S_{it} &= \begin{cases}
+    \onslide<1->{S^{*}_{it} &\sim \operatorname{exponential}(\beta_{it}(M_{it + 1}, W_{it + 1})) \\[1em]}
+    \onslide<2->{\beta_{it}(M_{it+1}, W_{it+1}) &= \exp(5.5 - W_{it+1} - 1.2 M_{it+1} - 0.75 W_{it+1} M_{it+1}) \\[1em]}
+   \onslide<3->{S_{it} &= \begin{cases}
       S^{*}_{it} + \sum_{j = 0}^{t} j & \text{if } S_{it} \leq 1 \text{ or } t = 2 \\
       \text{undefined} & \text{otherwise}
-    \end{cases} \\[1em]
-    R_{it + 1} &=\begin{cases}
+    \end{cases} \\[1em]}
+   \onslide<4>{R_{it + 1} &=\begin{cases}
           \log(S_{it}) & \text{if } S_{it} \leq 1 \text{ or } t = 2 \\
           0 & \text{otherwise\footnotemark}
-        \end{cases}
+        \end{cases}}
   \end{align*}  
-  \footnotetext{log of the survival time taken as continuous reward (and hence outcome), not as a censored time-to-event outcome}
+  \only<4>{\footnotetext{log survival: continuous reward/outcome, not censored time-to-event}}
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}[c]{Example}
+\begin{frame}[c]{Graphs}
+  \href{https://www.desmos.com/calculator/bhofs34c6k}{graphs}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Why these functions?}
+  \centering
+  \includegraphics[width=0.45\textwidth]{figure/cells}
+  \bigskip
+  \blfootnote{\url{https://xkcd.com/1217/}}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Example patient profile}
   \includegraphics[width=\textwidth]{figure/ind-plot-1} 
 \end{frame}
 %--- Next Frame ---%
@@ -723,82 +861,79 @@ Pick $\lambda$ (and hence final model) using generalized cross validation (GCV)
     X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1)
   \end{equation*}
   
-  $X_{1} < 0.5 \ \& \ X_{2} < 0.5$: same as before
-  
-  
-  $X_{1} > 0.5 \ \& \ X_{2} < 0.5$: 50\% more sensitive to drug effects:
+  \begin{itemize}[<+->]
+    \item[] $X_{1} < 0.5 \ \& \ X_{2} < 0.5$: same as before
+    \item[] $X_{1} > 0.5 \ \& \ X_{2} < 0.5$: 50\% more sensitive to drug effects:
   \begin{equation*}
-  W^{*}_{t} = W'_{t} = 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1}
+  W^{*}_{t} = W'_{t} = 0.1 M_{t-1} + 1.2 (\mathbf{1.5} D_{t-1} - 0.5) + W_{t - 1}
   \end{equation*}
-  %
-  $X_{1} < 0.5 \ \& \ X_{2} > 0.5$: drug 50\% more effective:
+  \item[] $X_{1} < 0.5 \ \& \ X_{2} > 0.5$: drug 50\% more effective:
   \begin{equation*}
-  M^{*}_{t} =  M'_{t} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+  M^{*}_{t} =  M'_{t} = [0.15 W_{t-1} - 1.2 (\mathbf{1.5} D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
   \end{equation*}
-  % 
-  $X_{1} > 0.5 \ \& \ X_{2} > 0.5$: 50\% more effective and 50\% more sensitive:
+  \item[]   $X_{1} > 0.5 \ \& \ X_{2} > 0.5$: 50\% more effective and 50\% more sensitive:
   \begin{align*}
-  W^{*}_{t} = W'_{t} &= 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1} \\
-  M^{*}_{t} = M'_{t} &= [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+  W^{*}_{t} = W'_{t} &= 0.1 M_{t-1} + 1.2 (\mathbf{1.5} D_{t-1} - 0.5) + W_{t - 1} \\
+  M^{*}_{t} = M'_{t} &= [0.15 W_{t-1} - 1.2 (\mathbf{1.5} D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
   \end{align*}
+  \end{itemize}
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}[c]{Noise scenarios}
-  
-  Noise (N) scenario: 100 additional baseline covariates with no effect:
+  \begin{itemize}
+    \item Noise (N) scenario: 100 more baseline covariates with no effect:
   \begin{align*}
     Z_{1}, \ldots, Z_{5} &\overset{iid}{\sim} N(1, 1) \\
     Z_{6}, \ldots, Z_{10} &\overset{iid}{\sim} N(-1, 1) \\
     V_{1}, \ldots, V_{90} &\overset{iid}{\sim} N(0, 1)
   \end{align*}
-  
-  Predictive noise (PN) scenario: same 100 baseline covariates, but
+  \item Predictive noise (PN) scenario: same as N but
   %
   \begin{align*}
     \beta'_{it}&(M_{it+1}, W_{it+1}) = \\
     &\exp\del{5.5 + W_{it+1} + 1.2 M_{it+1} + 0.75 W_{it+1} M_{it+1} + 0.05 \sum_{j = 1}^{10} Z_{ij}}
   \end{align*}
+  \end{itemize}
 \end{frame}
 %--- Next Frame ---%
 
 \begin{frame}[c]{Interaction + noise scenarios}
-  Interaction + noise scenario (I+N):
   
-  four subgroups as in interaction scenario plus the 100 noise variables from noise scenario
-  
-  \bigskip
-  
-  Interaction + predictive noise scenario (I+PN):
-  
-  four subgroups as in interaction scenario plus the 100 noise variables from noise scenario, but $Z$ variables shift expected survival up or down
+  \begin{itemize}[<+->]
+    \item Interaction + noise scenario (I+N)
+    \item Interaction + predictive noise scenario (I+PN)
+    \item These are exactly what you think they are
+  \end{itemize}
 \end{frame}
 %--- Next Frame ---%
 
 % section simulation (end)
 
 \begin{frame}[c]{Training procedure}
-  
-  Q-learning applied using:
-  \begin{itemize}
-    \item CART: trees that minimized 10 fold cross validation error\footnote{\label{tree} Splits creating terminal nodes with $\leq$ 5 observations not considered}
-    \item MARS: restricted to second degree interactions with $D$ only
-    \item Random forest: bagging turned out to be best under each scenario\textsuperscript{\ref{tree}}
+  \begin{itemize}[<+->]
+    \item Q-learning applied using:
+    \begin{itemize}
+      \item<.-> CART: pruned to $T_{\alpha}$ minimized 10 fold cross validation error \footnote{\label{tree} No terminal nodes with $\leq$ 5 observations allowed}
+      \item MARS: restricted to second degree interactions with $D$ only
+      \item Random forest: bagging best under each scenario\textsuperscript{\ref{tree}}
+    \end{itemize}
+    \item Fitted models saved for estimating optimal treatments for validation set
+    \item Repeated 100 times with different simulated patients
   \end{itemize}
-  
-  Fitted models for each stage under each scenario saved for estimating optimal treatments for patients in the validation set
-  
-  Repeated 100 times with different simulated patients
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}[t]{Validation procedure}
-  
-  2000 new patients simulated identically to those in each scenario, copies of the 2000 underwent:
+\begin{frame}[c]{Validation procedure}
+  For each scenario,
   \begin{itemize}[<+(1)->]
-    \item 10 constant dose regimes: doses of $0.1, 0.2, \ldots,$ or 1 given at each stage
-    \item Best: dose sequence out of all possible sequences with $D_{t} \in \{0, 0.01, 0.02, \ldots, 1\}$ that maximizes expected survival given complete knowledge of the transition functions and their influence on survival, as long as $S_{it} \leq 1$, $t = 0, 1 \enspace \forall i$.
-    \item CART, MARS, RF: Doses from $\{0, 0.01, 0.02, \ldots, 1\}$, corresponding to the maximum predicted rewards for each of the 100 models for each stage
+    \item 2000 new patients, copies (same $M_{0}$, $W_{0}$) for each of:
+  \begin{itemize}[<+(1)->]
+    \item 10 constant dose regimes: doses of $0.1, 0.2, \ldots,$ or 1
+    % \item Best: sequence with $D_{t} \in \{0, 0.01, 0.02, \ldots, 1\}$ that maximizes survival given complete knowledge, as long as $S^{*}_{it} \leq 1$, $t = 0, 1 \enspace \forall i$.
+        \item Best: sequence that maximizes survival given complete knowledge of simulation.
+    \item CART, MARS, RF: doses corresponding to the maximum predicted rewards \\* (for each of the 100 models for each stage)
+  \end{itemize}
   \end{itemize}
 \end{frame}
 %--- Next Frame ---%
@@ -839,8 +974,14 @@ Pick $\lambda$ (and hence final model) using generalized cross validation (GCV)
     \begin{itemize}
       \item Predictive accuracy was splitting and pruning criterion: dose and interacting variables (less important in overall survival) often pruned off 
     \end{itemize}
-    \item MARS gives comparable performance to random forest, but has higher variance in both performance on test set and variable importances 
-    \item As implemented subgroup identification is difficult, likely need to modify techniques to split upon magnitude of (qualitative) interaction with treatment 
+    \item MARS gives comparable performance to random forest
+    \begin{itemize}
+      \item but higher variance in performance and variable importances
+    \end{itemize} 
+    \item As implemented subgroup identification is difficult
+    \begin{itemize} 
+      \item likely need to modify to use magnitude of (qualitative) interaction with treatment
+    \end{itemize}  
   \end{itemize}
 \end{frame}
 %--- Next Frame ---%
