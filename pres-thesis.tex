@@ -1,6 +1,6 @@
 \RequirePackage[l2tabu, orthodox]{nag}
-\documentclass[handout]{beamer}
-% \documentclass{beamer}
+% \documentclass[handout]{beamer}
+\documentclass{beamer}
 \usetheme{metropolis}
 \usepackage{appendixnumberbeamer}
 
@@ -22,6 +22,7 @@
 }
 
 \setlength{\leftmargini}{12pt}
+\usetikzlibrary{arrows, shapes, positioning}
 
 \usepackage{xspace}
 \usepackage{commath}
@@ -200,6 +201,81 @@ The agent:
 \subsection{Q-learning} % (fold)
 \label{sub:q_learning}
 
+\begin{frame}{Q-learning: my simulation}
+\resizebox{1.1\textwidth}{!}{
+     \begin{tikzpicture}[->, >=stealth', auto, node distance=1.5cm, minimum size=1pt,
+    pt node/.style={rounded corners, draw},
+    pt node img/.style={rounded corners, dashed, draw},
+    dose node/.style={circle, draw},
+    surv node/.style={diamond, draw},
+    r node/.style={star, draw}]
+
+    \node[pt node]    (M0) {$M_{0}$, $W_{0}$};
+    \node[dose node]  (D0) [above of = M0] {$D_{0}$};
+    \path (D0) edge (M0);
+    
+    \pause
+    
+    \node[pt node]    (M1) [right of = M0, xshift = 1cm] {$M_{1}$, $W_{1}$};
+    
+    \node[r node]     (R1) [below of = M1, inner sep = -4pt, yshift = -0.5cm] {$R_{1} = 0$};
+    \path (M0) edge (M1) (M1) edge (R1);
+
+    \pause
+    
+    \node[dose node]  (D1) [above of = M1] {$D_{1}$};
+    \path (D1) edge (M1);
+    
+    \pause
+    
+    \node[pt node] (M2) [right of = M1, xshift = 1cm] {$M_{2}$, $W_{2}$};
+    \path (M1) edge (M2);
+    \node[r node]     (R2) [below of = M2, inner sep = -4pt, yshift = -0.5cm] {$R_{2} = 0$};
+    \path (M2) edge (R2);
+    
+    \pause
+    
+    \node[dose node]  (D2) [above of = M2] {$D_{2}$};
+    \path (D2) edge (M2);
+    
+    \pause
+    
+    \node[surv node]  (S3) [right of = M2, xshift = 0.8cm] {$S_{3}$};
+    \node[r node]     (R3) [right of = S3] {$R_{3}$};
+    \path (M2) edge (S3) (S3) edge (R3);
+    
+    \pause
+    \draw [->, dashed] (R3) edge (Q3);
+    \node (Q3) [below right of = R3] {$\hat{R}_{3} = R_{3}$};
+    % (M2) edge [bend right = 30] (Q3)
+    
+    \pause
+    
+    \draw [->, dashed] (Q3) edge [bend right = 30] node {$\hat{Q}_{3} = \operatorname{E}[\hat{R}_{3}|D_{2}, M_{2},W_{2}]$} (Q2);
+
+    \pause
+    
+    \node (Q2) [below right of = R2, xshift = 1cm, yshift = -0.5cm] {$\hat{R}_{2} = R_{2} +  \max_{D_{2}} \hat{Q}_{3}$};
+    \draw [->, dashed] (R2) edge (Q2);
+    
+    \pause
+    
+    \draw [->, dashed] (Q2) edge [bend left = 30] node {$\hat{Q}_{2} = \operatorname{E}[\hat{R}_{2}|D_{1}, M_{1},W_{1}]$} (Q1);
+
+    \pause
+   
+    \node (Q1) [below right of = R1, yshift = -1cm, xshift = -1cm] {$\hat{R}_{1} = R_{1} +  \max_{D_{2}} \hat{Q}_{1}$};
+    \draw [->, dashed] (R1) edge (Q1);
+    
+    \pause
+    
+    \node (Q0) [below of = M0, yshift = -3.5cm, xshift =1cm] {$\hat{Q}_{1} = \operatorname{E}[\hat{R}_{1}|D_{0}, M_{0},W_{0}]$};
+    
+    \draw [->, dashed] (Q1) edge (Q0);
+
+  \end{tikzpicture}
+  }
+\end{frame}
 
 
 \begin{frame}{Q-learning: setup}
