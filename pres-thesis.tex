@@ -53,7 +53,7 @@
 
 \begin{frame}[c]{Personalized medicine}
 
-Patients often have different responses to treatment
+Patients often respond differently to treatment
 \begin{itemize}[<+(1)->]
   \item Adverse drug reactions alone are significant burden 
   \begin{itemize}
@@ -143,19 +143,21 @@ Goal: find sequence of doses of a single treatment that maximize survival time i
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}[c]{Reinforcement learning: basic process}
-\begin{columns}%[<options>]
-  \begin{column}{0.54\textwidth}
-        \centering
+\begin{frame}[fragile]{Reinforcement learning: basic process}
+\begin{columns}
+  \begin{column}{0.6\textwidth}
+  \begin{figure}[H]
+    \centering 
     \includegraphics[width=\textwidth]{figure/rl-process} \\*
-        \vspace{-6pt}
-        \hrulefill \\*
-        \vspace{-6pt}
-        {\scriptsize Image by \href{http://www0.cs.ucl.ac.uk/staff/D.Silver/web/Teaching.html}{David Silver}}
+  \end{figure}
+  \vspace{-0.6cm}
+  \rule{5cm}{0.2pt} \\*
+  \vspace{-6pt}
+  {\footnotesize \quad Image by \href{http://www0.cs.ucl.ac.uk/staff/D.Silver/web/Teaching.html}{David Silver}}
   \end{column}
   \begin{column}{0.5\textwidth}
     Agent:
-    \begin{enumerate}[<+->]
+    \begin{enumerate}
       \item Presented with states $O_{t}$
       \item Tries action $A_{t}$
       \item Gets reward $R_{t}$
@@ -184,46 +186,19 @@ Goal: find sequence of doses of a single treatment that maximize survival time i
 % %--- Next Frame ---%
 
 
-\begin{frame}[t]{Reinforcement learning: basic process}
-
-\end{frame}
-%--- Next Frame ---%
-
-\begin{frame}[c]{Reinforcement learning: relationship to other areas of machine learning}
-\begin{itemize}[<+->]
-  \item Supervised learning
-  \begin{itemize}
-    \item Agent given correct example actions to take
-    \item Goal: agent extrapolates correct behavior to new situations
-  \end{itemize}
-  \item Unsupervised learning
-  \begin{itemize}
-    \item Agent given example actions where correct action unknown
-    \item Goal: agent finds hidden structure
-  \end{itemize} 
-  \item Reinforcement learning
-\begin{itemize}
-  \item No correct example actions required
-  \item Goal: maximize rewards, not find hidden structure
-  \item Feedback delayed 
-  \item Problems closed loop: actions taken now affect available actions and rewards later
-\end{itemize} 
-\end{itemize}
-\end{frame}
-%--- Next Frame ---%
 
 
-\begin{frame}[c]{Reinforcement learning: connection to personalized medicine}
-  
-  \begin{itemize}[<+->]
-      \item States: patient histories and characteristics
-      \item Actions: possible treatment options
-      \item Rewards: goal dependent (e.g. kg weight lost in weight loss study)
-      \item Policy: \emph{dynamic treatment regime} 
-  \end{itemize}
-
-\end{frame}
-%--- Next Frame ---%
+% \begin{frame}[c]{Reinforcement learning: connection to personalized medicine}
+%
+%   \begin{itemize}[<+->]
+%       \item States: patient histories and characteristics
+%       \item Actions: possible treatment options
+%       \item Rewards: goal dependent (e.g. kg weight lost in weight loss study)
+%       \item Policy: \emph{dynamic treatment regime}
+%   \end{itemize}
+%
+% \end{frame}
+% %--- Next Frame ---%
 
 \subsection{Q-learning} % (fold)
 \label{sub:q_learning}
@@ -231,9 +206,9 @@ Goal: find sequence of doses of a single treatment that maximize survival time i
 \begin{frame}{Q-learning: setup (\cite{dtr-review})}
   Patients recruited into a trial,
   \begin{enumerate}[<+(1)->]
-    \item Covariates measured $\rightarrow O_{0}$ \\*
+    \item Covariates (states) measured $\rightarrow O_{0}$ \\*
     Patient history stage 0: $H_{0} \doteq O_{0}$
-    \item Treatment $A_{0}$ randomly assigned
+    \item Treatment (action) $A_{0}$ randomly assigned
     \item Covariates measured $\rightarrow O_{1}$ \\*
     Reward $R_{1}$ received \\*
     Patient history stage 1: $H_{1} \doteq (O_{0}, A_{0}, O_{1})$
@@ -243,7 +218,7 @@ Goal: find sequence of doses of a single treatment that maximize survival time i
     $H_{2} \doteq (H_{1}, A_{1}, O_{2})$
   \end{enumerate}
     \pause
-    process repeated over $K$ stages
+    Process repeated over $K$ stages
 \end{frame}
 %--- Next Frame ---%
 
@@ -256,7 +231,10 @@ Goal: find sequence of doses of a single treatment that maximize survival time i
     surv node/.style={diamond, draw},
     r node/.style={star, draw}]
 
-    \node[pt node]    (M0) {$M_{0}$, $W_{0}$};
+    \node[pt node] (M0) {$M_{0}$, $W_{0}$};
+    
+    -\pause
+    
     \node[dose node]  (D0) [above of = M0] {$D_{0}$};
     \path (D0) edge (M0);
     
@@ -658,31 +636,13 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
       \item Repeat until no terms left
     \end{enumerate}
     \item Result of each stage: $\hat{f}_{\lambda}(X)$, best model with $\lambda$ terms
+    \item Pick final model ($\lambda$) using generalized cross validation 
   \end{itemize}
 
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}{MARS: Backward pass}
-Pick final model ($\lambda$) using generalized cross validation (GCV) 
-    
-    \pause
-    
-    \begin{equation*}
-    GCV(\lambda) =
-      \frac{
-        \sum_{i = 1}^{N}(y_{i} - \hat{f}_{\lambda}(x_{i}))^2
-      }{
-        (1 - M(\lambda)/N)^2
-      }
-  \end{equation*}
-  %
-  \begin{align*}
-    M(\lambda) &= \lambda + 3(\text{\# knots}) \\
-     &=\lambda + 2(\text{\# knots}) \quad \text{when restricted to additive}
-  \end{align*}
-\end{frame}
-%--- Next Frame ---%
+
 
 % \begin{frame}{MARS: Relationship to CART}
 %   \begin{itemize}[<+->]
@@ -733,7 +693,6 @@ Pick final model ($\lambda$) using generalized cross validation (GCV)
 %--- Next Frame ---%
 
 \begin{frame}{Bagging}
-  
   \begin{itemize}[<+->]
     \item Consider iid random variables, $X_{1}, X_{2}, \ldots, X_{n}$, each with variance $\sigma^2$ and sample mean $\bar{X}$:
   \begin{equation*}
@@ -751,7 +710,7 @@ Pick final model ($\lambda$) using generalized cross validation (GCV)
     \item Take $B$ bootstrap resamples of sample
     \item Fit model to each resample (grow a tree, don't prune)
     \item Average the resulting predictions
-    \item Make profit 
+    \item Call home and talk mom through how to log into her email for the third time
   \end{enumerate}
 \end{frame}
 %--- Next Frame ---%
@@ -842,7 +801,7 @@ Pick final model ($\lambda$) using generalized cross validation (GCV)
     \onslide<1->{S^{*}_{it} &\sim \operatorname{exponential}(\beta_{it}(M_{it + 1}, W_{it + 1})) \\[1em]}
     \onslide<2->{\beta_{it}(M_{it+1}, W_{it+1}) &= \exp(5.5 - W_{it+1} - 1.2 M_{it+1} - 0.75 W_{it+1} M_{it+1}) \\[1em]}
    \onslide<3->{S_{it} &= \begin{cases}
-      S^{*}_{it} + \sum_{j = 0}^{t} j & \text{if } S_{it} \leq 1 \text{ or } t = 2 \\
+      S^{*}_{it} + \sum_{j = 0}^{t} j & \text{if } S^{*}_{it} \leq 1 \text{ or } t = 2 \\
       \text{undefined} & \text{otherwise}
     \end{cases} \\[1em]}
    \onslide<4>{R_{it + 1} &=\begin{cases}
@@ -851,11 +810,6 @@ Pick final model ($\lambda$) using generalized cross validation (GCV)
         \end{cases}}
   \end{align*}  
   \only<4>{\footnotetext{log survival: continuous reward/outcome, not censored time-to-event}}
-\end{frame}
-%--- Next Frame ---%
-
-\begin{frame}[c]{Graphs}
-  \href{https://www.desmos.com/calculator/bhofs34c6k}{graphs}
 \end{frame}
 %--- Next Frame ---%
 
@@ -898,7 +852,7 @@ Pick final model ($\lambda$) using generalized cross validation (GCV)
 %--- Next Frame ---%
 
 \begin{frame}[c]{Noise scenarios}
-  \begin{itemize}
+  \begin{itemize}[<+->]
     \item Noise (N) scenario: 100 more baseline covariates with no effect:
   \begin{align*}
     Z_{1}, \ldots, Z_{5} &\overset{iid}{\sim} N(1, 1) \\
@@ -944,13 +898,14 @@ Pick final model ($\lambda$) using generalized cross validation (GCV)
 \begin{frame}[c]{Validation procedure}
   For each scenario,
   \begin{itemize}[<+(1)->]
-    \item 2000 new patients, copies (same $M_{0}$, $W_{0}$) for each of:
+    \item The same 2000 new patients (same $M_{0}$, $W_{0}$), underwent each of:
   \begin{itemize}[<+(1)->]
     \item 10 constant dose regimes: doses of $0.1, 0.2, \ldots,$ or 1
-    % \item Best: sequence with $D_{t} \in \{0, 0.01, 0.02, \ldots, 1\}$ that maximizes survival given complete knowledge, as long as $S^{*}_{it} \leq 1$, $t = 0, 1 \enspace \forall i$.
-        \item Best: sequence that maximizes survival given complete knowledge of simulation.
+    %\item Best: sequence with $D_{t} \in \{0, 0.01, 0.02, \ldots, 1\}$ that maximizes survival given complete knowledge, as long as $S^{*}_{it} \leq 1$, $t = 0, 1 \enspace \forall i$.
+        \item Best: sequence (with each $D_{t} \in \{0, 0.01, 0.02, \ldots, 1\}$) that maximizes survival given complete knowledge of simulation.
     \item CART, MARS, RF: doses corresponding to the maximum predicted rewards \\* (for each of the 100 models for each stage)
   \end{itemize}
+  \item Variable importance for each model: change in SSE from removing all splits/terms made with a given variable 
   \end{itemize}
 \end{frame}
 %--- Next Frame ---%
@@ -965,7 +920,7 @@ Pick final model ($\lambda$) using generalized cross validation (GCV)
 \end{frame}
 %--- Next Frame ---%
 
-\begin{frame}[c]{Survival times: scenarios without interaction}
+\begin{frame}[c]{Survival times: scenarios with interaction}
   \centering
   \includegraphics[width=0.98\textwidth]{figure/pres-results-int-1} 
 \end{frame}
@@ -996,10 +951,22 @@ Pick final model ($\lambda$) using generalized cross validation (GCV)
       \item but higher variance in performance and variable importances
     \end{itemize} 
     \item As implemented subgroup identification is difficult
-    \begin{itemize} 
-      \item likely need to modify to use magnitude of (qualitative) interaction with treatment
-    \end{itemize}  
   \end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Future directions}
+  \begin{enumerate}[<+->]
+    \item Modify methods to use magnitude of (qualitative) interaction with treatment
+    
+    \bigskip
+    
+    \item Incorporate censoring
+    
+    \bigskip
+    
+    \item Apply to observational data (e.g. EMR for chronic conditions)
+  \end{enumerate}
 \end{frame}
 %--- Next Frame ---%
 
@@ -1094,6 +1061,54 @@ Pick final model ($\lambda$) using generalized cross validation (GCV)
 \end{frame}
 %--- Next Frame ---%
 
+\begin{frame}{MARS: Backward pass}
+Pick final model ($\lambda$) using generalized cross validation (GCV) 
+    
+    %\pause
+    
+    \begin{equation*}
+    GCV(\lambda) =
+      \frac{
+        \sum_{i = 1}^{N}(y_{i} - \hat{f}_{\lambda}(x_{i}))^2
+      }{
+        (1 - M(\lambda)/N)^2
+      }
+  \end{equation*}
+  %
+  \begin{align*}
+    M(\lambda) &= \lambda + 3(\text{\# knots}) \\
+     &=\lambda + 2(\text{\# knots}) \quad \text{when restricted to additive}
+  \end{align*}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Reinforcement learning: relationship to other areas of machine learning}
+\begin{itemize}%[<+->]
+  \item Supervised learning
+  \begin{itemize}
+    \item Agent given correct example actions to take
+    \item Goal: agent extrapolates correct behavior to new situations
+  \end{itemize}
+  \item Unsupervised learning
+  \begin{itemize}
+    \item Agent given example actions where correct action unknown
+    \item Goal: agent finds hidden structure
+  \end{itemize}
+  \item Reinforcement learning
+\begin{itemize}
+  \item No correct example actions required
+  \item Goal: maximize rewards, not find hidden structure
+  \item Feedback delayed
+  \item Problems closed loop: actions taken now affect available actions and rewards later
+\end{itemize}
+\end{itemize}
+\end{frame}
+%--- Next Frame ---%
+
+\begin{frame}[c]{Graphs}
+  \href{https://www.desmos.com/calculator/bhofs34c6k}{graphs}
+\end{frame}
+%--- Next Frame ---%
 
 
 \begin{frame}[allowframebreaks]{References}
