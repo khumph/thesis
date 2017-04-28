@@ -2,17 +2,13 @@
 \documentclass[12pt]{article}
 \usepackage{geometry}
 
+\usepackage[normalem]{ulem}
+
 % makes table of contents and such hyperlinks
 \usepackage{hyperref}
 
 % nicely formatted tables
 \usepackage{booktabs}
-
-% H to force figures and tables to where they appear in text
-% \usepackage{float}
-
-% bold math symbols (including greek)
-% \usepackage{bm}
 
 % English language/hyphenation
 \usepackage[english]{babel}
@@ -24,20 +20,19 @@
 \usepackage{microtype}
 % \usepackage[subtle]{savetrees}
 
-\setlength\belowcaptionskip{10pt}
-% allows usage of \enquote to quote things
-\usepackage{csquotes}
-
 \usepackage{ctable}
-
+\usepackage{tabu}
 \usepackage{amsmath}
 \usepackage{commath}
 \usepackage[style=authoryear, hyperref = true]{biblatex}
 \addbibresource{library.bib}
 
+% \usepackage{tikz}
+% \usetikzlibrary{arrows, shapes, positioning}
+
 \usepackage[]{algorithm2e}
 \RestyleAlgo{boxruled}
-
+\setlength\belowcaptionskip{12pt}
 \DeclareMathOperator*{\argmax}{argmax}
 
 %--------------------------------------------------------------------------
@@ -52,7 +47,107 @@
 
 \begin{document}
 
-\maketitle
+\begin{titlepage}
+    \begin{center}
+        \vspace*{1cm}
+        
+        \uppercase{Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data}
+        
+        \vfill
+        
+        by
+        
+        \vfill
+        
+        Kyle Humphrey
+        
+        \vfill
+        
+        \underline{\kern 2in}
+        
+        \vfill
+        
+        A thesis submitted to the faculty of the
+
+        \vfill
+        
+        \uppercase{Mel and Enid Zuckerman College of Public Health}
+        
+        \vfill
+        
+        In partial fulfillment of the requirements
+        
+        \bigskip
+        
+        for the degree of
+        
+        \vfill
+        
+        \uppercase{Master of Science}
+        
+        \medskip
+        
+        \uppercase{With a major in Biostatistics}
+        
+        \vfill
+        
+        In the Graduate College 
+        
+        \vfill
+        
+        \uppercase{The University of Arizona}
+        
+        \vfill
+        
+        2017
+        
+    \end{center}
+\end{titlepage}
+
+\begin{center}
+STATEMENT BY AUTHOR
+\end{center}
+
+The thesis titled ``Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data'' prepared by Kyle Humphrey has been submitted in partial fulfillment of requirements for a master’s degree at the University of Arizona and is deposited in the University Library to be made available to borrowers under rules of the Library.  
+
+\medskip
+
+Brief quotations from this thesis are allowable without special permission, provided that an accurate acknowledgement of the source is made. Requests for permission for extended quotation from or reproduction of this manuscript in whole or in part may be granted by the head of the major department or the Dean of the Graduate College when in his or her judgment the proposed use of the material is in the interests of scholarship.  In all other instances, however, permission must be obtained from the author.
+
+\bigskip
+\bigskip
+
+\begin{tabu}{XX[3, c]}
+  & SIGNED: \emph{Kyle Humphrey}
+\end{tabu}
+
+\vfill
+
+{\centering
+  \uppercase{Approval by thesis director}
+  
+  \bigskip
+  
+  This thesis has been approved on the date shown below:
+  
+  \vspace{1cm}
+
+\emph{
+\begin{tabu} to \textwidth {X[1.3, c] X[c]}
+  \underline{\kern 2.5in} & \underline{\quad April 26, 2017 \quad}\\
+  Jin Zhou, Ph.D. &   \emph{Date} \\
+  Assistant Professor of Biostatistics & \\[0.5cm]
+  \underline{\kern 2.5in} & \underline{\quad April 26, 2017 \quad} \\
+  Chengcheng Hu, Ph.D. &   \emph{Date} \\
+  Associate Professor of Biostatistics & \\[0.5cm]
+  \underline{\kern 2.5in} & \underline{\quad April 26, 2017 \quad} \\
+  Chiu-Hsieh Hsu, Ph.D. &   \emph{Date} \\
+  Associate Professor of Biostatistics &
+\end{tabu}
+}
+}
+
+\newpage
 
 \begin{abstract}
 In a simulation of an advanced generic cancer trial, I use Q-learning, a reinforcement learning algorithm, to develop dynamic treatment regimes for a continuous treatment, the dose of a single drug. Selected dynamic treatment regimes are tailored to time-varying patient characteristics and to patient subgroups with differential treatment effects. This approach allows estimation of optimal dynamic treatment regimes without a model of the disease process or a priori hypotheses about subgroup membership. Using observed patient characteristics and outcomes from the simulated trial, I estimate Q-functions based on 1) a single regression tree grown by the Classification And Regression Trees (CART) method, 2) random forests, and 3) a slightly modified version of Multivariate Adaptive Regression Splines (MARS). I then compare the survival times of an independent group of simulated patients under treatment regimes estimated using Q-learning with each of the three methods, 10 constant dose regimes, and the best possible treatment regime chosen using a brute force search over all possible treatment regimes with complete knowledge of disease processes and their effects on survival. I also make these comparisons in scenarios with and without spurious high dimensional covariates and with and without patient subgroups with differential treatment effects. Treatment regimes estimated using Q-learning with MARS and random forests greatly increased survival times when compared to the constant dose regimes, but were still considerably lower than the best possible dose regime. Q-learning with a single regression tree did not outperform the constant dose regimes. These results hold across high dimensional and subgroup scenarios. While the MARS method employed produces much more interpretable models than random forests, and therefore has more promise for patient subgroup identification, I show that it is also more sensitive to variations in training data.
@@ -77,7 +172,7 @@ This is the idea of \emph{personalized medicine}\footnote{Personalized medicine 
 % When/where did personalized medicine start?
 However, the general idea goes back at least as far as Hippocrates\footnote{Hippocrates is attributed with saying ``It is more important to know what sort of person has a disease than to know what sort of disease a person has.'' (\cite{Fischer2015})} and is implemented in principle whenever a physician tries to inform a treatment decision by determining whether the cause of an infection is bacterial or viral.
 
-While personalized medicine in principle has a long history and shows considerable promise, there are numerous challenges in identifying these patient subgroups and the optimal treatment for each. Chief among them is the question of how to select from what is often a multitude of plausible subgroups. Narrowing down these subgroups is hindered by disease processes which are usually quite complicated and not well understood. Furthermore, optimal treatments can change over time with changing disease.
+While personalized medicine in principle has a long history and shows considerable promise, there are numerous challenges in identifying these patient subgroups and the optimal treatment for each. Chief among them is the question of how to select from what is often a multitude of plausible subgroups. Narrowing down these subgroups is hindered by disease processes which are usually quite complicated and not well understood. Furthermore, optimal treatments can change over time with changing disease. This is especially true of chronic diseases, however little evidence is available to inform how to tailor treatments over time and using the information from previous treatments. 
 
 % subsection personalized_medicine (end)
 
@@ -152,7 +247,7 @@ In this paper, we will see how the obstacles to identifying optimal treatment re
 
 We will first briefly overview the basic elements of reinforcement learning, reinforcement learning's relevance for personalized medicine, and Q-learning (\cite{Watkins1989}) specifically. We will then discuss the supervised learning methods that I used in conjunction with Q-learning to estimate optimal dosing strategies: regression tress constructed using the classification and regression trees (CART) method (\cite{CART}), Multivariate adaptive regression splines (MARS--\cite{mars}), and random forests (RF--\cite{rf}), with random forests serving as a less interpretable comparison similar to the extremely randomized trees used by \textcite{crt}. Each technique will be illustrated with a simple example taken from the simulation. We will then discuss the details of the simulation setup and its results.
 
-For our purposes, trees (and MARS, which shares many of their desirable properties) have several particularly appealing features. First, the tree and MARS model building procedures conduct covariate selection as part of the model building process. This will help us screen non-informative variables. Second, we need not specify of the form of the relationship between the covariates and the outcome, or limit ourselves to linear or additive relationships. This will allow us to choose optimal actions without prior knowledge of disease mechanisms, which are often complicated and not well understood. Third, since single trees and MARS models are quite interpretable, we can in principle inspect them to see which variables interact with treatment.
+For our purposes, trees (and MARS, which shares many of their desirable properties) have several particularly appealing features. First, the tree and MARS model building procedures conduct covariate selection as part of the model building process. This will help us screen non-informative variables. Second, we need not specify of the form of the relationship between the covariates and the outcome, or limit ourselves to linear or additive relationships. This will allow us to choose optimal actions without prior knowledge of disease mechanisms, which are often complicated and not well understood. Third, since single trees and MARS models are quite interpretable, we can in principle inspect them to see which variables interact with treatment and hence define patient subgroups.
 
 % subsection overview_of_contents (end)
 
@@ -191,7 +286,9 @@ We can think of a personalized treatment as a decision rule, or a \emph{treatmen
 \section{Q-learning} % (fold)
 \label{sec:q_learning}
 
-Following the notation in \textcite{dtr-book}, suppose patients are recruited into a clinical trial and covariates (states) are measured before the trial begins and recorded in a vector, $O_{1}$. These covariates will be referred to as the patient history at stage 1: $H_{1} \equiv O_{1}$, which may include the baseline level of the outcome. A first treatment, $A_{1}$, is randomly assigned to each patient and each patient is measured again for the same covariates as before, the new values of which are recorded in $O_{2}$, and a reward is received, $R_{1}$. As mentioned above, this reward can be any scalar, which if maximized, would achieve the goals of the study. Most often rewards are simply set to be a continuous outcome of interest (e.g. kg of weight lost in a weight loss study). The treatment and second observation of covariates (which may include the first stage outcome and/or rewards) are incorporated into each patients' history at stage 2: $H_{2} \equiv (O_{1}, A_{1}, O_{2})$. A second treatment, $A_{2}$ is then assigned to each patient at random (potentially depending on $H_{2}$) and is followed by another outcome/reward, $R_{2}$. This process can be repeated through as many stages as desired. Note that this scheme can easily be modified for a single terminal outcome by setting $R_{1}, \ldots, R_{K-1} \equiv 0$ for a sequence of $K$ stages (as we do in the simulation below). The Q-functions (Q for quality--i.e. quality of treatment decisions) are defined as the expected rewards at each stage $k$ given that treatment(s) $A_{k}$ was assigned and patient histories/characteristics up to stage $k$ were $H_{k}$:
+Following the notation in \textcite{dtr-book}, suppose patients are recruited into a clinical trial and covariates (states) are measured before the trial begins and recorded in a vector, $O_{1}$. These covariates will be referred to as the patient history at stage 1: $H_{1} \equiv O_{1}$, which may include the baseline level of the outcome. A first treatment, $A_{1}$, is randomly assigned to each patient and each patient is measured again for the same covariates as before, the new values of which are recorded in $O_{2}$, and a reward is received, $R_{1}$. As mentioned above, this reward can be any scalar, which if maximized, would achieve the goals of the study. Most often rewards are simply set to be a continuous outcome of interest (e.g. kg of weight lost in a weight loss study). The treatment and second observation of covariates (which may include the first stage outcome and/or rewards) are incorporated into each patients' history at stage 2: $H_{2} \equiv (O_{1}, A_{1}, O_{2})$. 
+
+A second treatment, $A_{2}$ is then assigned to each patient at random (potentially depending on $H_{2}$) and is followed by another outcome/reward, $R_{2}$. This process can be repeated through as many stages as desired. Note that this scheme can easily be modified for a single terminal outcome by setting $R_{1}, \ldots, R_{K-1} = 0$ for a sequence of $K$ stages (as we do in the simulation below). The Q-functions (Q for quality--i.e. quality of treatment decisions) are defined as the expected rewards at each stage $k$ given that treatment(s) $A_{k}$ was assigned and patient histories/characteristics up to stage $k$ were $H_{k}$:
 \begin{equation}
    Q_{k}(A_{k}, H_{k})  = \operatorname{E}[r_{k} \mid A_{k}, H_{k}], \quad k = 1, \ldots, K
 \end{equation}
@@ -244,6 +341,8 @@ The optimal treatment for each participant $i \in 1, \ldots, n$ at each stage $k
   \hat{a}^{opt}_{ik} = \argmax_{a_{ik}} \hat{Q}_{k}(a_{ik}, h_{ik}), \enspace i = 1, \ldots, n; \enspace k = 1, \ldots, K
 \end{equation}
 
+Note that for the estimated treatment regime estimated using Q-learning to converge to the true optimal dynamic treatment regime, this process would be repeated. New patients would be recruited, the estimated optimal dynamic treatment regime estimated from the previous trial would be used to assign treatments to each patient, then the optimal treatment regime would be estimated again using Q-learning. This updated optimal dynamic treatment regime would then be used to assign treatments to a new group of patients, and the process would be repeated. 
+
 % subsection steps_in_two_stage_q_learning (end)
 
 \begin{algorithm}[ht]
@@ -276,7 +375,6 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 
 \section{Regression Trees using CART} % (fold)
 \label{sec:rpart}
-
 
 A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statement is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once the desired number of splits is performed, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node). Unlike trees in nature, decision trees grow from the root node downward, as shown in the illustrative example below. Since in reinforcement learning, rewards are defined to be continuous, we focus on regression trees constructed using the CART procedure of \textcite{CART}.
 
@@ -632,6 +730,62 @@ When using this model to predict the test data we obtain a root mean squared err
 
 Largely inspired by \textcite{crt} and \textcite{nsclc}, I estimated optimal dynamic treatment regimes for a cancer clinical trial for an advanced generic cancer. This trial had three stages of treatment, each stage being one month long. A dose of a single drug was given at the beginning of each stage, potentially a different dose for each stage. My primary goal was to find dynamic treatment regimes that would maximize survival time. To achieve this, I first simulated a trial to serve as training data where at the beginning of each of the three months ($t = 0, 1, 2$), patients' tumor masses and qualities of life were measured, and each patient was assigned a random dose of the drug.
 
+% \begin{figure}
+%      \begin{tikzpicture}[->, >=stealth', auto, node distance=1.5cm, minimum size=1pt,
+%     pt node/.style={rounded corners, draw},
+%     pt node img/.style={rounded corners, dashed, draw},
+%     dose node/.style={circle, draw},
+%     surv node/.style={diamond, draw},
+%     r node/.style={star, draw}]
+%
+%     \node[pt node]    (M0) {$M_{0}$, $W_{0}$};
+%     \node[dose node]  (D0) [above of = M0] {$D_{0}$};
+%     \path (D0) edge (M0);
+%     \node[pt node]    (M1) [right of = M0, xshift = 1cm] {$M_{1}$, $W_{1}$};
+%     \node[r node]     (R1) [below of = M1, inner sep = -4pt, yshift = -0.5cm] {$R_{1} = 0$};
+%     \path (M0) edge (M1) (M1) edge (R1);
+%     \node[dose node]  (D1) [above of = M1] {$D_{1}$};
+%     \path (D1) edge (M1);
+%     \node[pt node] (M2) [right of = M1, xshift = 1cm] {$M_{2}$, $W_{2}$};
+%     \path (M1) edge (M2);
+%     \node[r node]     (R2) [below of = M2, inner sep = -4pt, yshift = -0.5cm] {$R_{2} = 0$};
+%     \path (M2) edge (R2);
+%     \node[dose node]  (D2) [above of = M2] {$D_{2}$};
+%     \path (D2) edge (M2);
+%     \node[surv node]  (S3) [right of = M2, xshift = 0.8cm] {$S_{3}$};
+%     \node[r node]     (R3) [right of = S3] {$R_{3}$};
+%     \path (M2) edge (S3) (S3) edge (R3);
+%
+%
+%     \draw [->, dashed] (R3) edge (Q3);
+%     \node (Q3) [below right of = R3] {$\hat{R}_{3} = R_{3}$};
+%     % (M2) edge [bend right = 30] (Q3)
+%
+%
+%
+%     \draw [->, dashed] (Q3) edge [bend right = 30] node {$\hat{Q}_{3} = \operatorname{E}[\hat{R}_{3}|D_{2}, M_{2},W_{2}]$} (Q2);
+%
+%
+%
+%     \node (Q2) [below right of = R2, xshift = 1cm, yshift = -0.5cm] {$\hat{R}_{2} = R_{2} +  \max_{D_{2}} \hat{Q}_{3}$};
+%     \draw [->, dashed] (R2) edge (Q2);
+%
+%
+%
+%     \draw [->, dashed] (Q2) edge [bend left = 30] node {$\hat{Q}_{2} = \operatorname{E}[\hat{R}_{2}|D_{1}, M_{1},W_{1}]$} (Q1);
+%
+%
+%
+%     \node (Q1) [below right of = R1, yshift = -1cm, xshift = -1cm] {$\hat{R}_{1} = R_{1} +  \max_{D_{1}} \hat{Q}_{2}$};
+%     \draw [->, dashed] (R1) edge (Q1);
+%
+%     \node (Q0) [below of = M0, yshift = -3.5cm, xshift =1cm] {$\hat{Q}_{1} = \operatorname{E}[\hat{R}_{1}|D_{0}, M_{0},W_{0}]$};
+%
+%     \draw [->, dashed] (Q1) edge (Q0);
+%
+%   \end{tikzpicture}
+% \end{figure}
+
 \subsection{Patient Model} % (fold)
 \label{sub:vpm}
 
@@ -812,7 +966,7 @@ The interaction and noise scenarios were also combined together, to create the s
 \subsection{Training procedure} % (fold)
 \label{sub:procedure}
 
-With the the survival times resulting from each simulated trial for each scenario listed above, Q-learning was applied using each of CART, MARS, and random forest to estimate the Q-functions at each stage. The fitted models for each stage under each scenario were saved for estimating optimal treatments for patients in the validation set. Maximum rewards in each stage of Q-learning were estimated by generating predicted rewards from the set of doses $D_{t} = 0, 0.01, 0.02, \ldots, 1$ and choosing the largest.
+With the the survival times resulting from each simulated trial for each scenario listed above, Q-learning was applied using each of CART, MARS, and random forest to estimate the Q-functions at each stage. State signals were assumed to be Markov, so only the covariates from a particular stage were used in fitting the corresponding Q-function. The fitted models for each stage under each scenario were saved for estimating optimal treatments for patients in the validation set.  Maximum rewards in each stage of Q-learning were estimated by generating predicted rewards from the set of doses $D_{t} = 0, 0.01, 0.02, \ldots, 1$ and choosing the largest.
 
 To quantify the influence the training data have on the resulting estimated optimal dynamic treatment regimes, I repeated the processes described in the preceding paragraph for 100 unique training sets each with 1000 patients.
 
@@ -839,8 +993,6 @@ To compare the regimes, I calculated the arithmetic mean survival time for the 2
 
 Variable importance was calculated for each model at each stage, as a percentage of the most important variable. For the CART models, variable importance was calculated as the total reduction in SSE resulting from each split on a particular variable. For the MARS models, the importance of each variable was calculated as the increase in SSE which would result from removing each term with a particular variable in it. Variable importance in each tree in the random forest models was calculated in the same way as a single CART tree, then these importances were averaged across all trees in the forest.
 
-For ease of presentation, the interaction variables, $X$, are be presented together as a group. Each noise variable vector, $Z$ and $V$, are also presented as groups, since in each scenario the importances of each variable within each vector should be the same. Importances for each of the $X$, $Z$, and $V$ vectors were separately averaged across the 100 models for each technique and, since the importances were very similar across stages, averaged across stages as well. Standard deviations of importances across stage, training set, and variable vector were also calculated to show the variability of importance.
-
 % subsubsection variable_importance (end)
 
 % subsection validation (end)
@@ -851,27 +1003,21 @@ For ease of presentation, the interaction variables, $X$, are be presented toget
 \label{sec:simulation_results}
 
 \begin{figure}[!htbp]
-\centering
+  \centering
   \includegraphics[width=\textwidth]{figure/results-no-int-1}
-
-
-
-\caption[Mean months of survival under each regime for scenarios without interaction]{Mean months of survival under each regime for the scenarios without interaction, log scale. The mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \times IQR$ from either hinge (lower or upper quartile) are shown as points.}\label{fig:results-no-int}
+  \caption[Mean months of survival under each regime for scenarios without interaction]{Mean months of survival under each regime for the scenarios without interaction, log scale. The mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \times IQR$ from either hinge (lower or upper quartile) are shown as points.}\label{fig:results-no-int}
 \end{figure}
 
 \begin{figure}[!htbp]
-
-\centering
+  \centering
   \includegraphics[width=\textwidth]{figure/results-int-1}
-
-
-\caption[Mean months of survival under each regime for scenarios with interaction]{Mean months of survival under each regime for scenarios with interaction, log scale. As in Figure \ref{fig:results-no-int}, mean months of survival for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \times IQR$ from either hinge (lower or upper quartile) are shown as points.}\label{fig:results-int}
+  \caption[Mean months of survival under each regime for scenarios with interaction]{Mean months of survival under each regime for scenarios with interaction, log scale. As in Figure \ref{fig:results-no-int}, mean months of survival for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \times IQR$ from either hinge (lower or upper quartile) are shown as points.}\label{fig:results-int}
 \end{figure}
 
 
 %latex.default(., file = "", dec = 1, caption = cap, caption.lot = cap_toc,     label = "tab:rewards", where = "!htbp", rowname = NULL, colheads = col_heads,     booktabs = T)%
 \begin{table}[!htbp]
-\caption[Mean survival times under each scenario]{Mean months of survival under each scenario (in months), averaged over 2000 test patients for each regime. Each test set of 2000 had identical initial tumor masses and toxicities ($M_{0}$, $W_{0}$). Best is the optimal dose sequence obtained from evaluating every possible three dose sequence. MARS, RF (random forest, which is equivalent to bagging in these scenarios), and CART (regression trees using the CART procedure) represent the average survival times when using the optimal dose regime estimated from Q-learning using each method to fit the Q-functions, averaged over the 100 training set replicates. B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, I+N is the interaction and noise scenario, and I+PN is the interaction and predictive noise scenario. Each scenario is described in detail in section \ref{sec:simulation}.\label{tab:rewards}}
+  \caption[Mean survival times under each scenario]{Mean months of survival under each scenario (in months), averaged over 2000 test patients for each regime. Each test set of 2000 had identical initial tumor masses and toxicities ($M_{0}$, $W_{0}$). Best is the optimal dose sequence obtained from evaluating every possible three dose sequence. MARS, RF (random forest, which is equivalent to bagging in these scenarios), and CART (regression trees using the CART procedure) represent the average survival times when using the optimal dose regime estimated from Q-learning using each method to fit the Q-functions, averaged over the 100 training set replicates. B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, I+N is the interaction and noise scenario, and I+PN is the interaction and predictive noise scenario. Each scenario is described in detail in section \ref{sec:simulation}.\label{tab:rewards}}
 
 \centering
 \begin{tabular}{lrrrrrr}
@@ -892,16 +1038,16 @@ CART&$12.5$&$ 9.9$&$10.0$&$12.8$&$10.0$&$ 9.9$\tabularnewline
 0.3&$14.7$&$14.7$&$15.0$&$16.8$&$16.8$&$17.2$\tabularnewline
 0.2&$12.7$&$12.7$&$12.9$&$14.1$&$14.1$&$14.4$\tabularnewline
 0.1&$10.5$&$10.5$&$10.6$&$11.0$&$11.0$&$11.2$\tabularnewline
-\bottomrule
+  \bottomrule
 \end{tabular}
 \end{table}
 
-The arithmetic mean survival times under each treatment regime are shown in Figure \ref{fig:results-no-int} for the scenarios without covariate by treatment interaction (patient subgroups with differential treatment response) and in Figure \ref{fig:results-int} for the interaction scenarios--those with covariate by treatment interaction. ``Best'' shows the arithmetic mean survival time for the 2000 test patients when following the best possible dose sequence. The optimal regimes estimated using Q-learning are labelled as ``MARS'', ``RF'', and ``CART'' for Q-learning using MARS, random forest (which in these situations was equivalent to bagging), and regression trees using the CART procedure to estimate the Q-functions, respectively. For each of these modeling techniques in Figures \ref{fig:results-no-int} and \ref{fig:results-int}, each of the 100 mean survival times for the test set obtained from using the optimal regime derived from each of the 100 different training sets are displayed as separate points in box plots. The comparison regimes have only a single line because they do not require training and are therefore invariant across training set. Table \ref{tab:rewards} displays the arithmetic mean survival times under each regime, averaged over all of the 100 test set survival times for each of the regimes estimated using each Q-learning technique on each training set.
+The arithmetic mean survival times under each treatment regime are shown in Figure \ref{fig:results-no-int} for the scenarios without covariate by treatment interaction (patient subgroups with differential treatment response) and in Figure \ref{fig:results-int} for the interaction scenarios--those with covariate by treatment interaction. ``Best'' shows the arithmetic mean survival time for the 2000 test patients when following the best possible dose sequence. The optimal regimes estimated using Q-learning are labelled as ``MARS'', ``RF'', and ``CART'' for Q-learning using MARS, random forest (which in these situations was equivalent to bagging), and regression trees using the CART procedure to estimate the Q-functions, respectively. In Figures \ref{fig:results-no-int} and \ref{fig:results-int}, each of the 100 mean survival times obtained using the optimal regime derived from the 100 different training sets on the test set are displayed as separate points in box plots for the three modeling techniques. Comparison regimes are shown with only a single line because they do not require training and are therefore invariant across training set. Table \ref{tab:rewards} displays the arithmetic mean survival times under each regime, averaged over all of the 100 test set survival times for each of the regimes estimated using each Q-learning technique on each training set.
 
 %latex.default(., file = "", dec = 1, caption = cap, caption.lot = cap_toc,     label = "tab:sd-train-rewards", where = "!htbp", rowname = NULL,     colheads = col_heads, booktabs = T)%
 \begin{table}[!htbp]
 \caption[Standard deviation of mean survival times across training sets]{Standard deviation of mean survival times across training set replicates for Q-learning models. B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, I+N is the interaction and noise scenario, and I+PN is the interaction and predictive noise scenario. Each scenario is described in detail in section \ref{sec:simulation}. \label{tab:sd-train-rewards}}
-\centering
+\begin{center}
 \begin{tabular}{lrrrrrr}
 \toprule
 \multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
@@ -911,11 +1057,12 @@ RF&$5.2$&$5.2$&$5.8$&$6.0$&$6.4$&$6.5$\tabularnewline
 CART&$3.0$&$2.5$&$2.2$&$4.0$&$3.2$&$2.7$\tabularnewline
 \bottomrule
 \end{tabular}
+\end{center}
 \end{table}
 
-In the basic (B) scenario, MARS and random forest produce similar mean survival times, about two thirds of the best possible survival times. However, as will be repeated throughout scenarios, MARS exhibits more sensitivity to the training set (higher variance) as shown in Figure \ref{fig:results-no-int} and in Table \ref{tab:sd-train-rewards}, which shows standard deviations in mean months of survival across training sets. As is also repeated across scenarios, a single regression tree (labelled ``CART'' throughout) performs very poorly, worse overall than many constant dose regimes. When the 100 noise variables are added in the noise (N) scenario, there is approximately a 10 month decrease in mean survival times for MARS and RF, bringing them to about half of the best possible survival times and a 1-2 month decrease for CART. Allowing some of the noise variables to shift survival times up or down in the predictive noise (PN) scenario produces results very similar to the noise scenario without predictive noise.
+In the basic (B) scenario, MARS and random forest produce similar mean survival times, about two thirds of the best survival times, with MARS performing slightly better on average. However, as will be repeated throughout scenarios, MARS exhibits more sensitivity to the training set (higher variance) as shown in Figure \ref{fig:results-no-int} and in Table \ref{tab:sd-train-rewards}, which shows standard deviations in mean months of survival across training sets. As is also repeated across scenarios, a single regression tree (labelled ``CART'' throughout) performs very poorly, worse overall than many constant dose regimes. When the 100 noise variables are added in the noise (N) scenario, there is approximately a 10 month decrease in mean survival times for MARS and RF, bringing them to about half of the best possible survival times and about a 2 month decrease for CART. MARS then performs slightly worse than random forest when noise variables are added. Allowing some of the noise variables to shift survival times up or down in the predictive noise (PN) scenario produces results very similar to the noise scenario without predictive noise.
 
-Results from the interaction scenarios, scenarios with the four treatment subgroups created by $X_{1}$ and $X_{2}$, shown in Figure \ref{fig:results-int} and Table \ref{tab:rewards}, were similar to those in the scenarios without interaction, but shifted towards longer survival. Despite the shift upwards, the trend is very similar to the scenarios without interaction. In the interaction only scenario (I), MARS and random forest produce similar mean survival times, around two-thirds of those produced by the best possible regime, with MARS showing greater variability across training sets. Addition of noise variables to the interaction scenario (I+N), results in a reduction of around 10 months of survival time for MARS and random forest, bringing them to about half of the best possible survival time. Allowing 10 of the noise variables to shift survival up or down by a little in the interaction and predictive noise (I+PN) scenario has little effect on the performance of the estimated regimes. CART produces results very similar to those in the scenarios without interaction.
+Results from the interaction scenarios, scenarios with the four treatment subgroups created by $X_{1}$ and $X_{2}$, shown in Figure \ref{fig:results-int} and Table \ref{tab:rewards}, were similar to those in the scenarios without interaction, but shifted towards longer survival. Despite the shift upwards, the trend is very similar to the scenarios without interaction. In the interaction only scenario (I), MARS and random forest produce similar mean survival times, a little more than half of those produced by the best possible regime, with MARS showing greater variability across training sets. Addition of noise variables to the interaction scenario (I+N), results in a reduction of around 10 months of survival time for MARS and random forest, bringing them to half or a bit less than half of the best possible survival time. As in the scenarios without interaction, MARS decreases more than random forest when the noise variable are added. Allowing 10 of the noise variables to shift survival up or down by a little in the interaction and predictive noise (I+PN) scenario has little effect on the performance of the estimated regimes. CART produces results very similar to those in the scenarios without interaction.
 
 \begin{figure}[!htbp]
 \centering
@@ -935,7 +1082,7 @@ Results from the interaction scenarios, scenarios with the four treatment subgro
 
 \begin{table}[!htbp]
 \caption[Mean variable importance across stages and model replicates]{Mean variable importance across stages and model replicates. Importances are given as a percentage of the most important variable in each model. Standard deviations are shown in parentheses. Mean and standard deviation variable importance over all of the importances for each noise variable in the $Z$ vector are labelled $Z$, while the mean and standard deviation importance across all variables in the $V$ and $X$ vectors are labelled $V$ and $X$ respectively. \label{tab:imp}}
-\centering
+\begin{center}
 \begin{tabular}{lllllll}
 \toprule
 \multicolumn{1}{l}{Variable}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
@@ -965,13 +1112,16 @@ Results from the interaction scenarios, scenarios with the four treatment subgro
 ~~$V$&&0.0 (0.4)&0.0 (0.4)&&0.0 (0.4)&0.0 (0.4)\tabularnewline
 \bottomrule
 \end{tabular}
+\end{center}
 \end{table}
 
-Variable importances as a percentage of the most important variable for each method, stage, and training set replicate are shown in Figures \ref{fig:var-imps-no-int} and \ref{fig:var-imps-int}. The interaction variables $X_{1}$, $X_{2}$, noise variables with no predictive value, $V_{1}, \ldots, V_{90}$, and noise variables with some predictive value in the scenarios with predictive noise, $Z_{1}, \ldots, Z_{10}$ are shown together as $X$, $V$, and $Z$ respectively. I.e. the Z label in Figures \ref{fig:var-imps-no-int} and \ref{fig:var-imps-int} shows violin plots of the relative importance for all of the variables in the $Z$ vector for each scenario (and for every stage, so 3000 importances for each violin). Table \ref{tab:imp} shows the mean and standard deviation of the relative importances over the 100 different training models and the three stages, for each variable group vector and each method. For example, the average importance of a $V$ variable for all MARS models (at all stages) in the noise scenario (N) is 5.4, with a standard deviation of 11.0. Mean importances were quite similar between stages.
+Variable importances as a percentage of the most important variable for each method, stage, and training set replicate are shown in Figures \ref{fig:var-imps-no-int} and \ref{fig:var-imps-int}. The interaction variables $X_{1}$, $X_{2}$, noise variables with no predictive value, $V_{1}, \ldots, V_{90}$, and noise variables with some predictive value in the scenarios with predictive noise, $Z_{1}, \ldots, Z_{10}$ are shown together as $X$, $V$, and $Z$ respectively. Specifically, the Z label in Figures \ref{fig:var-imps-no-int} and \ref{fig:var-imps-int} shows violin plots of the relative importance for all of the variables in the $Z$ vector for each scenario (and for every stage, so 3000 importances for each violin). Table \ref{tab:imp} shows the mean and standard deviation of the relative importances over the 100 different training models and the three stages, for each variable group vector and each method. For example, the average importance of a $V$ variable for all MARS models (at all stages) in the noise scenario (N) is 5.4, with a standard deviation of 11.1. Mean importances were quite similar between stages.
 
 As shown in Figures \ref{fig:var-imps-no-int} and \ref{fig:var-imps-int} and Table \ref{tab:imp}, $M$ and $W$ are the most important variables across all model types. This aligns well with the higher importance of $M$ and $W$ on survival in the simulated data. Further, $M$ is almost always the most important variable, which agrees with the higher weight that was placed on it in the simulation relative to $W$.
 
-Figures \ref{fig:var-imps-no-int} and \ref{fig:var-imps-int} and Table \ref{tab:imp} also show that this version of MARS is much better than the other modeling techniques at identifying interacting variables and the treatment ($D$) as important. However, it is also much more prone to identify noise variables as important. As with mean survival times, there is higher variance across training sets in the importances MARS assigns to treatment and interacting variables. Random forest is best at identifying the noise variables as not important, but also gives a relatively low importance to interacting and treatment variables. A single regression tree (CART) shows a similar trend in importances as the random forest models, but with more variability and higher importances on dose and lower importances on interacting variables.
+Figures \ref{fig:var-imps-no-int} and \ref{fig:var-imps-int} and Table \ref{tab:imp} also show that this version of MARS is much better than the other modeling techniques at identifying interacting variables and the treatment ($D$) as important. However, it is also much more prone to identify noise variables as important. As with mean survival times, there is higher variance across training sets in the importances MARS assigns to treatment and interacting variables. 
+
+Random forest is best at identifying the noise variables as not important, but also gives a relatively low importance to interacting and treatment variables. A single regression tree (CART) shows a similar trend in importances as the random forest models, but with near zero importance for noise variables and lower importance for dose and interacting ($X$) variables.
 
 % \begin{table}[!htbp]
 % \caption[SD of rewards across test sets]{SD of rewards across test sets\label{tab:sd-test-rewards}}
@@ -1009,23 +1159,25 @@ Figures \ref{fig:var-imps-no-int} and \ref{fig:var-imps-int} and Table \ref{tab:
 Q-learning using random forest (which in these scenarios was equivalent to bagging) and Multivariate Adaptive Regression Splines modified to only interact variables with treatment can increase survival times compared to constant dose regimes by large margins in this simulation. However, Q-learning using single regression trees grown with the CART procedure often performed worse than many constant dose regimes.
 
 % Relation to other literature/previous research
-This agrees with the results of \textcite{crt}, but also shows that the more interpretable MARS models can produce comparable results to the more complex ``black box'' models. Further, it shows the results in context with the best possible sequence, and gives inklings of the variability in performance due to differences in training data.
+This agrees with the results of \textcite{crt}, but also shows that the more interpretable MARS models can produce comparable results to more complex ``black box'' models. Further, it shows the results in context with the best possible sequence, and gives inklings of the variability in performance due to differences in training data.
 
 % biological rationale/possible explanation/mechanisms
-The lack of performance from single regression trees is likely due to the splitting criterion being based on predictive performance and not on a measure of the degree of interaction with the treatment variable. With the predictive performance splitting criterion of SSE, one can choose to grow a deep, bushy tree that is relatively unbiased but also has high variance (overfits the data), or one can prune to a less variable but more biased tree. In our scenarios, the treatment variable dose plays much less of a role in the absolute survival time than tumor mass or toxicity (as shown in the variable importance measures) so it tends to only be split upon further down the tree. To model the effect of dose well, therefore, a large tree is required. However large trees tend to overfit and hence also don't consistently model the effect of dose well. Attempting to correct this by pruning results in most (or all) of the effects due to dose being pruned off because the cost-complexity criterion use for pruning is also not based on capturing the differential effects of treatment. An analogous explanation applies for the interacting variables.
+The lack of performance from single regression trees is likely due to the splitting criterion being based on predictive performance and not on a measure of the degree of interaction with the treatment variable. With $SSE$ as the splitting criterion, one can choose to grow a deep, bushy tree that is relatively unbiased but also has high variance (overfits the data), or one can prune to a less variable but more biased tree. In our scenarios, the treatment variable, dose, plays much less of a role in the absolute survival time than tumor mass or toxicity (as shown in the variable importance measures) so it tends to only be split upon further down the tree. To model the effect of dose well, therefore, a large tree is required. However, large trees tend to overfit and hence also don't consistently model the effect of dose well. Attempting to correct this by pruning results in most (or all) of the effects due to dose being pruned off because the cost-complexity criterion use for pruning is also not based on capturing the differential effects of treatment. An analogous explanation applies for the interacting variables.
 
 % strengths and limitations: address limitations but then try to minimize impact
-Restricting MARS to only interact covariates with the treatment gave comparable performance to random forest on average, but the survival times produced were more variable, and for some training data were quite low. This most likely due to the restriction on interactions with treatment, which are harder to consistently detect using SSE as the metric for variable addition and removal. This instability could be likely be improved through bagging, though bagging would negate much of the interpretably gained from using MARS.
+Restricting MARS to only interact covariates with the treatment gave comparable performance to random forest on average, but the survival times produced were more variable, and for some training data were quite low. This most likely due to the restriction on interactions with treatment, which are harder to consistently detect using $SSE$ as the metric for variable addition and removal. This instability could be likely be improved through bagging, though bagging would negate much of the interpretably gained from using MARS.
 
-Using these methods, subgroup identification is difficult. With MARS, although the true interacting variables often have high importance measures, so may spurious variables for any given set training data, as shown in the importance measures. Random forest works well despite low importances for dose and interacting variables, which while a little larger on average than noise variables, would be hard to distinguish in practice.
+Using these methods, subgroup identification is difficult. With MARS, although the true interacting variables often have high importance measures, for any given set of training data so may spurious variables. Random forest works well despite low importances for dose and interacting variables, which while a little larger on average than noise variables, would be hard to distinguish in practice.
 
-Due to constraints in computing resources, I could not obtain more precise estimates of the sensitivity of the results to different training sets by simulating more training set replicates. Further, censoring of observations was ignored. If similar methods will be applied to real data how to model censoring will need to be addressed.
+Due to constraints in computing resources, I could not obtain more precise estimates of the sensitivity of the results to different training sets by simulating more training set replicates. Further, censoring of observations was ignored. If similar methods will be applied to real data with survival outcomes, censoring will need to be incorporated.
 
 % Implications/take home message
 The above being said, I showed that statistical learning methods that were designed to maximize predictive performance can be used to personalize treatment regimes with a continuous treatment, increasing mean length of survival in simulated cancer patients.
 
 % Directions for future research
-While this approach is more effective than constant doses in this setting, performance can almost certainly be improved by modifying the techniques used to fit Q-functions to use magnitude of interaction as the basis for model building and evaluating performance. This could also greatly increase the interpretability of the Q-functions, and would make subgroup identification much easier.
+While this approach is more effective than constant doses in this setting, performance can almost certainly be improved by modifying the techniques used to fit Q-functions to use magnitude of interaction as the basis for model building and evaluating performance. This could also greatly increase the interpretability of the Q-functions, and would make subgroup identification much easier. 
+
+Extending this framework to observational data could have a large impact.  For example, through solving some casual inference questions, these techniques could be applied to electronic medical record data for people with chronic diseases. This could lead to a much better understanding of how to to tailor treatment sequences to a patient's individual characteristics and their changing disease.
 
 % section discussion (end)
 
