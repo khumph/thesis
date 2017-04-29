@@ -25,7 +25,7 @@
 \usepackage{amsmath}
 \usepackage{commath}
 \usepackage[style=authoryear, hyperref = true]{biblatex}
-\addbibresource{library.bib}
+\addbibresource{thesis.bib}
 
 % \usepackage{tikz}
 % \usetikzlibrary{arrows, shapes, positioning}
@@ -186,7 +186,7 @@ While personalized medicine in principle has a long history and shows considerab
 
 % traditional methods: ad hoc subgroup analyses, or searching for treatment by subgroups interactions
 
-Statistically, the personalization of medicine involves the identification of patient subgroups which respond to treatment differently. Traditionally, this is accomplished by investigation of (often ad hoc) treatment by covariate interactions, where different values of a covariate identify subgroups (\cite{Byar1985}). Using the HER2 breast cancer example above, we could encapsulate our knowledge of a patient's HER2 status into a binary covariate which indicates whether she was HER2 positive or negative, then statistically test if the coefficient on an interaction term with this indicator of HER2 status and treatment assignment is significantly different from 0.
+Statistically, the personalization of medicine involves the identification of patient subgroups which respond to treatment differently. Traditionally, this is accomplished by investigation of (often ad hoc) treatment by covariate interactions, where different values of a covariate identify subgroups (\cite{Byar1985}). Using the HER2 breast cancer example above, we would encapsulate our knowledge of a patient's HER2 status into a binary covariate which equaled one if her tumor was HER2 postitive or zero if her tumor was HER2 negative. We would then statistically test if the coefficient on an interaction term with this indicator and treatment is significantly different from zero.
 
 % Problems: Curse of dimensionality, multiple comparisons
 
@@ -195,8 +195,7 @@ While straightforward, this approach has several problems. First, which subgroup
 \subsubsection{Algorithms for detecting interactions} % (fold)
 \label{ssub:algorithms_for_detecting_interactions}
 
-In response to the above problems with the traditional approach, several novel algorithms to detect interactions have been developed. Many are based on recursive portioning (\cite{Doove2013}), the basic process of which is described in detail below. These tree structures are appealing because they are easy to interpret, and ``naturally'' partition samples into subgroups. These and other methods are promising but it is not clear how to extend them to address our goal of determining optimal dosing strategies, i.e. how to select the optimal value of a continuous treatment. Nor do they directly consider more than a single stage of treatment, that is, they don't consider how to adapt treatment over time to changing situations.
-
+%%%%%
 % interaction trees - easy to interpret, final trees don't connect with any objective function - hard to determine optimal treatment for patients
 
 % Su, X., Tsai, C.-L., Wang, H., Nickerson, D. M., and Li, B. (2009), “Subgroup analysis via recursive partitioning,” Journal of Machine Learning Research, 10, 141–158.
@@ -208,10 +207,9 @@ In response to the above problems with the traditional approach, several novel a
 
 % STIMA, others could also be included in this group
 
-% subsubsection novel_algorithms_for_detecting_interactions (end)
+In response to the above problems with the traditional approach, several novel algorithms to detect interactions have been developed. Many use recursive partitioning (the basic process of which is described below) with a splitting criterion based on the degree of interaction (\cite{Zeileis2008}; \cite{Su2009}; \cite{Lipkovich2011}; \cite{Dusseldorp2014}). These (and models based on recursive partitioning in general) have the advantage of being easy to interpret.
 
 %%%%%
-
 % two-step methods: first step: estimate differential treatment effect of each ind by score function, then use scores as response in second step - (Cai et al., 2011; Zhao et al., 2013; Foster et al., 2011; Faries et al., 2013) \\
 %   need to impose parametric models that may be misspecified, hard to interpret
 %
@@ -224,8 +222,9 @@ In response to the above problems with the traditional approach, several novel a
 %
 % Faries, D. E., Chen, Y., Lipkovich, I., Zagar, A., Liu, X., and Obenchain, R. L. (2013), “Local control for identifying subgroups of interest in observational research: Persistence of treatment for major depressive disorder,” International Journal of Methods in Psychiatric Research, 22, 185–194.
 
-%%%%%
+Other methods use a two-step process (\cite{Cai2011}; \cite{Zhao2013}; \cite{Foster2011}). The first step is to estimate the differential treatment effect of each participant and use this to develop a score to group patients. These scores are then used as a response in the second step to estimate the mean treatment difference between groups. These methods require a parametric or semi-parametric model in the first step which is subject to misspecification. 
 
+%%%%%
 % maximize value function
 %
 % Qian, M. and Murphy, S. A. (2011), “Performance guarantees for individualized treatment rules,” Annals of Statistics, 39, 1180.
@@ -234,7 +233,13 @@ In response to the above problems with the traditional approach, several novel a
 %
 % Zhang, B., Tsiatis, A. A., Davidian, M., Zhang, M., and Laber, E. (2012), “Estimating optimal treatment regimes from a classification perspective,” Stat, 1, 103–114.
 
+A third class of methods maximize mean response across patients and subgroups either by using penalized regression (\cite{Qian2011}), or by treating identification of subgroups as a classification problem with each participant weighted by their outcome (\cite{Zhao2012}; \cite{Zhang2012}).
+
+These and other methods are promising but none address how to select the optimal value of a continuous treatment, so it is not clear how to extend them to address our goal of determining optimal dosing strategies. Perhaps more importantly, none of the methods described above directly consider more than a single stage of treatment. In practice treatments are often changed over time based off of patient response and other factors, particularly in the management of chronic disease. To truly personalize medicine, therefore, it is important to determine how to adapt treatment over time to changing situations. 
+
 % All limited to single step?
+
+% subsubsection novel_algorithms_for_detecting_interactions (end)
 
 % subsubsection statistical_methods_to_personalize_medicine (end)
 
@@ -247,7 +252,7 @@ In this paper, we will see how the obstacles to identifying optimal treatment re
 
 We will first briefly overview the basic elements of reinforcement learning, reinforcement learning's relevance for personalized medicine, and Q-learning (\cite{Watkins1989}) specifically. We will then discuss the supervised learning methods that I used in conjunction with Q-learning to estimate optimal dosing strategies: regression tress constructed using the classification and regression trees (CART) method (\cite{CART}), Multivariate adaptive regression splines (MARS--\cite{mars}), and random forests (RF--\cite{rf}), with random forests serving as a less interpretable comparison similar to the extremely randomized trees used by \textcite{crt}. Each technique will be illustrated with a simple example taken from the simulation. We will then discuss the details of the simulation setup and its results.
 
-For our purposes, trees (and MARS, which shares many of their desirable properties) have several particularly appealing features. First, the tree and MARS model building procedures conduct covariate selection as part of the model building process. This will help us screen non-informative variables. Second, we need not specify of the form of the relationship between the covariates and the outcome, or limit ourselves to linear or additive relationships. This will allow us to choose optimal actions without prior knowledge of disease mechanisms, which are often complicated and not well understood. Third, since single trees and MARS models are quite interpretable, we can in principle inspect them to see which variables interact with treatment and hence define patient subgroups.
+For our purposes, trees (and MARS, which shares many of their desirable properties) have several particularly appealing features. First, the tree and MARS model building procedures conduct covariate selection as part of the model building process. This will help us screen non-informative variables. Second, we need not specify the form of the relationship between the covariates and the outcome, or limit ourselves to linear or additive relationships. This will allow us to choose optimal actions without prior knowledge of disease mechanisms, which are often complicated and not well understood. Third, since single trees and MARS models are quite interpretable, we can in principle inspect them to see which variables interact with treatment and thus identify patient subgroups.
 
 % subsection overview_of_contents (end)
 
@@ -257,7 +262,7 @@ For our purposes, trees (and MARS, which shares many of their desirable properti
 \subsection{Basic elements and basic process} % (fold)
 \label{sub:basic_process}
 
-Reinforcement learning is a branch of machine learning distinct from the two main branches more familiar to statisticians, supervised and unsupervised learning (\cite{Sutton2016})\footnote{Techniques from both supervised and unsupervised learning can, however, be useful in reinforcement learning problems, as we will see for supervised learning methods.}. A reinforcement problem at its most basic is a problem of sequential decision making and has the following elements:
+Reinforcement learning is a branch of machine learning distinct from the two main branches more familiar to statisticians, supervised and unsupervised learning (\cite{Sutton2016})\footnote{Techniques from both supervised and unsupervised learning can, however, be useful in reinforcement learning problems, as we will see for supervised learning methods.}. Reinforcement learning in general is about how to make good sequences of decisions. It has the following elements:
 
 A learning \emph{agent}, who has goals related to its \emph{environment}, loosely defined as everything outside the agent's direct control. Features of the environment are represented to the agent through \emph{states}. Given a state representation, an agent can take an \emph{action} to affect the environment in order to achieve some goal. A goal is defined to the agent in such a way that maximizing a scalar quantity called the \emph{reward} would achieve the goal. Given a state representation, an agent follows a \emph{policy}, roughly a guide to which actions to take (or which ones to favor) given a state signal. An optimal policy therefore, is a policy that achieves the largest reward over the long run.
 
