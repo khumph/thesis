@@ -233,7 +233,7 @@ Other methods use a two-step process (\cite{Cai2011}; \cite{Zhao2013}; \cite{Fos
 %
 % Zhang, B., Tsiatis, A. A., Davidian, M., Zhang, M., and Laber, E. (2012), “Estimating optimal treatment regimes from a classification perspective,” Stat, 1, 103–114.
 
-A third class of methods maximize mean response across patients and subgroups either by using penalized regression (\cite{Qian2011}), or by treating identification of subgroups as a classification problem with each participant weighted by their outcome (\cite{Zhao2012}; \cite{Zhang2012}).
+A third class of methods maximize mean responses across patients and subgroups either by using penalized regression (\cite{Qian2011}), or by treating the identification of subgroups as a classification problem with each participant weighted by their outcome (\cite{Zhao2012}; \cite{Zhang2012}).
 
 These and other methods are promising but none address how to select the optimal value of a continuous treatment, so it is not clear how to extend them to address our goal of determining optimal dosing strategies. Perhaps more importantly, none of the methods described above directly consider more than a single stage of treatment. In practice treatments are often changed over time based off of patient response and other factors, particularly in the management of chronic disease. To truly personalize medicine, therefore, it is important to determine how to adapt treatment over time to changing situations. 
 
@@ -346,7 +346,7 @@ The optimal treatment for each participant $i \in 1, \ldots, n$ at each stage $k
   \hat{a}^{opt}_{ik} = \argmax_{a_{ik}} \hat{Q}_{k}(a_{ik}, h_{ik}), \enspace i = 1, \ldots, n; \enspace k = 1, \ldots, K
 \end{equation}
 
-Note that for the estimated treatment regime estimated using Q-learning to converge to the true optimal dynamic treatment regime, this process would be repeated. New patients would be recruited, the estimated optimal dynamic treatment regime estimated from the previous trial would be used to assign treatments to each patient, then the optimal treatment regime would be estimated again using Q-learning. This updated optimal dynamic treatment regime would then be used to assign treatments to a new group of patients, and the process would be repeated. 
+Formally, Q-learning can be applied to solve any Markov decision process, and the estimated actions have been shown to converge to the optimal actions with probability one for finite Markov decision processes, given that actions are repeatedly sampled in all states (\cite{Watkins1992}). Therefore, it is important to note that in practice, the process described above this process should be repeated. New patients would be recruited, the estimated optimal dynamic treatment regime estimated from the previous trial would be used to assign treatments to each patient, then the optimal treatment regime would be estimated again using Q-learning. This updated optimal dynamic treatment regime would then be used to assign treatments to a new group of patients, and the process would be repeated again. 
 
 % subsection steps_in_two_stage_q_learning (end)
 
