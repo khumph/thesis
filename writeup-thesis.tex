@@ -152,13 +152,14 @@ Brief quotations from this thesis are allowable without special permission, prov
 \newpage
 \setcounter{page}{1}
 
-\begin{abstract}
-In a simulation of an advanced generic cancer trial, I use Q-learning, a reinforcement learning algorithm, to develop dynamic treatment regimes for a continuous treatment, the dose of a single drug. Selected dynamic treatment regimes are tailored to time-varying patient characteristics and to patient subgroups with differential treatment effects. This approach allows estimation of optimal dynamic treatment regimes without a model of the disease process or a priori hypotheses about subgroup membership. Using observed patient characteristics and outcomes from the simulated trial, I estimate Q-functions based on 1) a single regression tree grown by the Classification And Regression Trees (CART) method, 2) random forests, and 3) a slightly modified version of Multivariate Adaptive Regression Splines (MARS). I then compare the survival times of an independent group of simulated patients under treatment regimes estimated using Q-learning with each of the three methods, 10 constant dose regimes, and the best possible treatment regime chosen using a brute force search over all possible treatment regimes with complete knowledge of disease processes and their effects on survival. I also make these comparisons in scenarios with and without spurious high dimensional covariates and with and without patient subgroups with differential treatment effects. Treatment regimes estimated using Q-learning with MARS and random forests greatly increased survival times when compared to the constant dose regimes, but were still considerably lower than the best possible dose regime. Q-learning with a single regression tree did not outperform the constant dose regimes. These results hold across high dimensional and subgroup scenarios. While the MARS method employed produces much more interpretable models than random forests, and therefore has more promise for patient subgroup identification, I show that it is also more sensitive to variations in training data.
-\end{abstract}
-
 \tableofcontents
 \listoffigures
 \listoftables
+\newpage
+
+\begin{abstract}
+In a simulation of an advanced generic cancer trial, I use Q-learning, a reinforcement learning algorithm, to develop dynamic treatment regimes for a continuous treatment, the dose of a single drug. Selected dynamic treatment regimes are tailored to time-varying patient characteristics and to patient subgroups with differential treatment effects. This approach allows estimation of optimal dynamic treatment regimes without a model of the disease process or a priori hypotheses about subgroup membership. Using observed patient characteristics and outcomes from the simulated trial, I estimate Q-functions based on 1) a single regression tree grown by the Classification And Regression Trees (CART) method, 2) random forests, and 3) a slightly modified version of Multivariate Adaptive Regression Splines (MARS). I then compare the survival times of an independent group of simulated patients under treatment regimes estimated using Q-learning with each of the three methods, 10 constant dose regimes, and the best possible treatment regime chosen using a brute force search over all possible treatment regimes with complete knowledge of disease processes and their effects on survival. I also make these comparisons in scenarios with and without spurious high dimensional covariates and with and without patient subgroups with differential treatment effects. Treatment regimes estimated using Q-learning with MARS and random forests greatly increased survival times when compared to the constant dose regimes, but were still considerably lower than the best possible dose regime. Q-learning with a single regression tree did not outperform the constant dose regimes. These results hold across high dimensional and subgroup scenarios. While the MARS method employed produces much more interpretable models than random forests, and therefore has more promise for patient subgroup identification, I show that it is also more sensitive to variations in training data.
+\end{abstract}
 
 \section{Introduction}
 
@@ -300,47 +301,81 @@ A second treatment, $A_{2}$ is then assigned to each patient at random (potentia
 
 The basic process described above is a Markov decision process. Markov decision processes are Markov chains with the addition of actions (adding choices) and rewards (motivation/goals). In a Markov decision process the agent and environment interact over a series of stages. At a stage $k$, the agent is presented with a state $S_k \in \mathcal{S}$ from the set of possible states, and chooses an action $A_{k} \in \mathcal{A}(S_{k})$ from the set of possible actions available in that state. At the next time step, the agent receives a numerical reward, $R_{k+1}$ as a consequence of the action chosen and is presented with a new state $S_{k+1}$. The states in a Markov decision process have the Markov property, which means that they summarize all the information from previous steps without a reduction in what's relevant to make the best action decision. Reinforcement learning methods try to determine how the agent should change its policy in response to experience (available data) in order to maximize reward. Hence ``solving'' a reinforcement learning problem means finding a policy that achieves the most reward over the long run.
 
-The expected return (the sum of rewards) for an agent starting in state $s$, taking action $a$, and then following policy $\pi$ thereafter, called the action-value function (and in the context of Q-learning, a Q-function), is denoted:
+The expected return (the sum of rewards) for an agent starting in state $s$, taking action $a$, and then following policy $\pi$ thereafter, called the action-value function for policy \( \pi \) (and in the context of Q-learning, a Q-function), is denoted:
 \begin{equation}
-  Q_{k}(s,a) \doteq
+  Q^{\pi}_{k}(s,a) \doteq
     \operatorname{E}_{\pi}\left[
       \sum_{j=k}^{K} R_{j+1} \mid S_{k} = s, A_{k} = a
     \right]
 \end{equation}
 
-With the Q-function for stage \( k \) in hand, one can obtain the optimal Q-function, which is the action-value function obtained when following the optimal policy \( \pi^{*} \), the policy that leads to the maximum cumulative rewards. This is done simply by finding the action \( a \) that maximizes \( Q_{k}(s,a) \) for each stage \( k \):
+All action-value (Q) functions satisfy a recursive relationship called the Bellman equation for $Q_{k}^{\pi}$:
+\begin{align}
+  Q_{k}^{\pi}(s,a) &=
+  \operatorname{E}_{\pi}\left[
+      \sum_{j=k}^{K} R_{j+1} \mid S_{k} = s, A_{k} = a\right] \nonumber\\
+     &=
+    \operatorname{E}_{\pi}\left[
+     R_{k+1}+ \sum_{j=k+1}^{K} R_{j+1} \mid S_{k} = s, A_{k} = a \right]\nonumber\\
+     &=
+     \operatorname{E}_{\pi}\left[R_{k+1}\mid S_{k} = s, A_{k} = a\right]+  \sum_{s'}\left[ \Pr(S_{k+1} = s'|S_{k} = s, \pi(S_{k} = s))\sum_{j=k+1}^{K} R_{j+1}\right]\nonumber\\
+     &=
+     \operatorname{E}_{\pi}\left[R_{k+1}\mid S_{k} = s, A_{k} = a\right]+  \sum_{s'}\left[ \Pr(S_{k+1} = s'|S_{k} = s, \pi(S_{k} = s))V_{k+1}^{\pi}(s')\right]\nonumber\\
+     \mbox{or}\nonumber\\
+ Q_{k}^{\pi}(s,a)    &=
+     \operatorname{E}_{s'\sim\Pr(s'|s,a)}\left[R_{k+1}+   V_{k+1}^{\pi}(s') \right]\nonumber\\
+     &=
+       \operatorname{E}_{s'\sim\Pr(s'|s,a)}\left\{ R_{k+1}+\operatorname{E}_{a'\sim \pi} [Q_{k+1}^{\pi}(s',a')] \right\}\label{eq:q_pi_dp_operator}, \\
+\text{where } \nonumber \\
+  V_{k}^{\pi}(s) &\doteq
+    \operatorname{E}_{\pi}\left[
+      \sum_{j=k}^{K} R_{j+1} \mid S_{k} = s
+    \right] \\
+    &= \operatorname{E}_{a\sim\pi} \left[ Q_{k}^{\pi}(s,a)  \right].
+\end{align}
+
+With the Q-function for stage \( k \) in hand, one can obtain the optimal Q-function, which is the action-value function obtained when following the optimal policy  \( \pi^{*} \), the policy that leads to the maximum cumulative rewards. This is done simply by finding the action \( a \) that maximizes \( Q^{\pi}_{k}(s,a) \) for each stage \( k \):
 \begin{equation}
-   Q^{*}_{k}(s, a) = \max_{a} Q_{k}(s, a)
+   Q^{*}_{k}(s, a) = \max_{a} Q^{\pi}_{k}(s, a)
 \end{equation}
 The optimal action at stage \( k \) is then the action which maximizes the optimal Q-function
 \begin{equation}
   a^{*}_{k} = \argmax_{a} Q^{*}_{k}(s, a)
 \end{equation}
+It turns out that there is always at least one optimal policy for every Markov decision process (\cite{Sutton2016}).
 
 Optimal Q-functions satisfy a recursive relationship called the Bellman optimality equation for \( Q^{*} \), which describes the relationship between adjacent stage optimal Q-functions:
-\begin{multline}
-    Q^{*}_{k}(s, a) = \operatorname{E}\sbr{R_{k+1} \mid S_k = s, A_k = a} + \\ \sum_{s' \in \mathcal{S}} \max_{a'} Q_{k+1}(s', a') % \pi(s', a') 
-    P(S_{k+1} = s' \mid S_k = s, A_k = a)
-\end{multline} 
-% Where \( \pi(s', a') \) is the probability of taking action $a'$ in state $s'$ as dictated by policy $\pi$.
-With the Bellman optimality equation, optimal Q-functions, and the state-transition probabilities, \( P(S_{k+1} = s' \mid S_k = s, A_k = a) \), we can use value iteration from dynamic programming to iterate through the stages backwards from the last stage to the first stage, obtaining at each stage the optimal Q-function and hence the optimal action. The sequence of optimal actions obtained is an optimal policy. In reinforcement learning problems, however, this dynamic programming approach equation won't work because the state-transition probabilities are unknown.
+\begin{align}
+  Q_{k}^{*}(s,a) &= \operatorname{E}_{s'\sim\Pr(s'|s,a)}\left\{ R_{k+1}+\max_{a'} [Q_{k+1}^{*}(s',a')] \right\}\label{eq:q_dp_operator}.
+\end{align}
 
-Q-learning overcomes this limitation by directly estimating the optimal Q-functions, for each stage, starting with the last stage. Dynamic programming is then used iterating backwards through the stages, obtaining each \( Q^{*}_{k}(s, a) \) at each step. Each  \( Q^{*}_{k}(s, a) \) can then be used to choose optimal policies/actions (shown below) for each stage \( k \). Since Q-learning does not require a model of the state-transition probabilities it is described as being ``model-free''.
+% \begin{multline}
+%     Q^{*}_{k}(s, a) = \operatorname{E}\sbr{R_{k+1} \mid S_k = s, A_k = a} + \\ \sum_{s' \in \mathcal{S}} \max_{a'} Q^{\pi}_{k+1}(s', a') % \pi(s', a')
+%     P(S_{k+1} = s' \mid S_k = s, A_k = a)
+% \end{multline}
+% Where \( \pi(s', a') \) is the probability of taking action $a'$ in state $s'$ as dictated by policy $\pi$.
+With the Bellman optimality equation, optimal Q-functions, and the state-transition probabilities, \( \Pr(S_{k+1} = s' \mid S_k = s, A_k = a) \), we can use value iteration from dynamic programming to iterate through the stages backwards from the last stage to the first stage, obtaining at each stage the optimal Q-function and hence the optimal action. The sequence of optimal actions obtained is an optimal policy \( \pi^{*} \). In reinforcement learning problems, however, this dynamic programming approach equation won't work because the state-transition probabilities are unknown.
+
+Q-learning overcomes this limitation by directly estimating the optimal Q-functions, for each stage, starting with the last stage. Dynamic programming is then used iterating backwards through the stages, obtaining estimates of each Q-function, \( \hat{Q}^{*}_{k}(s, a) \), at each step. Each \( \hat{Q}^{*}_{k}(s, a) \) can then be used to estimate optimal actions, \( \hat{A}^{*} \) (shown below) for each stage \( k \). Since Q-learning does not require a model of the state-transition probabilities it is described as being ``model-free''.
 % The algorithm goes backwards because this avoids simply choosing the greedy move at each stage, instead taking long term consequences into account.
 
-When there are many states and/or actions (as there are in most problems) \( Q^{*}_{k}(s, a) \) can be approximated using functions (as we do below), the parameters of which are adjusted to better match new observations over time. % Unfortunately these modifications mean that convergence can no longer be guaranteed (\cite{Szepesvari2010}).
+The estimated optimal Q-functions from Q-learning have been shown to converge to the true optimal action-value functions with probability one for finite Markov decision processes (MDPs with a finite number of states and actions), given that actions are repeatedly sampled in all states (\cite{Watkins1992}).
+
+When there are many states and/or actions (as there are in most problems) \( Q^{*}_{k}(s, a) \) can be approximated using functions (as we do below), the parameters of which are adjusted to better match new observations over time. % Unfortunately these modifications mean that convergence can no longer be guaranteed in all cases (\cite{Szepesvari2010}).
+
+
 
 \subsection{Estimating Q-functions and optimal DTRs} % (fold)
 \label{sub:estimating_q_functions}
 
 In our context, the full recursive form of Q-learning can be written as:
   \begin{equation}
-     \hat{Q}_{k}(A_{k}, H_{k})  = \operatorname{E}[r_{k+1} + \max_{a_{k+1}} \hat{Q}_{k+1}(A_{k+1}, H_{k+1}) \mid A_{k}, H_{k}], \quad k = 1, \ldots, K
+     \hat{Q}^{\pi}_{k}(A_{k}, H_{k})  = \operatorname{E}_{\pi}[r_{k+1} + \max_{a_{k+1}} \hat{Q}^{\pi}_{k+1}(A_{k+1}, H_{k+1}) \mid A_{k}, H_{k}], \quad k = 1, \ldots, K
   \end{equation}
   
 The optimal treatment for each participant $i \in 1, \ldots, n$ at each stage $k$ is the treatment which maximizes the corresponding stage's Q-function:
   \begin{equation}
-    \hat{A}^{*}_{ik} = \argmax_{a_{ik}} \hat{Q}_{k}(A_{ik}, H_{ik}), \enspace i = 1, \ldots, n; \enspace k = 1, \ldots, K
+    \hat{A}^{*}_{ik} = \argmax_{a_{ik}} \hat{Q}^{\pi}_{k}(A_{ik}, H_{ik}), \enspace i = 1, \ldots, n; \enspace k = 1, \ldots, K
   \end{equation}
 
 Since Q-functions are conditional expectations, standard regression techniques are applicable and hence the most popular method for estimating Q-functions in the health sciences is ordinary least squares (\cite{dtr-review}).
@@ -348,19 +383,19 @@ Since Q-functions are conditional expectations, standard regression techniques a
 That being said, any modeling method can be used, and as mentioned above recently \textcite{crt} have used extremely randomized trees and support vector regression to fit Q-functions. Note that Q-functions may differ across stages of treatment. The steps of Q-learning are as follows:
 
 \begin{enumerate}
-  \item Set the Q-function after the final stage to be 0, $\hat{Q}_{K+1} \equiv 0$ (though any value will do).
+  \item Set the Q-function after the final stage to be 0, $\hat{Q}^{\pi}_{K+1} \equiv 0$ (though any value will do).
   \item Create a pseudo-outcome for the last stage, $K$, by adding the rewards actually received from that stage to the estimated rewards that would have been obtained if the optimal dynamic treatment regime was followed after stage $K$:
   \begin{align}
-    \hat{r}_{K+1} &= r_{K+1} + \max_{a_{K+1}} \hat{Q}_{K+1}(A_{K+1}, H_{K+1}) \\
+    \hat{r}_{K+1} &= r_{K+1} + \max_{a_{K+1}} \hat{Q}^{\pi}_{K+1}(A_{K+1}, H_{K+1}) \\
     \hat{r}_{K+1} &= r_{K+1}
   \end{align}
-  \item Estimate the preceding stage Q-function, $Q_{K - 1}$, using the pseudo-outcome just created, $\hat{r}_{K}$, as the outcome with all aspects of patient history at that stage, $H_{K}$, desired as covariates, in addition to (if fitting a linear regression model) treatment by covariate interactions for covariates in $H_{K}$ thought to be indicative of subgroups with differential treatment effects:
+  \item Estimate the preceding stage Q-function, $Q^{\pi}_{K - 1}$, using the pseudo-outcome just created, $\hat{r}_{K}$, as the outcome with all aspects of patient history at that stage, $H_{K}$, desired as covariates, in addition to (if fitting a linear regression model) treatment by covariate interactions for covariates in $H_{K}$ thought to be indicative of subgroups with differential treatment effects:
   \begin{equation}
-      \hat{Q}_{K}(A_{K}, H_{K}) = \operatorname{E}[\hat{r}_{K+1} \mid A_{K}, H_{K}]
+      \hat{Q}^{\pi}_{K}(A_{K}, H_{K}) = \operatorname{E}[\hat{r}_{K+1} \mid A_{K}, H_{K}]
   \end{equation}
   \item Create the pseudo-outcome for the previous stage $K - 1$, again as if the optimal treatment regime will be followed after $K - 1$:
   \begin{equation}
-    \hat{r}_{K+1} = r_{K+1} + \max_{a_K} \hat{Q}_{K}(A_{K}, H_{K})
+    \hat{r}_{K+1} = r_{K+1} + \max_{a_K} \hat{Q}^{\pi}_{K}(A_{K}, H_{K})
   \end{equation}
   \item Repeat until you've estimated the Q-function for the first stage
 \end{enumerate}
@@ -369,25 +404,25 @@ That being said, any modeling method can be used, and as mentioned above recentl
 
 % subsubsection estimating_q_functions (end)
 
-The estimated optimal action-value functions from Q-learning have been shown to converge to the true optimal action-value functions with probability one for finite Markov decision processes (MDPs with a finite number of states and actions), given that actions are repeatedly sampled in all states (\cite{Watkins1992}). It is therefore important to note that in practice, the process described above should be repeated through a process called policy iteration. New patients would be recruited and the estimated optimal dynamic treatment regime estimated from the previous trial would be used to assign treatments to each patient. Then, an updated estimate of the optimal treatment regime would be obtained by using Q-learning on these new observations. This updated optimal dynamic treatment regime would then be used to assign treatments to a new group of patients, and the process would be repeated again. After each new trial, the updated optimal dynamic treatment regime gets closer to the true optimal dynamic treatment. 
+It is important to note that in practice, the process described above should be repeated through a process called policy iteration. New patients would be recruited and the estimated optimal dynamic treatment regime estimated from the previous trial would be used to assign treatments to each patient. Then, an updated estimate of the optimal treatment regime would be obtained by using Q-learning on these new observations. This updated optimal dynamic treatment regime would then be used to assign treatments to a new group of patients, and the process would be repeated again. After each new trial, the updated optimal dynamic treatment regime gets closer to the true optimal dynamic treatment. 
 
 % subsection steps_in_two_stage_q_learning (end)
 
 \begin{algorithm}[ht]
-  initialize $\hat{Q}_{K + 1}$ arbitrarily:
+  initialize $\hat{Q}^{\pi}_{K + 1}$ arbitrarily:
 
-  $\hat{Q}_{K + 1} \gets 0$
+  $\hat{Q}^{\pi}_{K + 1} \gets 0$
 
   \medskip
 
  \For{$k$ in $K, \ldots, 1$}{
   Estimate the rewards that would occur if the optimal policy was  followed after $k$:
 
-$ \hat{r}_{k} \gets r_{k} + \max_{A_{k+1}} \hat{Q}_{k+1}(A_{k+1}, H_{k+1})$
+$ \hat{r}_{k} \gets r_{k} + \max_{A_{k+1}} \hat{Q}^{\pi}_{k+1}(A_{k+1}, H_{k+1})$
 
 \medskip
 
-Estimate the Q-function, $Q_{k}(A_{k}, H_{k})$, for the preceding stage using this reward as the outcome (e.g. through ordinary least squares).
+Estimate the Q-function, $Q^{\pi}_{k}(A_{k}, H_{k})$, for the preceding stage using this reward as the outcome (e.g. through ordinary least squares).
 
 \medskip
 
