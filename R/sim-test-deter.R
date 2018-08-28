@@ -1,12 +1,8 @@
 getPreds <- function(Q, name, dat, pred) {
-  optimD <- max_df(
+  max_df(
     dat = filter(dat, str_detect(group, paste0("^", name, "$"))),
     model = Q$mod_list[[dat$month[1] + 1]],
     truth = F, pred = pred)
-  
-  bestDopt <- max_df(dat = optimD, model = NULL,
-                     truth = T, pred = pred)$dose
-  optimD %>% mutate(best_dose = bestDopt)
 }
 
 simMonthT <- function(dat, Q, pred) {
@@ -29,13 +25,13 @@ simMonthT <- function(dat, Q, pred) {
     mutate(
       lam = lambda(M_next, W_next, Z = noise_chng),
       pdeath = pexp(lam),
-      surv_time = rexp(nrow(.), lam),
+      # surv_time = rexp(nrow(.), lam),
       expect_surv_time = 1 / lam,
-      dead = ifelse(dead, T, surv_time < 1)
+      dead = ifelse(dead, T, expect_surv_time < 1)
     )
 }
 
-sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6, seed = 1) {
+sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6, seed = 20170128) {
   set.seed(seed)
   ngroups <- 12 + length(Q)
   M0 <- runif(npergroup, min = 0, max = 2)
@@ -61,23 +57,22 @@ sim_test <- function(Q, int, noise, noise_pred, npergroup = 200, Ttot = 6, seed 
     mutate(
       ID = rep(1:(npergroup * ngroups)),
       group = rep(groups, each = npergroup),
-      dose = c(D1, rep(NA, npergroup * (ngroups - 10))),
-      best_dose = NA
+      dose = c(D1, rep(NA, npergroup * (ngroups - 10)))
     )
   
   d <- simMonthT(dat, Q, pred = T) %>%
-    mutate(reward = ifelse(dead, log(surv_time), 0))
+    mutate(reward = ifelse(dead, log(expect_surv_time), 0))
   out <- d
   for (i in 1:(Ttot - 1)) {
     d <- d %>% mutate(month = i,
                       tumor_mass = M_next,
                       toxicity = W_next) %>%
       simMonthT(Q, pred = F) %>%
-      mutate(reward = ifelse(!dead, 0, log(i + surv_time)))
+      mutate(reward = ifelse(!dead, 0, log(i + 1 + expect_surv_time)))
     out <- bind_rows(out, d)
   }
   out %>% group_by(ID) %>% mutate(
-    reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
+    reward = ifelse(month == Ttot - 1 & !dead, log(expect_surv_time + Ttot - 1), reward),
     pdeath = ifelse(is.na(pdeath), 1, pdeath),
     tot_reward = sum(reward[1:6], na.rm = T),
     Qhat = reward,

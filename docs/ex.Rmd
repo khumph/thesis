@@ -11,10 +11,7 @@ noise_pred <- F
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
 p_load(tidyverse, rms, caret, gridExtra, stringr, partykit)
-source("sim.R")
-source("sim-test.R")
-source("q-functs.R")
-source("results-functs.R")
+source("ex-sim.R")
 ```
 
 
@@ -31,14 +28,11 @@ dat <- tibble(
 )
   
 dat <- genIntNoise(dat, int, noise, noise_pred)
-  
-dat <- simMonth(dat) %>% rename(
-  M = tumor_mass, D = dose, W = toxicity
-) %>% mutate(
-  Y = M_next - M
-)
 
-N = 50
+dat <- simMonth(dat) %>%
+  rename(M = tumor_mass, D = dose, W = toxicity) %>%
+  mutate(Y = M_next - M)
+
 dat_test <- tibble(
     ID = 1:N,
     month = rep(0, N),
@@ -50,11 +44,9 @@ dat_test <- tibble(
   
 dat_test <- genIntNoise(dat_test, int, noise, noise_pred)
   
-dat_test <- simMonth(dat_test) %>% rename(
-  M = tumor_mass, D = dose, W = toxicity
-) %>% mutate(
-  Y = M_next - M
-)
+dat_test <- simMonth(dat_test) %>%
+  rename(M = tumor_mass, D = dose, W = toxicity) %>%
+  mutate(Y = M_next - M)
 ```
 
 
@@ -79,7 +71,7 @@ ggplot(dat, aes(x = D, y = Y)) +
   geom_point(alpha = 0.5) +
   geom_abline(slope = -1.2, intercept = 0.75, linetype = 3) +
   geom_point(aes(x = D, y = predict(mod)), shape = 4) +
-  geom_line(aes(x = D, y = predict(mod)), linetype = 1)
+  geom_step(aes(x = D, y = predict(mod)), linetype = 1)
 
 ggsave(filename = "ex-plot-cart.png", width = 6, height = 3.5)
 
@@ -113,7 +105,7 @@ ggplot(dat, aes(x = D, y = Y)) +
 ggsave(filename = "ex-plot-mars.png", width = 6, height = 3.5)
 
 mod$finalModel %>% summary()
-plotmo(mod$finalModel)
+# plotmo(mod$finalModel)
 
 postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
 ```
@@ -137,7 +129,7 @@ ggplot(dat, aes(x = D, y = Y)) +
   geom_point(alpha = 0.5) +
   geom_abline(slope = -1.2, intercept = 0.75, linetype = 3) +
   geom_point(aes(x = D, y = predict(mod)), shape = 4) +
-  geom_line(aes(x = D, y = predict(mod)), linetype = 1)
+  geom_step(aes(x = D, y = predict(mod)), linetype = 1)
 
 ggsave(filename = "ex-plot-rf.png", width = 6, height = 3.5)
 

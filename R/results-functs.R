@@ -1,18 +1,5 @@
-indPlot <- function(data, ex_ID) {
-  tox_mass_plot <- ggplot(data = filter(data, ID == ex_ID)) +
-    geom_line(mapping = aes(x = month, y = toxicity, group = ID),
-              color = "green") +
-    geom_line(mapping = aes(x = month, y = tumor_mass, group = ID))
-  
-  dose_plot <- ggplot(data = filter(data, ID == ex_ID)) +
-    geom_line(mapping = aes(x = month, y = dose, group = ID),
-              color = "red") + ylim(0, 1)
-  
-  list(grid.arrange(tox_mass_plot, dose_plot, nrow = 2, ncol = 1), ex_ID)
-}
-
-maxPlots <- function(Q, ex_ID, mon = 5, n = 4, int, noise_pred, seed = 1) {
-  dat <- filter(Q$data, month == mon)
+maxPlots <- function(Q, dat_long, ex_ID, mon, n = 4, int, noise_pred, seed = 1) {
+  dat <- filter(dat_long, month == mon)
   set.seed(seed)
   ids <- dat %>% filter(!is.na(M_next)) %>%
     distinct(ID) %>% sample_n(n) %>% flatten_dbl()

@@ -13,6 +13,11 @@
 % English language/hyphenation
 \usepackage[english]{babel}
 
+\addto\captionsenglish{% Replace "english" with the language you use
+  \renewcommand{\contentsname}%
+    {Table of Contents}%
+}
+
 % > < print corectly, accented words hyphenate
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -27,8 +32,11 @@
 \usepackage[style=authoryear, hyperref = true]{biblatex}
 \addbibresource{thesis.bib}
 
+
+
 % \usepackage{tikz}
 % \usetikzlibrary{arrows, shapes, positioning}
+
 
 
 
@@ -36,6 +44,8 @@
 \RestyleAlgo{boxruled}
 \setlength\belowcaptionskip{12pt}
 \DeclareMathOperator*{\argmax}{argmax}
+% \renewcommand{\contentsname}{Table of Contents}
+% \renewcommand{\contentsname}{}
 
 %--------------------------------------------------------------------------
 %  TITLE SECTION
@@ -65,7 +75,8 @@
         
         \vfill
         
-        \underline{\kern 2in}
+        \underline{\kern 3in} \\*
+        Copyright \copyright~Kyle Humphrey 2017
         
         \vfill
         
@@ -138,24 +149,28 @@ Brief quotations from this thesis are allowable without special permission, prov
 \begin{tabu} to \textwidth {X[1.3, c] X[c]}
   \underline{\kern 2.5in} & \underline{\quad April 26, 2017 \quad}\\
   Jin Zhou, Ph.D. &   \emph{Date} \\
-  Assistant Professor of Biostatistics & \\[0.5cm]
-  \underline{\kern 2.5in} & \underline{\quad April 26, 2017 \quad} \\
-  Chengcheng Hu, Ph.D. &   \emph{Date} \\
-  Associate Professor of Biostatistics & \\[0.5cm]
-  \underline{\kern 2.5in} & \underline{\quad April 26, 2017 \quad} \\
-  Chiu-Hsieh Hsu, Ph.D. &   \emph{Date} \\
-  Associate Professor of Biostatistics &
+  Assistant Professor of Biostatistics & 
 \end{tabu}
 }
 }
-\thispagestyle{empty}
+\vspace{1.25in}
+
+\setcounter{page}{2}
 \newpage
-\setcounter{page}{1}
+
 
 \tableofcontents
+\newpage
+
+\addcontentsline{toc}{section}{List of Figures}
 \listoffigures
+\newpage
+
+\addcontentsline{toc}{section}{List of Tables}
 \listoftables
 \newpage
+
+\addcontentsline{toc}{section}{Abstract}
 
 \begin{abstract}
 In a simulation of an advanced generic cancer trial, I use Q-learning, a reinforcement learning algorithm, to develop dynamic treatment regimes for a continuous treatment, the dose of a single drug. Selected dynamic treatment regimes are tailored to time-varying patient characteristics and to patient subgroups with differential treatment effects. This approach allows estimation of optimal dynamic treatment regimes without a model of the disease process or a priori hypotheses about subgroup membership. Using observed patient characteristics and outcomes from the simulated trial, I estimate Q-functions based on 1) a single regression tree grown by the Classification And Regression Trees (CART) method, 2) random forests, and 3) a slightly modified version of Multivariate Adaptive Regression Splines (MARS). I then compare the survival times of an independent group of simulated patients under treatment regimes estimated using Q-learning with each of the three methods, 10 constant dose regimes, and the best possible treatment regime chosen using a brute force search over all possible treatment regimes with complete knowledge of disease processes and their effects on survival. I also make these comparisons in scenarios with and without spurious high dimensional covariates and with and without patient subgroups with differential treatment effects. Treatment regimes estimated using Q-learning with MARS and random forests greatly increased survival times when compared to the constant dose regimes, but were still considerably lower than the best possible dose regime. Q-learning with a single regression tree did not outperform the constant dose regimes. These results hold across high dimensional and subgroup scenarios. While the MARS method employed produces much more interpretable models than random forests, and therefore has more promise for patient subgroup identification, I show that it is also more sensitive to variations in training data.
@@ -260,7 +275,7 @@ For our purposes, trees (and MARS, which shares many of their desirable properti
 
 % subsection overview_of_contents (end)
 
-\section{Reinforcement Learning} % (fold)
+\section{Reinforcement learning} % (fold)
 \label{sec:reinforcement_learning}
 
 \subsection{Basic elements and basic process} % (fold)
@@ -436,7 +451,7 @@ $\hat{A}^{*}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 
 % section q_learning (end)
 
-\section{Regression Trees using CART} % (fold)
+\section{Regression trees using CART} % (fold)
 \label{sec:rpart}
 
 A decision tree is a graphical representation of nested \texttt{if-then} statements, with each ``decision'' being based on whether the \texttt{if} statement is true or false. A regression tree is a kind of decision tree where each \texttt{if-then} statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time. Since an \texttt{if} statement creates two possible outcomes (\texttt{TRUE} or \texttt{FALSE}), each split is binary and results in two \emph{daughter nodes}, two subsets of the data created according to the value of a particular covariate. Once the desired number of splits is performed, each \emph{terminal node} or \emph{leaf}, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node). Unlike trees in nature, decision trees grow from the root node downward, as shown in the illustrative example below. Since in reinforcement learning, rewards are defined to be continuous, we focus on regression trees constructed using the CART procedure of \textcite{CART}.
@@ -849,7 +864,7 @@ Largely inspired by \textcite{crt} and \textcite{nsclc}, I estimated optimal dyn
 %   \end{tikzpicture}
 % \end{figure}
 
-\subsection{Patient Model} % (fold)
+\subsection{Patient model} % (fold)
 \label{sub:vpm}
 
 % The goals of the patient model were to capture:
@@ -1062,7 +1077,7 @@ Variable importance was calculated for each model at each stage, as a percentage
 
 % section simulation (end)
 
-\section{Simulation Results} % (fold)
+\section{Simulation results} % (fold)
 \label{sec:simulation_results}
 
 \begin{figure}[!htbp]
@@ -1244,6 +1259,8 @@ Extending this framework to observational data could have a large impact.  For e
 
 % section discussion (end)
 
+% \clearpage
+\addcontentsline{toc}{section}{References}
 \printbibliography
 
 \end{document}

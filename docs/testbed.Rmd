@@ -24,15 +24,15 @@ noise_pred <- params$noise_pred
 ```{r setup}
 knitr::opts_chunk$set(warning = F, message = F)
 library(pacman)
-p_load(tidyverse, rms, caret, gridExtra, stringr)
+p_load(tidyverse, rms, caret, rpart, earth, ranger, gridExtra, stringr, grid)
 source("sim.R")
-source("sim-test.R")
+source("sim-test-best-deter.R")
 source("q-functs.R")
 source("results-functs.R")
 ```
 
 ```{r}
-samps <- 20
+samps <- 1
 nstages <- 3
 ```
 
@@ -44,34 +44,55 @@ dat_long <- map_df(1:samps, ~ sim(N = 1000,
 ```
 
 ```{r formula}
-if (int & !noise) {
-  nms <- dat_long %>%
-    select(tumor_mass, toxicity, dose, Qhat, starts_with("X")) %>% names()
-} else if (noise & !int) {
-  nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
-                        starts_with("Z"),
-                        starts_with("V")) %>% names()
-} else if (noise & int) {
-  nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
-                             starts_with("X"),
-                             starts_with("Z"),
-                             starts_with("V")) %>% names()
-} else {
-  nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat) %>% names()
-}
-response <- "Qhat"
-treatment <- "dose"
-pred_nms <- nms[!(nms %in% c(response, treatment))]
-form <- paste(response,
-                   "~",
-                   paste0(c(pred_nms, treatment), collapse = " + ")) %>%
-  as.formula()
+form <- makeForm(dat_long, int = int, noise = noise)
+pred_nms <- form$pred_nms
+form <- form$form
 ```
 
 ```{r}
-set.seed(20170321)
+set.seed(20170422)
 ex_ID <- sample(dat_long$ID, 1)
+ex_ID <- 2
 indPlot(dat_long, ex_ID)
+```
+
+```{r}
+  
+  dat <- bind_rows(filter(dat_long, ID == ex_ID),
+                   filter(dat_long, ID == ex_ID, month == 2) %>%
+                     mutate(month = 3, tumor_mass = M_next, toxicity = W_next))
+  save(dat, file = "ind_plot_dat.Rdata")
+  
+  # p1 <- dat %>% rename(`Tumor mass` = tumor_mass, Toxicity = toxicity) %>%
+    # gather(var, val, `Tumor mass`, Toxicity) %>%
+    
+  p2 <- ggplot(dat) +
+    geom_line(mapping = aes(x = month, y = tumor_mass)) +
+    geom_line(mapping = aes(x = month, y = toxicity), color = "green", linetype = 2) +
+    theme_bw() +
+    labs(y = "M (solid); W (dashed)") +
+    theme(
+      # legend.position = "top",
+      # legend.title = element_blank(),
+      axis.title.x = element_blank() #,
+      # axis.title.y = element_blank()
+    )
+  p3 <- ggplot(dat) +
+    geom_step(aes(x = month, y = beta, group = ID), color = "blue") +
+    labs(y = expression(beta)) +
+    theme_bw() +
+    theme(axis.title.x = element_blank())
+    
+  
+  p1 <- ggplot(data = dat) +
+    geom_step(mapping = aes(x = month, y = dose, group = ID),
+              color = "red") + ylim(0, 1) +
+    labs(x = "Month", y = "Dose") + theme_bw() +
+    theme(axis.title.x = element_blank())
+  
+  grid.draw(rbind(ggplotGrob(p1),
+                  ggplotGrob(p2),
+                  ggplotGrob(p3), size = "first"))
 ```
 
 # rpart
@@ -80,23 +101,25 @@ ptm_rpart <- proc.time()
 Q_rpart <- map(
   1:samps,
   ~ Qlearn(
-    form = form,
+    form = form, 
     dat_long = filter(dat_long, samp == .x),
     nstages = nstages,
-    # tuneGrid = expand.grid(cp = 10^(seq(-7, -1, 1))),
-    # trControl = trainControl(method = "boot"),
-    method = 'rpart1SE',
+    method = 'rpart',
     control = rpart.control(cp = 1e-5,
+                            maxcompete = 0,
                             maxsurrogate = 0,
-                            minbucket = 5,
-                            minsplit = 15)
-  )
+                            minbucket = 5))
 ) %>% set_names(paste0("CART", 1:samps))
 (t_rpart <- proc.time() - ptm_rpart)
+
+# varImp(Q_rpart$CART1$mod_list[[1]]$finalModel)
+# imps <-  Q_rpart$CART1$mod_list[[1]]$finalModel$variable.importance
+# imps[1]/sum(imps)
 ```
 
 ```{r}
-maxPlots(Q_rpart$CART1, ex_ID, int = int, noise_pred = noise_pred)
+maxPlots(Q_rpart$CART1, dat_long, ex_ID, mon = nstages - 1,
+         int = int, noise_pred = noise_pred)
 ```
 
 # MARS
@@ -104,7 +127,7 @@ maxPlots(Q_rpart$CART1, ex_ID, int = int, noise_pred = noise_pred)
 #--- predictors in PREDICTORS are allowed to interact with predictors in PARENTS
 #--- but no other interactions are allowed
 
-PREDICTORS <- pred_nms
+PREDICTORS <- form$pred_nms
 PARENTS <-  c("dose")
 allowFunct <- function(degree, pred, parents, namesx) {
   if (degree <= 1)
@@ -192,11 +215,23 @@ maxPlots(Q_rf$rf1, ex_ID, int = int, noise_pred = noise_pred)
 
 ```{r}
 ptm_test <- proc.time()
-Q_list <- c(Q_rpart, Q_mars, Q_bmars, Q_rf)
+# Q_list <- c(Q_rpart, Q_mars, Q_bmars, Q_rf)
+Q_list <- Q_rpart
 dat_test <- sim_test(Q_list, int = int, noise = noise, noise_pred = noise_pred,
                      npergroup = 2000, Ttot = nstages, seed = 20170410,
-                     best = !(noise & !noise_pred))
+                     best = F)
 (t_test <- proc.time() - ptm_test)
+```
+
+
+```{r, eval = F}
+dat_test %>% group_by(ID) %>%
+  mutate(tot_reward = sum(reward)) %>%
+  group_by(group) %>%
+  summarise(tot_reward = mean(exp(tot_reward), na.rm = T)) %>% 
+  ggplot() +
+  geom_boxplot(aes(x = group, y = tot_reward)) +
+  coord_trans(y = "log")
 ```
 
 ```{r}

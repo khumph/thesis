@@ -97,10 +97,9 @@ simMonth <- function(dat) {
   dat <- Mnext(dat)
   dat <- Wnext(dat)
   dat %>% mutate(
-    lam = lambda(M_next, W_next, Z = noise_chng),
+    beta = 1 / lambda(M_next, W_next, Z = noise_chng),
     d_next = runif(nrow(.), min = 0, max = 1),
-    surv_time = rexp(nrow(.), lam),
-    expect_surv_time = 1 / lam,
+    surv_time = rexp(nrow(.), 1 / beta),
     dead = ifelse(dead, dead, surv_time < 1)
   )
 }
@@ -131,8 +130,8 @@ sim <- function(N = 1000, Ttot = 6, int = F, noise = F, noise_pred = F, seed = 1
     out <- bind_rows(out, d)
   }
   out %>% mutate(
-    reward = ifelse(month == Ttot - 1 & !dead, log(surv_time + Ttot - 1), reward),
-    Qhat = reward,
-    best = NA
+    reward = ifelse(month == Ttot - 1 & !dead,
+                    log(surv_time + Ttot - 1), reward),
+    Qhat = reward
   )
 }

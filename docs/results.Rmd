@@ -1,0 +1,558 @@
+---
+title: "Results"
+output: html_document
+---
+
+```{r}
+rm(list = ls())
+options(tikzDefaultEngine = "xetex")
+library(pacman)
+p_load(tidyverse, Hmisc, caret, ranger, rpart, earth, stringr, partykit, feather)
+source("ex-sim.R")
+```
+
+```{r}
+grp_nms <- c("greedy", "bmars", "mars", "rf", "CART", '1on1off',
+             seq(from = 1, to = 0.1, by = -0.1) %>% as.character())
+grp_labs <- c("best", "BMARS", "MARS", "RF", "CART", '1on1off',
+              seq(from = 1, to = 0.1, by = -0.1) %>% as.character())
+
+scen_levs <- c("orig", "noise", "noise_pred", "int", "int_noise",
+               "int_noise_pred")
+labs_lng <- c("Basic", "Noise", "Predictive noise", "Interaction", "Interaction + noise", "Interaction + predictive noise")
+```
+
+
+```{r replace rpart, eval = F}
+load('all_rpart.Rdata')
+all_f <- dat_all %>% select(-starts_with("V"), -starts_with("Z")) %>%
+  group_by(ID, scenario) %>%
+  mutate(tot_reward = sum(reward[1:3], na.rm = T)) 
+load('all_3.Rdata')
+
+dat_all <- bind_rows(
+  dat_all %>% filter(mod != "CART"),
+  all_f
+)
+
+dat_all <- dat_all %>% ungroup() %>%
+  mutate(scenario = factor(scenario, levels = scen_levs),
+         mod = factor(mod, levels = grp_nms, labels = grp_labs)) %>%
+  group_by(scenario, mod, samp) %>%
+  mutate(rep = 1:n() %/% (100.0000000001 * 6)) %>% filter(mod != "BMARS", mod != "1on1off")
+
+write_feather(dat_all, 'all_3.feather')
+save(dat_all, file = 'all_3_rpart.Rdata')
+```
+
+```{r}
+load("all_rpart80.Rdata")
+all_f <- dat_all %>% select(-starts_with("V"), -starts_with("Z")) %>%
+  group_by(ID, scenario) %>%
+  mutate(tot_reward = sum(reward[1:3], na.rm = T)) 
+load('all_100.Rdata')
+
+dat_all <- bind_rows(
+  dat_all,
+  all_f
+)
+
+dat_all <- dat_all %>% mutate(
+  mod = ifelse(mod == "mars", "MARS", mod),
+  mod = ifelse(mod == "rf", "RF", mod)
+) %>% ungroup()
+
+dat_all <- dat_all %>% ungroup() %>%
+  mutate(scenario = factor(scenario, levels = scen_levs),
+         mod = factor(mod, levels = grp_labs)) %>%
+  group_by(scenario, mod, samp) %>%
+  mutate(rep = 1:n() %/% (100.000000001 * 6))
+
+save(dat_all, file = 'all_100.Rdata')
+```
+
+
+# method examples
+
+```{r gen-ex-data}
+int <- F
+noise <- F
+noise_pred <- F
+set.seed(20170410)
+N = 50
+dat <- tibble(
+    ID = 1:N,
+    month = rep(0, N),
+    tumor_mass = runif(N, min = 1, max = 2),
+    toxicity = 1,
+    dose = runif(N, min = 0, max = 1),
+    dead = rep(F, N)
+)
+
+dat <- genIntNoise(dat, int, noise, noise_pred)
+
+dat <- simMonth(dat) %>%
+  rename(M = tumor_mass, D = dose, W = toxicity) %>%
+  mutate(Y = M_next - M)
+
+dat_test <- tibble(
+    ID = 1:N,
+    month = rep(0, N),
+    tumor_mass = runif(N, min = 1, max = 2),
+    toxicity = 1,
+    dose = runif(N, min = 0, max = 1),
+    dead = rep(F, N)
+)
+
+dat_test <- genIntNoise(dat_test, int, noise, noise_pred)
+
+dat_test <- simMonth(dat_test) %>%
+  rename(M = tumor_mass, D = dose, W = toxicity) %>%
+  mutate(Y = M_next - M)
+
+form <- Y ~ D
+numpreds <- 0
+```
+
+```{r cart-model}
+set.seed(20170128)
+mod_rpart <- train(
+  form,
+  data = dat,
+  method = 'rpart1SE',
+  minbucket = 5
+)
+mod <- mod_rpart
+
+pR <- postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+```
+
+```{r ex-cart-tree}
+cap <- "Regression tree fit to example data. For each split, the variable split upon is shown as a circle representing an internal node (with a numbered box giving the node a number). The values of the splitting variable that define resulting node membership are shown breaking the line connecting nodes (e.g. observations with $D \\geq 0.585$ end up in node 2, while observations with $D < 0.585$ end up in node 5). Boxplots show the distribution of responses in each terminal node (nodes 3, 4, 6, and 7, shown at the bottom of the tree)"
+as.party(mod$finalModel) %>% plot()
+```
+
+```{r}
+cap <- "Predicted regression function for example data using CART. The grey dots are the observations and the dotted line is the true relationship from which they were generated. The solid line connects the predicted values, which are shown with Xs."
+ggplot(dat, aes(x = D, y = Y)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = -1.2, intercept = 0.75, linetype = 3) +
+  geom_point(aes(x = D, y = predict(mod)), shape = 4) +
+  geom_step(aes(x = D, y = predict(mod)), linetype = 1) +
+  theme_bw()
+```
+
+```{r ex-mars-mod}
+set.seed(20170128)
+mod_mars <- train(
+  Y ~ D,
+  data = dat,
+  method = 'gcvEarth',
+  trControl = trainControl(method = "none"),
+  tuneGrid = expand.grid(degree = 2)
+)
+mod <- mod_mars
+pR <- postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+```
+
+
+```{r ex-mars-plot}
+cap <- "Predicted regression function for example data using MARS. As in Figure \\ref{fig:ex-plot-cart}, the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the Xs represent predicted values for each observation."
+ggplot(dat, aes(x = D, y = Y)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = -1.2, intercept = 0.75, linetype = 3) +
+  geom_point(aes(x = D, y = predict(mod)), shape = 4) +
+  geom_line(aes(x = D, y = predict(mod)), linetype = 1) +
+  theme_bw()
+```
+
+```{r ex-rf-mod}
+set.seed(20170128)
+mod_rf <- train(
+  form,
+  data = dat,
+  method = 'ranger',
+  tuneGrid = expand.grid(mtry = 1),
+  trControl = trainControl(method = "none"),
+  min.node.size = 5,
+  num.trees = 100
+)
+
+mod <- mod_rf
+
+pR <- postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+
+```
+
+```{r ex-rf-plot}
+cap <- "Predicted regression function for example data using RF. As in Figure \\ref{fig:ex-plot-cart} and Figure \\ref{fig:ex-plot-mars}, the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the Xs represent predicted values for each observation."
+ggplot(dat, aes(x = D, y = Y)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = -1.2, intercept = 0.75, linetype = 3) +
+  geom_point(aes(x = D, y = predict(mod)), shape = 4) +
+  geom_step(aes(x = D, y = predict(mod)), linetype = 1) +
+  theme_bw()
+
+```
+
+```{r load-all-sim-data}
+load("all_100.Rdata")
+```
+
+```{r derive-plot-data}
+scen_levs <- c("orig", "noise", "noise_pred", "int", "int_noise",
+               "int_noise_pred")
+labs_lng <- c("Basic", "Noise", "Predictive noise", "Interaction", "Interaction + noise", "Interaction + predictive noise")
+labs_lng <- paste(labs_lng, "scenario")
+
+dat_test_all_summ <- dat_all %>%
+  group_by(mod, samp, scenario) %>%
+  summarise(mean_reward = mean(exp(tot_reward))) %>% ungroup() %>%
+  mutate(scenario = factor(scenario, levels = scen_levs, labels = labs_lng))
+```
+
+```{r surv-plot-no-int}
+cap <- "Months of survival under each regime for the basic scenario. The same 200 patients were simulated under each treatment regime (same initial tumor masses and toxicities). This test simulation was repeated 25 times and averaged over the 25 repetitions"
+plot_surv <- function(dat) {
+  ggplot(dat) +
+  geom_boxplot(mapping = aes(x = mod,
+                             y = mean_reward)) +
+  labs(y = "Mean months of survival",
+       x = "Regime") +
+  theme(legend.position = "none") + coord_trans(y = "log") +
+  facet_wrap(~ scenario, nrow = 3) + theme_bw()
+}
+dat_test_all_summ %>%
+  filter(scenario %in% labs_lng[1:3]) %>% plot_surv()
+```
+
+```{r surv-plot-int}
+cap <- "Months of survival under each regime for the interaction scenarios."
+dat_test_all_summ %>%
+  filter(scenario %in% labs_lng[4:6]) %>% plot_surv()
+```
+
+```{r tab-surv}
+col_heads <- c("Regime", "B", "N", "PN", "I", "I+N", "I+PN")
+cap <- "Average months of survival under each scenario, averaged over 5 test sets each with 200 participants for each regime. The fitted B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, IN is the interaction and noise scenario, and IPN is the interaction and predictive noise scenario."
+cap_toc <- "Average months of survival under each scenario"
+dat_all %>%
+  group_by(scenario, mod) %>%
+  summarise(mean_surv_time = mean(exp(tot_reward))) %>%
+  spread(key = scenario, value = mean_surv_time) %>%
+  latex(file = "", dec = 1,
+        caption = cap, caption.lot = cap_toc, label = "tab:rewards",
+        where = "!htbp", rowname = NULL, colheads = col_heads, booktabs = T)
+```
+
+```{r tab-sd-train}
+cap <- "SD of rewards across training sets"
+cap_toc <- "SD of rewards across training sets"
+dat_all %>%
+  filter(mod %in% c("BMARS", "MARS", "RF", "CART")) %>%
+  group_by(scenario, mod, samp) %>%
+  summarise(mean_surv_time = mean(exp(tot_reward))) %>%
+  group_by(scenario, mod) %>%
+  summarise(sd_mean_surv_time = sd(mean_surv_time)) %>%
+  spread(key = scenario, value = sd_mean_surv_time) %>%
+  latex(file = "", dec = 1,
+        caption = cap, caption.lot = cap_toc, label = "tab:sd-train-rewards",
+        where = "!htbp", rowname = NULL, colheads = col_heads, booktabs = T)
+
+```
+
+```{r tab-sd-test}
+cap <- "SD of rewards across test sets"
+cap_toc <- "SD of rewards across test sets"
+dat_all %>%
+  group_by(scenario, mod, samp, rep) %>%
+  summarise(mean_surv_time = mean(exp(tot_reward))) %>%
+  group_by(scenario, mod, samp) %>%
+  summarise(sd_mean_surv_time = sd(mean_surv_time)) %>%
+  group_by(scenario, mod) %>%
+  summarise(mean_sd_mean_surv_time = mean(sd_mean_surv_time)) %>%
+  spread(key = scenario, value = mean_sd_mean_surv_time) %>%
+  latex(file = "", dec = 1,
+        caption = cap, caption.lot = cap_toc, label = "tab:sd-test-rewards",
+        where = "!htbp", rowname = NULL, colheads = col_heads, booktabs = T)
+```
+
+```{r}
+imps <- read_feather("imps.feather")
+```
+
+<!-- <<var-imps-no-int, fig.cap = cap, fig.lp='fig:', fig.height=7.5, fig.width='\\textwidth', out.width='\\textwidth' -->
+```{r var-imps-no-int}
+cap <- "Variable importances for the basic scenarios"
+plot_imps <- function(dat) {
+  dat %>% mutate(scenario = factor(scenario,
+                                  levels = scen_levs,
+                                  labels = labs_lng)) %>%
+    ggplot() +
+    geom_violin(aes(x = var_nm, y = importance,
+                    linetype = mod, color = mod),
+                position = "dodge") +
+    labs(x = "Variable",
+         y = "Importance (% of most important variable)", 
+         linetype = "Model", color = "Model") +
+    facet_wrap( ~ scenario, nrow = 3) +
+    theme_bw() + theme(legend.position = "bottom")
+}
+imps %>% filter(!str_detect(scenario, "int")) %>% plot_imps()
+```
+
+<<var-imps-int, fig.cap = cap, fig.lp='fig:', fig.height=7.5, fig.width='\\textwidth', out.width='\\textwidth'
+```{r}
+cap <- "Variable importances for the interaction scenarios"
+imps %>% filter(str_detect(scenario, "int")) %>% plot_imps()
+```
+
+<<tab-var-imps, results='asis'
+```{r}
+cap <- "Average variable importance for the first stage averaged over the models."
+cap_toc <- "Average variable importance for the first stage averaged over the models."
+col_heads <- c("B", "N", "PN", "I", "I+N", "I+PN")
+var_levs <- c("M", "W", "D", "X", "Z", "V")
+var_labs <- str_c("$", var_levs, "$")
+imp_tab <- imps %>%
+  mutate(var_nm = factor(var_nm,
+                         levels = var_levs, labels = var_labs)) %>%
+  group_by(scenario, mod, var_nm) %>%
+  summarise(mean_imp = str_c(
+    sprintf("%.1f", round(mean(importance), 1)), " (", 
+    sprintf("%.1f", round(sd(importance), 1)), ")")
+  ) %>%
+  spread(key = scenario, value = mean_imp) %>%  
+  ungroup() %>% select(-mod)
+
+latex(select(imp_tab, -var_nm), file = "", dec = 1, na.blank = T,
+      caption = cap, caption.lot = cap_toc, label = "tab:imp-1",
+      rowname = imp_tab$var_nm,
+      rowlabel = "Variable",
+      rgroup = c("MARS", "RF", "CART"),
+      n.rgroup = rep(6, 3),
+      where = "!htbp", colheads = col_heads,
+      booktabs = T)
+```
+
+
+
+# Variable importance
+
+```{r}
+getImps <- function(Q_list, nmod, nstage, int, noise) {
+  mod <- Q_list[[nmod]]$mod_list[[nstage]]
+  if (class(mod$finalModel) == "earth") {
+     varImp(mod$finalModel, useModel = T, value = "rss") %>%
+      rename(importance = Overall) %>% 
+      rownames_to_column(var = "var_nm") %>% 
+      mutate(nstage = nstage,
+             nmod = 20 + (nmod %% 80.00001 %>% ceiling()),
+             mod = "mars")
+  } else if (class(mod$finalModel) == "ranger") {
+    imps <- ranger::importance(mod$finalModel)
+    tibble(var_nm = names(imps), 
+           importance = imps / max(imps) * 100,
+           nstage = nstage,
+           nmod = 20 + (nmod %% 80.00001 %>% ceiling()),
+           mod = "rf") 
+  } else if (class(mod) == "rpart") {
+    imps <- mod$variable.importance
+    imps <- (imps / max(imps)) * 100
+    var_nms <- c("tumor_mass", "toxicity", "dose", "X1", "X2",
+                 str_c("V", 1:90), str_c("Z", 1:10))
+    if (!noise & !int) {
+      var_nms <- var_nms[1:3]
+    } else if (int & !noise) {
+      var_nms <- var_nms[1:5]
+    } else if (!int & noise) {
+      var_nms <- var_nms[-(4:5)]
+    }
+    tibble(var_nm = var_nms,
+           importance = ifelse(var_nms %in% names(imps), imps[var_nm], 0),
+           nstage = nstage,
+           nmod = 20 + (nmod %% 100.00001 %>% ceiling()),
+           mod = "CART")
+  } 
+}
+
+impsByMod <- function(x, int, noise) {
+   map_df(1:3, ~ getImps(Q_list, x, ., int, noise))
+}
+
+x <- list(
+  orig = rep(F, 3),
+  noise = c(F, T, F),
+  noise_pred = c(F, T, T),
+  int = c(T, F, F),
+  int_noise = c(T, T, F),
+  int_noise_pred = rep(T, 3)
+)
+```
+
+```{r, eval = F}
+ptm <- proc.time()
+for (i in seq_along(x)) {
+  int = x[[i]][1]
+  noise = x[[i]][2]
+  noise_pred = x[[i]][3]
+  type_nm <- paste0(
+    ifelse(int, "int", ""),
+    ifelse(int & noise, "_", ""),
+    ifelse(noise, "noise", ""),
+    ifelse(noise_pred, "_pred", ""),
+    ifelse(!noise_pred & !noise & !int, "orig", "")
+  )
+  load(paste0(type_nm, "_rpart80.Rdata"))
+  prefix <- c("dat_test_", "Q_list_")
+  var_nms <- map(prefix, ~ paste0(.x, type_nm)) %>%
+    set_names(c("dat_test", "Q_list"))
+  rm(list = c(var_nms$dat_test))
+  Q_list <- var_nms$Q_list %>% parse(text = .) %>% eval()
+  
+  load(paste0(type_nm, "_rpart.Rdata"))
+  Q_list[str_detect(names(Q_list), "^bmars")] <- NULL
+  var_nms <- map(prefix, ~ paste0(.x, type_nm)) %>%
+    set_names(c("dat_test", "Q_list"))
+  rm(list = c(var_nms$dat_test))
+  Q_list <- c(Q_list, var_nms$Q_list %>% parse(text = .) %>% eval())
+  assign(str_c("Q_list_", type_nm), Q_list)
+  
+  if (!noise & !int & !noise_pred) {
+    imps <- map_df(1:length(Q_list), ~ impsByMod(.x, int, noise)) %>%
+      mutate(scenario = type_nm)
+  } else {
+    imps <- bind_rows(imps,
+                      map_df(1:length(Q_list), ~ impsByMod(.x, int, noise)) %>%
+                        mutate(scenario = type_nm))
+  }
+}
+load("imps_100.Rdata")
+imps <- bind_rows(imps,
+                      imps_new)
+save(imps, file = "imps_100.Rdata")
+proc.time() - ptm
+```
+
+
+```{r}
+ptm <- proc.time()
+for (i in seq_along(x)) {
+  int = x[[i]][1]
+  noise = x[[i]][2]
+  noise_pred = x[[i]][3]
+  type_nm <- paste0(
+    ifelse(int, "int", ""),
+    ifelse(int & noise, "_", ""),
+    ifelse(noise, "noise", ""),
+    ifelse(noise_pred, "_pred", ""),
+    ifelse(!noise_pred & !noise & !int, "orig", "")
+  )
+  load(paste0(type_nm, "_rf.Rdata"))
+  prefix <- c("dat_test_", "Q_list_")
+  var_nms <- map(prefix, ~ paste0(.x, type_nm)) %>%
+    set_names(c("dat_test", "Q_list"))
+  rm(list = c(var_nms$dat_test))
+  Q_list <- var_nms$Q_list %>% parse(text = .) %>% eval()
+  
+  if (!noise & !int & !noise_pred) {
+    imps <- map_df(1:length(Q_list), ~ impsByMod(.x, int, noise)) %>%
+      mutate(scenario = type_nm)
+  } else {
+    imps <- bind_rows(imps,
+                      map_df(1:length(Q_list), ~ impsByMod(.x, int, noise)) %>%
+                        mutate(scenario = type_nm))
+  }
+}
+load("imps_100.Rdata")
+imps <- bind_rows(imps, imps_new)
+save(imps, file = "imps_100.Rdata")
+proc.time() - ptm
+```
+
+```{r, eval = F}
+scen_levs <- c("orig", "noise", "noise_pred", "int", "int_noise",
+               "int_noise_pred")
+labs_lng <- c("Basic", "Noise", "Predictive noise", "Interaction", "Interaction + noise", "Interaction + predictive noise")
+
+load("imps_100.Rdata")
+
+imps <- imps %>%
+  mutate(var_nm = str_extract(var_nm, "\\D+") %>%
+           factor(levels = c("tumor_mass", "toxicity", "dose", "X", "Z", "V"),
+                  labels = c("M", "W", "D", "X", "Z", "V")),
+         scenario = factor(scenario, levels = scen_levs),
+         mod = factor(mod, levels = c("mars", "rf", "CART"),
+                      labels = c("MARS", "RF", "CART")))
+
+save(imps, file = "imps_out_100.Rdata")
+```
+
+```{r}
+col_heads <- c("Regime", "B", "N", "PN", "I", "I+N", "I+PN")
+cap <- "Average variable importance for the first stage averaged over the models."
+cap_toc <- "Average variable importance for the first stage averaged over the models."
+imps %>% filter(nstage == 1) %>% 
+  group_by(scenario, mod, var_nm) %>%
+  summarise(mean_imp = mean(importance)) %>%
+  spread(key = scenario, value = mean_imp) %>% 
+  latex(file = "", dec = 1, na.blank = T,
+        caption = cap, caption.lot = cap_toc, label = "tab:rewards",
+        where = "!htbp", rowname = NULL, colheads = col_heads, booktabs = T)
+```
+
+
+```{r}
+imps %>% filter(str_detect(scenario, "int")) %>% 
+  # group_by(scenario, mod, nstage, var_nm) %>%
+  # summarise(mean_imp = mean(importance)) %>%
+  mutate(var_nm = str_extract(var_nm, "(X1|X2|\\D+)") %>%
+           factor(
+             levels = c("tumor_mass", "toxicity", "dose", "X1", "X2", "Z", "V"),
+             labels = c("M", "W", "D", "X1", "X2", "Z", "V")
+           )) %>% 
+  # group_by(scenario, mod, nstage, var_nm) %>%
+  # summarise(mean_imp = max(importance)) %>%
+  ggplot() +
+  geom_violin(aes(x = var_nm, y = importance, fill = mod, color = mod),
+           # stat = "identity",
+           position = "dodge") +
+  facet_wrap( ~ scenario)
+```
+
+# Cumulative survival probability
+
+```{r, eval = F}
+dat_summ <- dat_all %>%
+  group_by(mod, scenario, ID) %>%
+  mutate(cumSurv = prod(1 - pdeath[1:3]),
+         cured = sum(tumor_mass == 0, na.rm = T) > 0) %>%
+  group_by(mod, scenario, month) %>%
+  summarise(mean_cumSurv = mean(cumSurv, na.rm = T),
+            prop_cured = mean(cured, na.rm = T))
+
+dat_summ <- dat_long_summ
+
+cumSurvTab2 <- dat_long_summ %>%
+  group_by(mod) %>%
+  summarise(mean_cumSurv = mean(mean_cumSurv) %>% round(3)) %>%
+  rename(`Mean cumulative probability of survival to end of study` = mean_cumSurv)  %>% arrange(-row_number())
+
+bind_cols(cumSurvTab, cumSurvTab2)
+latex(cumSurvTab, rowname = NULL, file = "")
+```
+
+```{r, eval = F}
+  # describeM <- function(...) {
+#   describeMean(..., html = F, plusmin_str = "")
+# }
+  # r1 <- getDescriptionStatsBy(exp(dt$tot_reward), by = dt$mod,
+  #                              continuous_fn = describeM) %>% t()
+  # colnames(r1) <- type_nm
+# labs <- c("Regime", "Basic", "Interaction", "Noise", "Predictive noise", "Interaction + noise", "Interaction + predictive noise")
+
+      # rep = 1:n() %/% (200 * 6 + 1),
+pdeath = pexp(lam),
+    pdeath = ifelse(is.na(pdeath), 1, pdeath),
+    tot_reward = sum(reward[1:Ttot], na.rm = T)
+```

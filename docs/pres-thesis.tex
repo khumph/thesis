@@ -1,6 +1,6 @@
 \RequirePackage[l2tabu, orthodox]{nag}
-% \documentclass[handout]{beamer}
-\documentclass{beamer}
+\documentclass[handout]{beamer}
+% \documentclass{beamer}
 \usetheme{metropolis}
 \usepackage{appendixnumberbeamer}
 
@@ -351,7 +351,7 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
 
     \pause
    
-    \node (Q1) [below right of = R1, yshift = -1cm, xshift = -1cm] {$\hat{R}_{1} = R_{1} +  \max_{D_{2}} \hat{Q}_{1}$};
+    \node (Q1) [below right of = R1, yshift = -1cm, xshift = -1cm] {$\hat{R}_{1} = R_{1} +  \max_{D_{1}} \hat{Q}_{2}$};
     \draw [->, dashed] (R1) edge (Q1);
     
     \pause
@@ -709,8 +709,8 @@ $\hat{A}^{opt}_{k} \gets \argmax_{A_{k}} \hat{Q}_{k}(A_{k}, H_{k})$
   \begin{enumerate}[<+->]
     \item Take $B$ bootstrap resamples of sample
     \item Fit model to each resample (grow a tree, don't prune)
-    \item Average the resulting predictions
     \item Call home and talk mom through how to log into her email for the third time
+    \item Average the resulting predictions
   \end{enumerate}
 \end{frame}
 %--- Next Frame ---%
