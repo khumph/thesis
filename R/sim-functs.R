@@ -84,7 +84,7 @@ genIntNoise <- function(dat, int, noise, noise_pred) {
   dat
 }
 
-# defined as in NSCLC paper
+
 lambda <- function(M, W, Z, mu0 = -5.5, mu1 = 1, mu2 = 1.2, mu3 = 0.75,
                    a3 = 0.05) {
   exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M + a3 * Z)
