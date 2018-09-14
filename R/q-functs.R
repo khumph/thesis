@@ -1,32 +1,3 @@
-makeForm <- function(dat_long, int, noise){
-  if (int & !noise) {
-    nms <- dat_long %>%
-      select(tumor_mass, toxicity, dose, Qhat, starts_with("X")) %>% names()
-  } else if (noise & !int) {
-    nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
-                               starts_with("Z"),
-                               starts_with("V")) %>% names()
-  } else if (noise & int) {
-    nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat,
-                               starts_with("X"),
-                               starts_with("Z"),
-                               starts_with("V")) %>% names()
-  } else {
-    nms <- dat_long %>% select(tumor_mass, toxicity, dose, Qhat) %>% names()
-  }
-  response <- "Qhat"
-  treatment <- "dose"
-  pred_nms <- nms[!(nms %in% c(response, treatment))]
-  form <- paste(response,
-                "~",
-                paste0(c(pred_nms, treatment), collapse = " + ")) %>%
-    as.formula()
-  list(
-    form = form,
-    pred_nms = pred_nms
-  )
-}
-
 max_df <- function(dat, model, truth, pred, nested = F) {
   dat <- ungroup(dat)
   if (!pred) {
@@ -61,9 +32,9 @@ max_df <- function(dat, model, truth, pred, nested = F) {
   dat %>% ungroup()
 }
 
-Qlearn <- function(form, dat_long, nstages = 6, method, ...) {
+Qlearn <- function(form, dat_long, n_stages = 6, method, ...) {
   mod_list <- list()
-  for (i in (nstages - 1):0) {
+  for (i in (n_stages - 1):0) {
     dat <- filter(dat_long, month == i)
     if (method == "rpart") {
       mod <- rpart(form, dat, ...)
