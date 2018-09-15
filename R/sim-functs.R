@@ -1,137 +1,99 @@
-# simulation functions ----------------------------------------------------
-
-updateW <- function(M, W, D, a1 = 0.1, b1 = 1.2, c1, d1 = 0.5, truth) {
-  # truth <- rep(truth, length(M))
-  W_next <-
-    a1 * M + b1 * (c1 * D  - d1) + W #+
-    # ifelse(!truth, rnorm(length(M), 0, 0.05), 0)
-  ifelse(W_next > 0, W_next, 0)
+updateW <- function(M, W, D, a = 0.1, b = 1.2, c, d = 0.5) {
+  W_next <- a * M + b * (c * D  - d) + W
+  replace(W_next, W_next < 0, 0)
 }
 
-Wnext <- function(dat, truth = F) {
-  if (truth) {
-    dat %>% mutate(W_next = updateW(tumor_mass, toxicity, dose,
-                                    c1 = c1,
-                                    truth = truth))
-  } else {
-    dat %>%
-      mutate(W_next = ifelse(!dead,
-                             updateW(tumor_mass, toxicity, dose,
-                                     c1 = c1,
-                                     truth = truth),
-                             NA))
-  }
-}
-
-updateM <- function(M, W, D, a2 = 0.15, b2 = 1.2, c2, d2 = 0.5,
-                    X = 0, Z = 0, a3 = 1e-3, truth) {
-  # truth <- rep(truth, length(M))
-  M_next <- ifelse(M > 0,
-                   (a2 * W - b2 * (c2 * D  - d2)) +
-                     M + sum(a3 * Z), #+
-                     # ifelse(!truth, rnorm(length(M), 0, 0.05), 0),
-                   0)
-  ifelse(M_next > 0, M_next, 0)
-}
-
-Mnext <- function(dat, truth = F) {
-  if (truth) {
-    dat %>% mutate(M_next = updateM(tumor_mass, toxicity, dose, 
-                                    c2 = c2, truth = truth))
-  } else {
-    dat %>% mutate(M_next = ifelse(!dead,
-                                   updateM(tumor_mass, toxicity, dose, 
-                                           c2 = c2, truth = truth),
-                                   NA))
-  }
+updateM <- function(M, W, D, a = 0.15, b = 1.2, c, d = 0.5, Z = 0, g = 1e-3) {
+  M_next <- a * W - b * (c * D - d) + M + sum(g * Z)
+  replace(M_next, M <= 0 | M_next < 0, 0)
 }
 
 genIntNoise <- function(dat, int, noise, noise_pred) {
+
+  n <- nrow(dat)
+
+  dat$cW <- rep(1, n)
+  dat$cM <- rep(1, n)
+
   if (int) {
-    dat <- dat %>%
-      mutate(
-        X1 = runif(nrow(.), min = 0, max = 1),
-        X2 = runif(nrow(.), min = 0, max = 1),
-        c1 = ifelse(X1 > 0.5, 1.5, 1),
-        c2 = ifelse(X2 > 0.5, 1.5, 1)
-      )
-  } else {
-    dat <- dat %>% mutate(c1 = 1, c2 = 1)
+    dat$X1 <- runif(n, min = 0, max = 1)
+    dat$X2 <- runif(n, min = 0, max = 1)
+    dat$cW <- replace(dat$cW, dat$X1 > 0.5, 1.5)
+    dat$cM <- replace(dat$cM, dat$X2 > 0.5, 1.5)
   }
+
   if (noise) {
-    dat <- dat %>%
-      mutate(
-        Z1  = rnorm(nrow(.), mean = 1),
-        Z2  = rnorm(nrow(.), mean = 1),
-        Z3  = rnorm(nrow(.), mean = 1),
-        Z4  = rnorm(nrow(.), mean = 1),
-        Z5  = rnorm(nrow(.), mean = 1),
-        Z6  = rnorm(nrow(.), mean = -1),
-        Z7  = rnorm(nrow(.), mean = -1),
-        Z8  = rnorm(nrow(.), mean = -1),
-        Z9  = rnorm(nrow(.), mean = -1),
-        Z10 = rnorm(nrow(.), mean = -1)
-      ) %>% 
-      bind_cols(
-        replicate(90, rnorm(nrow(.))) %>% as.data.frame())
-  } 
-  if (noise_pred) {
-    dat <- dat %>% mutate(
-      noise_chng = Z1 + Z2 + Z3 + Z4 + Z5 + Z6 + Z7 + Z8 + Z9 + Z10)
-  } else {
-    dat <- dat %>% mutate(noise_chng = 0)
+    Z1 <- lapply(1:5, function(x) rnorm(n, mean = 1))
+    Z2 <- lapply(1:5, function(x) rnorm(n, mean = -1))
+    V <- lapply(1:90, function(x) rnorm(n))
+
+    names(Z1) <- paste0("Z", 1:5)
+    names(Z2) <- paste0("Z", 6:10)
+    names(V) <- paste0("V", 1:90)
+
+    dat <- bind_cols(dat, Z1, Z2, V)
   }
-  dat
+
+  if (noise_pred) {
+    dat$noise_chng <- dat$Z1 + dat$Z2 + dat$Z3 + dat$Z4 + dat$Z5 +
+      dat$Z6 + dat$Z7 + dat$Z8 + dat$Z9 + dat$Z10
+  } else {
+    dat$noise_chng <- rep(0, n)
+  }
+  return(dat)
 }
 
 
-lambda <- function(M, W, Z, mu0 = -5.5, mu1 = 1, mu2 = 1.2, mu3 = 0.75,
-                   a3 = 0.05) {
+lambda <- function(M, W, Z, mu0 = -5.5, mu1 = 1, mu2 = 1.2, mu3 = 0.75, a3 = 0.05) {
   exp(mu0 + mu1 * W + mu2 * M + mu3 * W * M + a3 * Z)
 }
 
 
-# simulation --------------------------------------------------------------
-
 simMonth <- function(dat) {
-  dat <- Mnext(dat)
-  dat <- Wnext(dat)
-  dat %>% mutate(
-    beta = 1 / lambda(M_next, W_next, Z = noise_chng),
-    d_next = runif(nrow(.), min = 0, max = 1),
-    surv_time = rexp(nrow(.), 1 / beta),
-    dead = ifelse(dead, dead, surv_time < 1)
-  )
+  dat$W_next <- updateW(dat$tumor_mass, dat$toxicity, dat$dose, c = dat$cW)
+  dat$M_next <- updateM(dat$tumor_mass, dat$toxicity, dat$dose, c = dat$cM)
+  dat$W_next <- replace(dat$W_next, dat$dead, NA_real_)
+  dat$M_next <- replace(dat$M_next, dat$dead, NA_real_)
+  dat$lambda <- lambda(dat$M_next, dat$W_next, Z = dat$noise_chng)
+  dat$d_next <- runif(nrow(dat), min = 0, max = 1)
+  dat$surv_time <- rexp(nrow(dat), dat$lambda)
+  dat$dead <- replace(dat$dead, dat$surv_time < 1, T)
+  return(dat)
 }
 
-sim <- function(N = 1000, Ttot = 6, int = F, noise = F, noise_pred = F, seed = 1) {
-  set.seed(seed)
-  dat <- tibble(
-    ID = 1:N,
-    month = rep(0, N),
-    tumor_mass = runif(N, min = 0, max = 2),
-    toxicity = runif(N, min = 0, max = 2),
-    dose = runif(N, min = 0, max = 1),
-    dead = rep(F, N)
-  )
-  
-  dat <- genIntNoise(dat, int, noise, noise_pred)
-  
-  d <- simMonth(dat) %>%
-    mutate(reward = ifelse(dead, log(surv_time), 0))
-  out <- d
-  for (i in 1:(Ttot - 1)) {
-    d <- d %>% mutate(month = i,
-                      tumor_mass = M_next,
-                      toxicity = W_next,
-                      dose = d_next) %>%
-      simMonth() %>%
-      mutate(reward = ifelse(dead, log(i + 1 + surv_time), 0))
-    out <- bind_rows(out, d)
-  }
-  out %>% mutate(
-    reward = ifelse(month == Ttot - 1 & !dead,
-                    log(surv_time + Ttot - 1), reward),
-    Qhat = reward
-  )
+sim <- function(n_subjects = 1000, n_stages = 3, int = F, noise = F,
+                noise_pred = F, seed = 1) {
+
+    set.seed(seed)
+
+    dat <- data.frame(
+      ID = 1:n_subjects,
+      month = rep(0, n_subjects),
+      tumor_mass = runif(n_subjects, min = 0, max = 2),
+      toxicity = runif(n_subjects, min = 0, max = 2),
+      dose = runif(n_subjects, min = 0, max = 1),
+      dead = rep(F, n_subjects)
+    )
+
+    dat <- genIntNoise(dat, int, noise, noise_pred)
+
+    dat <- simMonth(dat)
+    dat$reward <- replace(log(dat$surv_time), !(dat$dead), 0)
+
+    out <- dat
+    for (i in 1:(n_stages - 1)) {
+      dat$month <- rep(i, nrow(dat))
+      dat$tumor_mass <- dat$M_next
+      dat$toxicity <- dat$W_next
+      dat$dose <- dat$d_next
+      dat <- simMonth(dat)
+      dat$reward <- replace(log(i + 1 + dat$surv_time), !dat$dead, 0)
+      out <- bind_rows(out, dat)
+    }
+
+    out$reward <- ifelse(out$month == n_stages - 1 & !out$dead,
+                         log(out$surv_time + n_stages - 1), out$reward)
+    out$Qhat <- out$reward
+
+    return(out)
 }
