@@ -52,7 +52,7 @@ Qlearn <- function(formula, data, n_stages = 3, method, ...) {
       mod <- rpart(formula, dat, ...)
       mod <- prune(mod, cp = mod$cptable[which.min(mod$cptable[, "xerror"]), "CP"])
     } else {
-      mod <- train(form, dat, method = method, na.action = na.omit, ...)
+      mod <- train(formula, dat, method = method, na.action = na.omit, ...)
     }
     new_dat <- max_df(dat, mod, truth = F, pred = F)
     mod_list[[i + 1]] <- mod
