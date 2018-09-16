@@ -23,7 +23,7 @@ $(foreach scenario, $(SCENARIOS), $(eval $(call sim_template,$(scenario))))
 learn : $(MODELS)
 
 define learn_template
-$$(RESULTS_DIR)/q$(1)-%.RData : R/learn-$(1).R $$(DATA_DIR)/data-%.rds R/q-functs.R
+$$(RESULTS_DIR)/q$(1)-%.rds : R/learn-$(1).R $$(DATA_DIR)/data-%.rds R/q-functs.R
 	mkdir -p $$(RESULTS_DIR)
 	Rscript $$(wordlist 1, 2, $$^) --dependencies $$(lastword $$^) --output $$@ 
 endef

@@ -8,7 +8,7 @@ Arguments:
   -h --help               Show this screen
   <input>                 .rds data file to use for learning
   --dependencies <files>  Files this program depends on
-  --output <file>         Path to .RData file to save fitted models in
+  --output <file>         Path to .rds file to save fitted models in
 " -> doc
 
 pacman::p_load(tidyverse, caret, rpart, tictoc)
@@ -27,11 +27,11 @@ main <- function(data_file, output_file, dependencies) {
 
   tic("Fitting all samples")
   set.seed(20170128)
-  Q_rpart <- lapply(
+  Q_list <- lapply(
     1:n_samples,
     function(x) {
       tic(paste("Fitting sample", x, "of", n_samples))
-      Qlearn(
+      q <- Qlearn(
         formula = form$formula,
         data = dat[dat$samp == x, ],
         n_stages = n_stages,
@@ -43,10 +43,11 @@ main <- function(data_file, output_file, dependencies) {
           minbucket = 5)
       )
       toc()
+      return(q)
     }) %>% set_names(paste0("rpart", 1:n_samples))
   toc()
 
-  save(Q_rpart, file = output_file)
+  write_rds(Q_list, path = output_file)
 }
 
 
