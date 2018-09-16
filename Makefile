@@ -9,26 +9,31 @@ all : simulate learn
 .PHONY : simulate
 simulate : $(DATA)
 
-$(DUMMIES) :
-	touch $(DUMMIES)
+define sim_template
+$$(DATA_DIR)/data-$(1).rds : R/simulate.R R/sim-functs.R 
+	mkdir -p $$(DATA_DIR)
+	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1)
+endef
 
-$(DATA_DIR)/data-%.rds : R/simulate.R $(DATA_DIR)/dummy-% R/sim-functs.R 
-	mkdir -p $(DATA_DIR)
-	Rscript $< --dependencies $(lastword $^) --output $@ --scenario $*
+$(foreach scenario, $(SCENARIOS), $(eval $(call sim_template,$(scenario))))
 
 
 ## learn       : Apply Q-learning to simulated data.
 .PHONY : learn
-learn : $(CART_MODELS)
+learn : $(MODELS)
 
-$(RESULTS_DIR)/QCART-%.RData : R/learn-CART.R $(DATA_DIR)/data-%.rds R/q-functs.R 
-	mkdir -p $(RESULTS_DIR)
-	Rscript $(wordlist 1, 2, $^) --dependencies $(lastword $^) --output $@ 
+define learn_template
+$$(RESULTS_DIR)/q$(1)-%.RData : R/learn-$(1).R $$(DATA_DIR)/data-%.rds R/q-functs.R
+	mkdir -p $$(RESULTS_DIR)
+	Rscript $$(wordlist 1, 2, $$^) --dependencies $$(lastword $$^) --output $$@ 
+endef
+
+$(foreach mod, $(MODEL_TYPES), $(eval $(call learn_template,$(mod))))
 
 
-## remove      : Remove auto-generated files.
-.PHONY : remove
-remove :
+## clean      : Remove auto-generated files.
+.PHONY : clean
+clean :
 	rm -fR $(DATA_DIR)
 	rm -fR $(RESULTS_DIR)
 
