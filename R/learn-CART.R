@@ -11,7 +11,7 @@ Arguments:
   --output <file>         Path to .RData file to save fitted models in
 " -> doc
 
-pacman::p_load(tidyverse, caret, rpart)
+pacman::p_load(tidyverse, caret, rpart, tictoc)
 opts <- docopt::docopt(doc)
 
 main <- function(data_file, output_file, dependencies) {
@@ -20,8 +20,8 @@ main <- function(data_file, output_file, dependencies) {
 
   dat <- read_rds(data_file)
 
-  n_stages = length(unique(dat$month))
-  n_samples = length(unique(dat$samp))
+  n_stages <- length(unique(dat$month))
+  n_samples <- length(unique(dat$samp))
 
   form <-
     paste("Qhat ~ ", paste(
@@ -29,10 +29,11 @@ main <- function(data_file, output_file, dependencies) {
       collapse = " + "
     )) %>% as.formula()
 
-  ptm <- proc.time()
+  tic("Fitting all samples")
   Q_rpart <- lapply(
     1:n_samples,
     function(x) {
+      tic(paste("Fitting sample", x, "of", n_samples))
       Qlearn(
         formula = form,
         data = dat[dat$samp == x, ],
@@ -44,8 +45,9 @@ main <- function(data_file, output_file, dependencies) {
           maxsurrogate = 0,
           minbucket = 5)
       )
+      toc()
     }) %>% set_names(paste0("CART", 1:n_samples))
-  print(proc.time() - ptm)
+  toc()
 
   save(Q_rpart, file = output_file)
 }
