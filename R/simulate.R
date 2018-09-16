@@ -18,7 +18,7 @@ Possible scenarios are:
   simple      Only the useful variables are simualted
   int         Only useful variables are simulated, with interactions between them and treatment
   noise       Same as 'simple' with 100 noise variables simulated
-  noise_pred  Same as 'noise' with 10 of the noise variables correlated with the outcome
+  noise-pred  Same as 'noise' with 10 of the noise variables correlated with the outcome
 " -> doc
 
 pacman::p_load(tidyverse)
@@ -27,7 +27,7 @@ opts <- docopt::docopt(doc)
 main <- function(seed, n_subjects, n_samples, n_stages, scenario, output_file,
                  dependencies) {
 
-  if (!(scenario %in% c("simple", "int", "noise", "noise_pred"))) {
+  if (!(scenario %in% c("simple", "int", "noise", "noise-pred"))) {
     stop(paste0("'", scenario, "'", " is not an alias of any scenario."))
   } else if (scenario == "simple") {
     int <- F
@@ -41,7 +41,7 @@ main <- function(seed, n_subjects, n_samples, n_stages, scenario, output_file,
     int <- F
     noise <- T
     noise_pred <- F
-  } else if (scenario == "noise_pred") {
+  } else if (scenario == "noise-pred") {
     int <- F
     noise <- T
     noise_pred <- T

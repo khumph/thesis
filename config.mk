@@ -3,7 +3,7 @@ WRITEUP_DIR = docs
 RESULTS_DIR = results
 DATA_DIR = data
 
-SCENARIOS = simple int noise noise_pred
+SCENARIOS = simple int noise noise-pred
 MODEL_TYPES = rpart mars rf
 
 DATA = $(addsuffix .rds, $(addprefix $(DATA_DIR)/data-, $(SCENARIOS)))
