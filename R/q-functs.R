@@ -1,3 +1,15 @@
+makeFormula <- function(data) {
+  predictor_names <- c("tumor_mass", "toxicity",
+                       grep("\\X|\\Z|\\V", names(data), value = T))
+  treatment_name <- "dose"
+  formula <- paste("Qhat ~ ", paste(c(treatment_name, predictor_names),
+                                    collapse = " + "))
+  return(list(
+    formula = as.formula(formula),
+    predictor_names = predictor_names
+  ))
+}
+
 max_df <- function(dat, model, truth, pred, nested = F) {
   dat <- ungroup(dat)
   if (!pred) {

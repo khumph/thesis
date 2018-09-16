@@ -1,8 +1,8 @@
-"Perform Q-learning using CART to fit Q-functions
+"Perform Q-learning using CART/rpart to fit Q-functions
 
 Usage:
-  learn-CART.R <input> (--dependencies <files> --output <file>)
-  learn-CART.R -h | --help
+  learn-rpart.R <input> (--dependencies <files> --output <file>)
+  learn-rpart.R -h | --help
 
 Arguments:
   -h --help               Show this screen
@@ -23,19 +23,16 @@ main <- function(data_file, output_file, dependencies) {
   n_stages <- length(unique(dat$month))
   n_samples <- length(unique(dat$samp))
 
-  form <-
-    paste("Qhat ~ ", paste(
-      c("dose", "tumor_mass", "toxicity", grep("\\X|\\Z|\\V", names(dat), value = T)),
-      collapse = " + "
-    )) %>% as.formula()
+  form <- makeFormula(dat)
 
   tic("Fitting all samples")
+  set.seed(20170128)
   Q_rpart <- lapply(
     1:n_samples,
     function(x) {
       tic(paste("Fitting sample", x, "of", n_samples))
       Qlearn(
-        formula = form,
+        formula = form$formula,
         data = dat[dat$samp == x, ],
         n_stages = n_stages,
         method = 'rpart',
@@ -46,7 +43,7 @@ main <- function(data_file, output_file, dependencies) {
           minbucket = 5)
       )
       toc()
-    }) %>% set_names(paste0("CART", 1:n_samples))
+    }) %>% set_names(paste0("rpart", 1:n_samples))
   toc()
 
   save(Q_rpart, file = output_file)
