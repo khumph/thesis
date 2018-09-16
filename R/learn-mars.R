@@ -18,7 +18,7 @@ main <- function(data_file, output_file, dependencies) {
 
   lapply(dependencies, source)
 
-  dat <- read_rds(data_file)
+  dat <- readRDS(data_file)
 
   n_stages <- length(unique(dat$month))
   n_samples <- length(unique(dat$samp))
@@ -65,7 +65,7 @@ main <- function(data_file, output_file, dependencies) {
     }) %>% set_names(paste0("mars", 1:n_samples))
   toc()
 
-  write_rds(Q_list, path = output_file)
+  saveRDS(Q_list, file = output_file, compress = F)
 }
 
 
