@@ -1,7 +1,7 @@
 "Simulate adaptive clinical trial data
 
 Usage:
-  simulate.R (--dependencies <files> --output <file>) [--seed <num> --n_subjects <num> --n_stages <num> --scenario <scenario> --initial_only]
+  simulate.R (--dependencies <files> --output <file>) [--seed <num> --n_subjects <num> --n_stages <num> --scenario <scenario> --baseline-only]
   simulate.R -h | --help
 
 Arguments:
@@ -12,7 +12,7 @@ Arguments:
   --n_subjects <num>      Participants to randomize [default: 1000]
   --n_stages <num>        Stages of treatment to simulate [default: 3]
   --scenario <scenario>   Scenario to simulate [default: simple]
-  --initial_only          Simulate only initial condtions (for testing treatment regimes)
+  --baseline-only          Simulate only baseline condtions (for testing treatment regimes)
 
 Possible scenarios are:
   simple      Only useful variables are simualted
@@ -35,7 +35,7 @@ sim_month <- function(dat) {
 }
 
 main <- function(seed, n_subjects, n_stages, scenario, output_file,
-                 dependencies, initial_only) {
+                 dependencies, baseline_only) {
 
   if (!(scenario %in% c("simple", "int", "noise", "noise-pred"))) {
     stop(paste0("'", scenario, "'", " is not an alias of any scenario."))
@@ -98,7 +98,7 @@ main <- function(seed, n_subjects, n_stages, scenario, output_file,
     dat$noise_chng <- rep(0, n_subjects)
   }
 
-  if (initial_only) {
+  if (baseline_only) {
     saveRDS(dat, file = output_file, compress = F)
     return(invisible())
   }
@@ -132,6 +132,6 @@ main(
   scenario = opts$scenario,
   output_file = opts$output,
   dependencies = opts$dependencies,
-  initial_only = opts$initial_only
+  baseline_only = opts[['baseline-only']]
 )
 toc()

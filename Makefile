@@ -23,7 +23,7 @@ $(foreach scenario, $(SCENARIOS), $(eval $(call sim_template,$(scenario))))
 learn : $(MODELS)
 
 define learn_template
-$$(RESULTS_DIR)/q$(1)-%.rds : R/learn-$(1).R $$(DATA_DIR)/data-%.rds R/q-functs.R
+$$(RESULTS_DIR)/q-$(1)-%.rds : R/learn-$(1).R $$(DATA_DIR)/data-%.rds R/q-functs.R
 	mkdir -p $$(RESULTS_DIR)
 	Rscript $$(wordlist 1, 2, $$^) --dependencies $$(lastword $$^) --output $$@ 
 endef
@@ -31,7 +31,21 @@ endef
 $(foreach mod, $(MODEL_TYPES), $(eval $(call learn_template,$(mod))))
 
 
-## clean      : Remove auto-generated files.
+## sim-test    : Simulate baseline patient condtions for testing treatment regimes.
+.PHONY : sim-test
+sim-test : $(DATA_BASE)
+
+define sim_test_template
+$$(DATA_DIR)/data-$(1)-base.rds : R/simulate.R R/sim-functs.R 
+	mkdir -p $$(DATA_DIR)
+	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --baseline-only
+endef
+
+$(foreach scenario, $(SCENARIOS), $(eval $(call sim_test_template,$(scenario))))
+
+
+
+## clean       : Remove auto-generated files.
 .PHONY : clean
 clean :
 	rm -fR $(DATA_DIR)
