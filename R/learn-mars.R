@@ -44,28 +44,21 @@ main <- function(data_file, output_file, dependencies) {
     FALSE
   }
 
-  tic("Fitting all samples")
+  tic()
   set.seed(20170128)
-  Q_list <- lapply(
-    1:n_samples,
-    function(x) {
-      tic(paste("Fitting sample", x, "of", n_samples))
-      q <- Qlearn(
-        formula = form$formula,
-        data = dat[dat$samp == x, ],
-        n_stages = n_stages,
-        method = 'gcvEarth',
-        trControl = trainControl(method = "none"),
-        nk = 200,
-        allowed = allowFunct,
-        tuneGrid = expand.grid(degree = 2)
-      )
-      toc()
-      return(q)
-    }) %>% set_names(paste0("mars", 1:n_samples))
+  q <- Qlearn(
+    formula = form$formula,
+    data = dat,
+    n_stages = n_stages,
+    method = 'gcvEarth',
+    trControl = trainControl(method = "none"),
+    nk = 200,
+    allowed = allowFunct,
+    tuneGrid = expand.grid(degree = 2)
+  )
   toc()
 
-  saveRDS(Q_list, file = output_file, compress = F)
+  saveRDS(q, file = output_file, compress = F)
 }
 
 

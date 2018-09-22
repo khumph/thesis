@@ -25,30 +25,23 @@ main <- function(data_file, output_file, dependencies) {
 
   form <- makeFormula(dat)
 
-  tic("Fitting all samples")
+  tic()
   set.seed(20170128)
-  Q_list <- lapply(
-    1:n_samples,
-    function(x) {
-      tic(paste("Fitting sample", x, "of", n_samples))
-      q <- Qlearn(
-        formula = form$formula,
-        data = dat[dat$samp == x, ],
-        n_stages = n_stages,
-        method = 'ranger',
-        tuneGrid = expand.grid(mtry = length(form$predictor_names),
-                               min.node.size = 5, splitrule = "variance"),
-        trControl = trainControl(method = "none"),
-        importance = "impurity",
-        always.split.variables = "dose",
-        num.trees = 250
-      )
-      toc()
-      return(q)
-    }) %>% set_names(paste0("mars", 1:n_samples))
+  q <- Qlearn(
+    formula = form$formula,
+    data = dat,
+    n_stages = n_stages,
+    method = 'ranger',
+    tuneGrid = expand.grid(mtry = length(form$predictor_names),
+                           min.node.size = 5, splitrule = "variance"),
+    trControl = trainControl(method = "none"),
+    importance = "impurity",
+    always.split.variables = "dose",
+    num.trees = 250
+  )
   toc()
 
-  saveRDS(Q_list, file = output_file, compress = F)
+  saveRDS(q, file = output_file, compress = F)
 }
 
 

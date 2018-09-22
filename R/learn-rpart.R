@@ -25,29 +25,22 @@ main <- function(data_file, output_file, dependencies) {
 
   form <- makeFormula(dat)
 
-  tic("Fitting all samples")
+  tic()
   set.seed(20170128)
-  Q_list <- lapply(
-    1:n_samples,
-    function(x) {
-      tic(paste("Fitting sample", x, "of", n_samples))
-      q <- Qlearn(
-        formula = form$formula,
-        data = dat[dat$samp == x, ],
-        n_stages = n_stages,
-        method = 'rpart',
-        control = rpart.control(
-          cp = 1e-5,
-          maxcompete = 0,
-          maxsurrogate = 0,
-          minbucket = 5)
-      )
-      toc()
-      return(q)
-    }) %>% set_names(paste0("rpart", 1:n_samples))
+  q <- Qlearn(
+    formula = form$formula,
+    data = dat,
+    n_stages = n_stages,
+    method = 'rpart',
+    control = rpart.control(
+      cp = 1e-5,
+      maxcompete = 0,
+      maxsurrogate = 0,
+      minbucket = 5)
+  )
   toc()
 
-  saveRDS(Q_list, file = output_file, compress = F)
+  saveRDS(q, file = output_file, compress = F)
 }
 
 
