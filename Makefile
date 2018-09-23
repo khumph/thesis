@@ -53,6 +53,17 @@ $(RESULTS_DIR)/data-best-%.rds : R/sim-best.R $(DATA_DIR)/data-base-%.rds R/sim-
 	Rscript $(wordlist 1, 2, $^) --dependencies $(lastword $^) --output $@
 
 
+## constant        : Simulate constant dose sequences for baseline data.
+.PHONY : constant
+constant : $(DATA_CONSTANT)
+
+$(info $(DATA_CONSTANT))
+
+$(RESULTS_DIR)/data-constant-%.rds : R/sim-constant.R $(DATA_DIR)/data-base-%.rds R/sim-functs.R
+	mkdir -p $(RESULTS_DIR)
+	Rscript $(wordlist 1, 2, $^) --dependencies $(lastword $^) --output $@
+
+
 ## clean       : Remove auto-generated files.
 .PHONY : clean
 clean :
