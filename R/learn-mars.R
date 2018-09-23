@@ -44,7 +44,6 @@ main <- function(data_file, output_file, dependencies) {
     FALSE
   }
 
-  tic()
   set.seed(20170128)
   q <- Qlearn(
     formula = form$formula,
@@ -56,10 +55,11 @@ main <- function(data_file, output_file, dependencies) {
     allowed = allowFunct,
     tuneGrid = expand.grid(degree = 2)
   )
-  toc()
 
   saveRDS(q, file = output_file, compress = F)
 }
 
 
+tic()
 main(opts$input, opts$output, opts$dependencies)
+toc()

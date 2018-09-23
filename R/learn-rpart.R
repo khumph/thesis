@@ -25,7 +25,6 @@ main <- function(data_file, output_file, dependencies) {
 
   form <- makeFormula(dat)
 
-  tic()
   set.seed(20170128)
   q <- Qlearn(
     formula = form$formula,
@@ -38,10 +37,11 @@ main <- function(data_file, output_file, dependencies) {
       maxsurrogate = 0,
       minbucket = 5)
   )
-  toc()
 
   saveRDS(q, file = output_file, compress = F)
 }
 
 
+tic()
 main(opts$input, opts$output, opts$dependencies)
+toc()
