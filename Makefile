@@ -2,7 +2,7 @@ include config.mk
 
 ## all         : Make everything.
 .PHONY : all
-all : simulate learn
+all : simulate learn base best
 
 
 ## simulate    : Simulate clinical trail data.
@@ -10,7 +10,7 @@ all : simulate learn
 simulate : $(DATA)
 
 define sim_template
-$$(DATA_DIR)/data-$(1).rds : R/simulate.R R/sim-functs.R 
+$$(DATA_DIR)/data-$(1).rds : R/simulate.R R/sim-functs.R
 	mkdir -p $$(DATA_DIR)
 	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1)
 endef
@@ -25,24 +25,32 @@ learn : $(MODELS)
 define learn_template
 $$(RESULTS_DIR)/q-$(1)-%.rds : R/learn-$(1).R $$(DATA_DIR)/data-%.rds R/q-functs.R
 	mkdir -p $$(RESULTS_DIR)
-	Rscript $$(wordlist 1, 2, $$^) --dependencies $$(lastword $$^) --output $$@ 
+	Rscript $$(wordlist 1, 2, $$^) --dependencies $$(lastword $$^) --output $$@
 endef
 
 $(foreach mod, $(MODEL_TYPES), $(eval $(call learn_template,$(mod))))
 
 
-## sim-test    : Simulate baseline patient condtions for testing treatment regimes.
-.PHONY : sim-test
-sim-test : $(DATA_BASE)
+## base        : Simulate baseline patient condtions for testing treatment regimes.
+.PHONY : base
+base : $(DATA_BASE)
 
 define sim_test_template
-$$(DATA_DIR)/data-$(1)-base.rds : R/simulate.R R/sim-functs.R 
+$$(DATA_DIR)/data-base-$(1).rds : R/simulate.R R/sim-functs.R
 	mkdir -p $$(DATA_DIR)
 	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --baseline-only
 endef
 
 $(foreach scenario, $(SCENARIOS), $(eval $(call sim_test_template,$(scenario))))
 
+
+## best        : Simulate best possible treatment sequences for baseline data.
+.PHONY : best
+best : $(DATA_BEST)
+
+$(RESULTS_DIR)/data-best-%.rds : R/sim-best.R $(DATA_DIR)/data-base-%.rds R/sim-functs.R
+	mkdir -p $(RESULTS_DIR)
+	Rscript $(wordlist 1, 2, $^) --dependencies $(lastword $^) --output $@
 
 
 ## clean       : Remove auto-generated files.
