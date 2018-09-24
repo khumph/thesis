@@ -13,3 +13,6 @@ DATA_CONSTANT = $(patsubst $(DATA_DIR)/data-base-%.rds, $(RESULTS_DIR)/data-cons
 
 MODELS = $(foreach mod, $(MODEL_TYPES), \
   $(patsubst $(DATA_DIR)/data-%.rds, $(RESULTS_DIR)/q-$(mod)-%.rds, $(DATA)))
+
+DATA_TEST = $(foreach mod, $(MODEL_TYPES), \
+  $(patsubst $(DATA_DIR)/data-base-%.rds, $(RESULTS_DIR)/data-test-$(mod)-%.rds, $(DATA_BASE)))

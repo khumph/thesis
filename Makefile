@@ -57,11 +57,21 @@ $(RESULTS_DIR)/data-best-%.rds : R/sim-best.R $(DATA_DIR)/data-base-%.rds R/sim-
 .PHONY : constant
 constant : $(DATA_CONSTANT)
 
-$(info $(DATA_CONSTANT))
-
 $(RESULTS_DIR)/data-constant-%.rds : R/sim-constant.R $(DATA_DIR)/data-base-%.rds R/sim-functs.R
 	mkdir -p $(RESULTS_DIR)
 	Rscript $(wordlist 1, 2, $^) --dependencies $(lastword $^) --output $@
+
+
+## test        : Simulate constant dose sequences for baseline data.
+.PHONY : test
+test : $(DATA_TEST)
+
+define test_template
+$$(RESULTS_DIR)/data-test-$(1)-%.rds : R/sim-q.R $$(DATA_DIR)/data-base-%.rds $$(RESULTS_DIR)/q-$(1)-%.rds R/sim-functs.R
+	Rscript $$(wordlist 1, 3, $$^) --dependencies $$(lastword $$^) --output $$@
+endef
+
+$(foreach mod, $(MODEL_TYPES), $(eval $(call test_template,$(mod))))
 
 
 ## clean       : Remove auto-generated files.
