@@ -53,7 +53,7 @@ $(RESULTS_DIR)/data-best-%.rds : R/sim-best.R $(DATA_DIR)/data-base-%.rds R/sim-
 	Rscript $(wordlist 1, 2, $^) --dependencies $(lastword $^) --output $@
 
 
-## constant        : Simulate constant dose sequences for baseline data.
+## constant    : Simulate constant dose sequences for baseline data.
 .PHONY : constant
 constant : $(DATA_CONSTANT)
 
@@ -67,7 +67,7 @@ $(RESULTS_DIR)/data-constant-%.rds : R/sim-constant.R $(DATA_DIR)/data-base-%.rd
 test : $(DATA_TEST)
 
 define test_template
-$$(RESULTS_DIR)/data-test-$(1)-%.rds : R/sim-q.R $$(DATA_DIR)/data-base-%.rds $$(RESULTS_DIR)/q-$(1)-%.rds R/sim-functs.R
+$$(RESULTS_DIR)/data-$(1)-%.rds : R/sim-q.R $$(DATA_DIR)/data-base-%.rds $$(RESULTS_DIR)/q-$(1)-%.rds R/sim-functs.R
 	Rscript $$(wordlist 1, 3, $$^) --dependencies $$(lastword $$^) --output $$@
 endef
 
