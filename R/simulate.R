@@ -12,47 +12,38 @@ Arguments:
   --n_subjects <num>      Participants to randomize [default: 1000]
   --n_stages <num>        Stages of treatment to simulate [default: 3]
   --scenario <scenario>   Scenario to simulate [default: simple]
-  --baseline-only          Simulate only baseline condtions (for testing treatment regimes)
+  --baseline-only         Simulate only baseline condtions (for testing treatment regimes)
 
 Possible scenarios are:
-  simple      Only useful variables are simualted
-  int         Only useful variables are simulated, with interactions between them and treatment
-  noise       Same as 'simple' with 100 noise variables simulated
-  noise-pred  'noise' with 10 noise variables correlated with the outcome
+  simple          Only useful variables are simualted
+  noise           Same as 'simple' with 100 noise variables simulated
+  noise-pred      'noise' with 10 noise variables correlated with the outcome
+  simple-int      Same as 'simple' with two variables that interact with treatment
+  noise-int       Same as 'noise' with two variables that interact with treatment
+  noise-pred-int  Same as 'noise-pred' with two variables that interact with treatment
 " -> doc
 
 pacman::p_load(tictoc)
 opts <- docopt::docopt(doc)
 
-sim_month <- function(dat) {
-  dat <- Mnext(dat)
-  dat <- Wnext(dat)
-  dat$lambda <- lambda(dat$M_next, dat$W_next, Z = dat$noise_chng)
-  dat$d_next <- runif(nrow(dat), min = 0, max = 1)
-  dat$surv_time <- rexp(nrow(dat), dat$lambda)
-  dat$dead <- replace(dat$dead, dat$surv_time < 1, T)
-  return(dat)
-}
-
 main <- function(seed, n_subjects, n_stages, scenario, output_file,
                  dependencies, baseline_only) {
 
-  if (!(scenario %in% c("simple", "int", "noise", "noise-pred"))) {
+  scenario_split <- unlist(strsplit(scenario, '-'))
+  int <- tail(scenario_split, 1) == 'int'
+  if (int) {
+    scenario <- paste(head(scenario_split, -1), collapse = '-')
+  }
+
+  if (!(scenario %in% c("simple", "noise", "noise-pred"))) {
     stop(paste0("'", scenario, "'", " is not an alias of any scenario."))
   } else if (scenario == "simple") {
-    int <- F
-    noise <- F
-    noise_pred <- F
-  } else if (scenario == "int") {
-    int <- T
     noise <- F
     noise_pred <- F
   } else if (scenario == "noise") {
-    int <- F
     noise <- T
     noise_pred <- F
   } else if (scenario == "noise-pred") {
-    int <- F
     noise <- T
     noise_pred <- T
   }
@@ -63,11 +54,8 @@ main <- function(seed, n_subjects, n_stages, scenario, output_file,
 
   dat <- data.frame(
     ID = seq_len(n_subjects),
-    month = rep(0, n_subjects),
     tumor_mass = runif(n_subjects, min = 0, max = 2),
     toxicity = runif(n_subjects, min = 0, max = 2),
-    dose = runif(n_subjects, min = 0, max = 1),
-    dead = rep(F, n_subjects),
     cW = rep(1, n_subjects),
     cM = rep(1, n_subjects)
   )
@@ -94,7 +82,8 @@ main <- function(seed, n_subjects, n_stages, scenario, output_file,
   if (noise_pred) {
     dat$noise_chng <- dat$Z1 + dat$Z2 + dat$Z3 + dat$Z4 + dat$Z5 +
       dat$Z6 + dat$Z7 + dat$Z8 + dat$Z9 + dat$Z10
-  } else {
+  }
+  if (!noise_pred) {
     dat$noise_chng <- rep(0, n_subjects)
   }
 
@@ -103,22 +92,26 @@ main <- function(seed, n_subjects, n_stages, scenario, output_file,
     return(invisible())
   }
 
-  dat <- sim_month(dat)
-  dat$reward <- replace(log(dat$surv_time), !(dat$dead), 0)
-
-  out <- dat
-  for (i in 1:(n_stages - 1)) {
+  out <- data.frame()
+  for (i in 0:(n_stages - 1)) {
     dat$month <- rep(i, nrow(dat))
-    dat$tumor_mass <- dat$M_next
-    dat$toxicity <- dat$W_next
-    dat$dose <- dat$d_next
-    dat <- sim_month(dat)
-    dat$reward <- replace(log(i + 1 + dat$surv_time), !dat$dead, 0)
+    dat$dose <- runif(nrow(dat), min = 0, max = 1)
+    dat <- Mnext(dat)
+    dat <- Wnext(dat)
+    dat$beta <- 1 / lambda(dat$M_next, dat$W_next, Z = dat$noise_chng)
+    dat$dead <- replace(dat$dead, dat$beta < 1, T)
+    if (i < (n_stages - 1)) {
+      dat$reward <- replace(log(i + dat$beta), !dat$dead, 0)
+    } else {
+      dat$reward <- log(i + dat$beta)
+    }
     out <- rbind(out, dat)
+    if (i < (n_stages - 1)) {
+      dat$tumor_mass <- dat$M_next
+      dat$toxicity <- dat$W_next
+    }
   }
 
-  out$reward <- ifelse(out$month == n_stages - 1 & !out$dead,
-                       log(out$surv_time + n_stages - 1), out$reward)
   out$Qhat <- out$reward
 
   saveRDS(out, file = output_file, compress = F)
