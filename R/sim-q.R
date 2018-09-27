@@ -27,9 +27,15 @@ main <- function(baseline_file, q_file, n_stages, output_file, dependencies) {
 
   out <- data.frame()
   for (i in 0:(n_stages - 1)) {
+
+    if (i > 0) {
+      dat <- dat[!(dat$dead), ]
+      dat$tumor_mass <- dat$M_next
+      dat$toxicity <- dat$W_next
+    }
+
     n <- nrow(dat)
     dat$month <- rep(i, n)
-
     doses <- seq(from = 0, to = 1, by = 0.01)
     dat_expand <- dat[rep(seq_len(n), each = length(doses)), ]
     dat_expand$dose <- rep(doses, n)
@@ -42,19 +48,12 @@ main <- function(baseline_file, q_file, n_stages, output_file, dependencies) {
     dat <- Mnext(dat)
     dat <- Wnext(dat)
     dat$beta <- 1 / lambda(dat$M_next, dat$W_next, Z = dat$noise_chng)
-    dat$dead <- replace(dat$dead, dat$beta < 1, T)
+    dat$dead <- dat$beta < 1
+    dat$reward <- log(i + dat$beta)
     if (i < (n_stages - 1)) {
-      dat$reward <- replace(log(i + dat$beta), !dat$dead, 0)
-    }
-    if (i == n_stages - 1) {
-      dat$reward <- log(i + dat$beta)
+      dat$reward <- replace(dat$reward, !dat$dead, 0)
     }
     out <- rbind(out, dat)
-    if (i < (n_stages - 1)) {
-      dat <- dat[!(dat$dead), ]
-      dat$tumor_mass <- dat$M_next
-      dat$toxicity <- dat$W_next
-    }
   }
 
   saveRDS(out, file = output_file, compress = F)
