@@ -65,6 +65,7 @@ main <- function(baseline_file, n_stages, output_file, dependencies) {
         if (any(x$dead) & i < (n_stages - 1)) {
           # select people who will die regardless of dose
           deads <- x[x[, .I[all(dead)], by = ID]$V1]
+          deads[ , (paste0('reward', i)) := log(i + deads$beta)]
           if (nrow(deads) > 0) {
             # store the best dose sequences for people who will die
             deads <- filter_best(deads)
@@ -72,6 +73,11 @@ main <- function(baseline_file, n_stages, output_file, dependencies) {
           }
           # next dose can't bring people back from dead, so remove dead
           x <- x[!(dead)]
+          x[ , (paste0('reward', i)) := rep(0, nrow(x))]
+        }
+
+        if (i == (n_stages - 1)) {
+          x[ , (paste0('reward', i)) := log(i + x$beta)]
         }
 
         if (all(x$dead)) {
@@ -85,7 +91,7 @@ main <- function(baseline_file, n_stages, output_file, dependencies) {
     }
   )
 
-  x <- rbindlist(x)
+  x <- rbindlist(x, fill = T)
 
   x[, c('M3', 'W3') := NULL]
 
