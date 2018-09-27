@@ -73,6 +73,15 @@ endef
 
 $(foreach mod, $(MODEL_TYPES), $(eval $(call test_template,$(mod))))
 
+## writeup     : Generate writeup
+.PHONY : writeup
+writeup : docs/writeup-thesis.pdf
+
+docs/writeup-thesis.tex : docs/writeup-thesis.Rnw
+	Rscript -e "pacman::p_load(knitr); owd <- setwd('$(<D)'); knit('$(<F)'); setwd(owd)"
+
+docs/writeup-thesis.pdf : docs/writeup-thesis.tex
+	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $^
 
 ## clean       : Remove auto-generated files.
 .PHONY : clean
