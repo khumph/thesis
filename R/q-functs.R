@@ -10,61 +10,36 @@ makeFormula <- function(data) {
   ))
 }
 
-max_df <- function(dat, model, truth, pred, nested = F) {
-  dat <- ungroup(dat)
-  if (!pred) {
-    deads <- filter(dat, is.na(M_next)) %>% mutate(dose = NA)
-    dat <- filter(dat, !is.na(M_next))
-  }
-
-  if (truth) {
-    dat <- dat %>%
-      mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.01))) %>%
-      unnest()
-    dat$W_next <- updateW(dat$tumor_mass, dat$toxicity, dat$dose, c = dat$cW)
-    dat$M_next <- updateM(dat$tumor_mass, dat$toxicity, dat$dose, c = dat$cM)
-    dat <- dat %>% mutate(
-      expect_surv_time = 1 / lambda(M_next, W_next, Z = noise_chng),
-      preds = log(expect_surv_time)
-    )
-  } else {
-    dat <- dat %>%
-      mutate(dose = map(1:nrow(.), ~ seq(0, 1, by = 0.01))) %>%
-      unnest() %>%
-      mutate(preds = predict(model, .))
-  }
-
-  if (!nested) {
-    dat <- dat %>% group_by(ID) %>%
-      filter(preds == max(preds)) %>% slice(1)
-    if (!pred) {
-      dat <- dat %>% bind_rows(deads) %>% arrange(ID) %>% ungroup()
-    }
-  }
-  dat %>% ungroup()
-}
-
 Qlearn <- function(formula, data, n_stages = 3, method, ...) {
+
   mod_list <- list()
   for (i in (n_stages - 1):0) {
-    dat <- filter(data, month == i)
+
+    dat <- data[data$month == i, ]
+    dat <- data.table::as.data.table(dat)
+
+    # remove people who are already dead at this stage, can't optimize dose if dead
+    dat <- dat[!is.na(dat$M_next), ]
+
     if (method == "rpart") {
-      mod <- rpart(formula, dat, ...)
-      mod <- prune(mod, cp = mod$cptable[which.min(mod$cptable[, "xerror"]), "CP"])
+      mod <- rpart::rpart(formula, dat, ...)
+      mod <- rpart::prune(mod, cp = mod$cptable[which.min(mod$cptable[, "xerror"]), "CP"])
     } else {
-      mod <- train(formula, dat, method = method, na.action = na.omit, ...)
+      mod <- caret::train(formula, dat, method = method, na.action = na.omit, ...)
     }
-    new_dat <- max_df(dat, mod, truth = F, pred = F)
-    mod_list[[i + 1]] <- mod
-    bestR <- new_dat$preds
+    mod_list[[paste0('month', i)]] <- mod
+
+    n <- nrow(dat)
+    doses <- seq(from = 0, to = 1, by = 0.01)
+    dat_expand <- dat[rep(seq_len(n), each = length(doses)), ]
+    dat_expand[ , dose := rep(doses, n)]
+    dat_expand[ , pred := predict(mod, dat_expand)]
+    max_preds <- dat_expand[ , max(pred), by = ID]
+
     if (i > 0) {
-      data <- data %>% mutate(
-        Qhat = ifelse(month == i - 1,
-                      reward + ifelse(!is.na(bestR), bestR, 0),
-                      Qhat))
+      ind <- (data$month == i - 1) & (data$ID %in% max_preds$ID)
+      data[ind, ]$Qhat <- data[ind, ]$reward + max_preds$V1
     }
   }
-  list(
-    mod_list = mod_list
-  )
+  return(mod_list)
 }
