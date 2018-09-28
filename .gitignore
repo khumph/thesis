@@ -21,7 +21,9 @@
 *_pid
 *.sty
 *.bbl
+*.tex
 *.pdf
+*-blx.bib
 extras/
 results/
 data/
