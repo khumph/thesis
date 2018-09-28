@@ -50,8 +50,7 @@ knitr::opts_chunk$set(
   fig.align = 'center',
   fig.pos = '!htbp',
   fig.height = 3, fig.width = 5,
-  fig.lp = 'fig:'#,
-  # out.width = '0.75\\textwidth'
+  fig.lp = 'fig:'
 )
 Sys.setenv(TEXINPUTS = getwd(),
            BIBINPUTS = getwd(),
@@ -1084,16 +1083,14 @@ Variable importance was calculated for each model at each stage, as a percentage
 \section{Simulation results} % (fold)
 \label{sec:simulation_results}
 
-<<load-data>>=
+<<load-process-data>>=
 dat <- readRDS('results/data-all.rds')
-@
 
-<<process-data>>=
 scen_levs <- c("simple", "noise", "noise_pred", "simple_int", "noise_int", "noise_pred_int")
 labs_lng <- c("Basic", "Noise", "Predictive noise", "Interaction", "Interaction + noise", "Interaction + predictive noise")
 labs_lng <- paste(labs_lng, "scenario")
 
-dat <- mutate(
+dat <- dat %>% mutate(
   samp = (.data$ID - 1) %/% 100,
   mod = factor(
     .data$mod,
@@ -1103,7 +1100,7 @@ dat <- mutate(
   scenario = factor(.data$scenario, levels = scen_levs, labels = labs_lng)
 )
 
-dat_test_all_summ <- dat %>%
+dat_summ <- dat %>%
   group_by(.data$mod, .data$samp, .data$scenario) %>%
   summarise(mean_surv_time = mean(exp(.data$tot_reward))) %>%
   ungroup()
@@ -1123,14 +1120,14 @@ plot_surv <- function(dat) {
 
 <<results-no-int, fig.cap=caption, fig.scap='Mean months of survival under each regime for scenarios without interaction', fig.width='\\textwidth', fig.height=7>>=
 caption <- 'Mean months of survival under each regime for the scenarios without interaction, log scale. The mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \\ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \\times IQR$ from either hinge (lower or upper quartile) are shown as points.'
-dat_test_all_summ %>%
+dat_summ %>%
   filter(.data$scenario %in% grep('Interaction', labs_lng, value = T, invert = T)) %>%
   plot_surv()
 @
 
 <<results-int, fig.cap=caption, fig.scap='Mean months of survival under each regime for scenarios with interaction', fig.width='\\textwidth', fig.height=7>>=
 caption <- 'Mean months of survival under each regime for scenarios with interaction, log scale. As in Figure \ref{fig:results-no-int}, mean months of survival for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \\ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \\times IQR$ from either hinge (lower or upper quartile) are shown as points.'
-dat_test_all_summ %>%
+dat_summ %>%
   filter(.data$scenario %in% grep('Interaction', labs_lng, value = T)) %>%
   plot_surv()
 @
