@@ -83,22 +83,27 @@ $(RES_DIR)/data-all.rds : R/join.R $(DATA_BEST) $(DATA_CONSTANT) $(DATA_TEST)
 
 ## writeup     : Generate writeup.
 .PHONY : writeup
-writeup : docs/writeup-thesis.pdf
+writeup : $(DOC_DIR)/writeup.pdf
 
-docs/writeup-thesis.tex : docs/writeup-thesis.Rnw
+$(DOC_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw
 	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
 
-docs/writeup-thesis.pdf : docs/writeup-thesis.tex
+$(DOC_DIR)/writeup.pdf : $(DOC_DIR)/writeup.tex
 	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $^
 
 
-## clean       : Remove auto-generated files.
-.PHONY : clean
-clean :
-	rm -fR $(DAT_DIR)
-	rm -fR $(RES_DIR)
+## clean-cache : Remove knitr cache
+.PHONY : clean-cache
+clean-cache : 
 	rm -fR $(CACHE_DIR)
 	rm -fR $(FIG_DIR)
+	rm -fR $(DOC_DIR)/writeup.pdf 
+
+## clean       : Remove auto-generated files.
+.PHONY : clean
+clean : clean-cache
+	rm -fR $(DAT_DIR)
+	rm -fR $(RES_DIR)
 
 
 ## help        : Show arguments to make and what they do.
