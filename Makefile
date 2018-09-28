@@ -2,7 +2,7 @@ include config.mk
 
 ## all         : Make everything.
 .PHONY : all
-all : simulate learn base best
+all : simulate learn base best join writeup
 
 
 ## simulate    : Simulate clinical trail data.
@@ -38,7 +38,7 @@ base : $(DATA_BASE)
 define sim_test_template
 $$(DATA_DIR)/data-base-$(1).rds : R/simulate.R R/sim-functs.R
 	mkdir -p $$(DATA_DIR)
-	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --baseline-only
+	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --seed 20180927 --baseline-only
 endef
 
 $(foreach scenario, $(SCENARIOS), $(eval $(call sim_test_template,$(scenario))))
@@ -90,6 +90,7 @@ docs/writeup-thesis.tex : docs/writeup-thesis.Rnw
 
 docs/writeup-thesis.pdf : docs/writeup-thesis.tex
 	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $^
+
 
 ## clean       : Remove auto-generated files.
 .PHONY : clean
