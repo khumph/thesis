@@ -55,7 +55,7 @@ knitr::opts_chunk$set(
 Sys.setenv(TEXINPUTS = getwd(),
            BIBINPUTS = getwd(),
            BSTINPUTS = getwd())
-pacman::p_load(tidyverse, Hmisc, stringr, caret, partykit)
+pacman::p_load(tidyverse, Hmisc)
 @
 
 %--------------------------------------------------------------------------
@@ -588,7 +588,7 @@ numpreds <- 0
 
 <<ex-cart-mod>>=
 set.seed(20170128)
-mod_rpart <- train(
+mod_rpart <- caret::train(
   form,
   data = dat,
   method = 'rpart1SE',
@@ -596,14 +596,14 @@ mod_rpart <- train(
 )
 mod <- mod_rpart
 
-pR <- postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+pR <- caret::postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
 # round(pR["RMSE"], 3)
 # round(pR["Rsquared"], 2)
 @
 
 <<ex-cart-tree, fig.cap=caption, fig.scap='Regression tree fit to example data', fig.width='0.9\\textwidth', fig.height=5, dev.args=list(pointsize=13)>>=
 caption <- 'Regression tree fit to example data. For each split, the variable split upon is shown as a circle representing an internal node (with a numbered box giving the node a number). The values of the splitting variable that define resulting node membership are shown breaking the line connecting nodes (e.g. observations with $D \\geq 0.585$ end up in node 2, while observations with $D < 0.585$ end up in node 5). Box plots show the distribution of responses in each terminal node (nodes 3, 4, 6, and 7, shown at the bottom of the tree).'
-plot(as.party(mod$finalModel))
+plot(partykit::as.party(mod$finalModel))
 @
 
 
@@ -730,15 +730,15 @@ Returning to our change in tumor mass example from above, let's fit a regression
 
 <<ex-mars-mod>>=
 set.seed(20170128)
-mod_mars <- train(
+mod_mars <- caret::train(
   Y ~ D,
   data = dat,
   method = 'gcvEarth',
-  trControl = trainControl(method = "none"),
+  trControl = caret::trainControl(method = "none"),
   tuneGrid = expand.grid(degree = 2)
 )
 mod <- mod_mars
-pR <- postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+pR <- caret::postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
 @
 
 <<ex-plot-mars, fig.cap=cap, fig.scap='Predicted regression function for example data using MARS'>>=
@@ -838,17 +838,17 @@ Random forests and bagging give significantly more accurate predictions over a s
 
 <<ex-mod-rf>>=
 set.seed(20170128)
-mod_rf <- train(
+mod_rf <- caret::train(
   form,
   data = dat,
   method = 'ranger',
   tuneGrid = expand.grid(mtry = 1, min.node.size = 5, splitrule = "variance"),
-  trControl = trainControl(method = "none"),
+  trControl = caret::trainControl(method = "none"),
   num.trees = 100
 )
 
 mod <- mod_rf
-pR <- postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+pR <- caret::postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
 @
 
 <<ex-plot-rf, fig.cap=cap, fig.scap='Predicted regression function for example data using Random Forest'>>=
@@ -1132,33 +1132,18 @@ dat_summ %>%
   plot_surv()
 @
 
-
-%latex.default(., file = "", dec = 1, caption = cap, caption.lot = cap_toc,     label = "tab:rewards", where = "!htbp", rowname = NULL, colheads = col_heads,     booktabs = T)%
-\begin{table}[!htbp]
-  \caption[Mean survival times under each scenario]{Mean months of survival under each scenario (in months), averaged over 2000 test patients for each regime. Each test set of 2000 had identical initial tumor masses and toxicities ($M_{0}$, $W_{0}$). Best is the optimal dose sequence obtained from evaluating every possible three dose sequence. MARS, RF (random forest, which is equivalent to bagging in these scenarios), and CART (regression trees using the CART procedure) represent the average survival times when using the optimal dose regime estimated from Q-learning using each method to fit the Q-functions, averaged over the 100 training set replicates. B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, I+N is the interaction and noise scenario, and I+PN is the interaction and predictive noise scenario. Each scenario is described in detail in section \ref{sec:simulation}.\label{tab:rewards}}
-
-\centering
-\begin{tabular}{lrrrrrr}
-\toprule
-\multicolumn{1}{c}{Regime}&\multicolumn{1}{c}{B}&\multicolumn{1}{c}{N}&\multicolumn{1}{c}{PN}&\multicolumn{1}{c}{I}&\multicolumn{1}{c}{I+N}&\multicolumn{1}{c}{I+PN}\tabularnewline
-\midrule
-Best&$60.0$&$60.0$&$61.1$&$79.5$&$79.5$&$81.1$\tabularnewline
-MARS&$39.8$&$29.1$&$27.7$&$43.9$&$35.8$&$37.0$\tabularnewline
-RF&$36.3$&$30.0$&$30.7$&$45.8$&$41.2$&$42.1$\tabularnewline
-CART&$12.5$&$ 9.9$&$10.0$&$12.8$&$10.0$&$ 9.9$\tabularnewline
-1&$12.5$&$12.5$&$12.7$&$ 9.2$&$ 9.2$&$ 9.4$\tabularnewline
-0.9&$14.5$&$14.5$&$14.8$&$11.8$&$11.8$&$12.0$\tabularnewline
-0.8&$16.2$&$16.2$&$16.5$&$15.0$&$15.0$&$15.3$\tabularnewline
-0.7&$16.6$&$16.6$&$16.9$&$18.0$&$18.0$&$18.4$\tabularnewline
-0.6&$16.2$&$16.2$&$16.5$&$20.1$&$20.1$&$20.5$\tabularnewline
-0.5&$15.5$&$15.5$&$15.8$&$21.1$&$21.1$&$21.5$\tabularnewline
-0.4&$15.6$&$15.6$&$16.0$&$19.8$&$19.8$&$20.2$\tabularnewline
-0.3&$14.7$&$14.7$&$15.0$&$16.8$&$16.8$&$17.2$\tabularnewline
-0.2&$12.7$&$12.7$&$12.9$&$14.1$&$14.1$&$14.4$\tabularnewline
-0.1&$10.5$&$10.5$&$10.6$&$11.0$&$11.0$&$11.2$\tabularnewline
-  \bottomrule
-\end{tabular}
-\end{table}
+<<tab-surv, results='asis'>>=
+col_heads <- c("Regime", "B", "N", "PN", "I", "I+N", "I+PN")
+cap <- "Mean months of survival under each scenario (in months), averaged over 2000 test patients for each regime. Each test set of 2000 had identical initial tumor masses and toxicities ($M_{0}$, $W_{0}$). Best is the optimal dose sequence obtained from evaluating every possible three dose sequence. MARS, RF (random forest, which is equivalent to bagging in these scenarios), and CART (regression trees using the CART procedure) represent the average survival times when using the optimal dose regime estimated from Q-learning using each method to fit the Q-functions, averaged over the 100 training set replicates. B is the basic scenario, N is noise scenario, PN is the predictive noise scenario, I is the interaction scenario, I+N is the interaction and noise scenario, and I+PN is the interaction and predictive noise scenario. Each scenario is described in detail in section \\ref{sec:simulation}."
+cap_toc <- "Mean survival times under each scenario"
+dat %>%
+  group_by(.data$scenario, .data$mod) %>%
+  summarise(mean_surv_time = mean(exp(.data$tot_reward))) %>%
+  spread(key = .data$scenario, value = .data$mean_surv_time) %>%
+  latex(file = "", dec = 1,
+        caption = cap, caption.lot = cap_toc, label = "tab:rewards",
+        where = "!htbp", rowname = NULL, colheads = col_heads, booktabs = T)
+@
 
 The arithmetic mean survival times under each treatment regime are shown in Figure \ref{fig:results-no-int} for the scenarios without covariate by treatment interaction (patient subgroups with differential treatment response) and in Figure \ref{fig:results-int} for the interaction scenarios--those with covariate by treatment interaction. ``Best'' shows the arithmetic mean survival time for the 2000 test patients when following the best possible dose sequence. The optimal regimes estimated using Q-learning are labelled as ``MARS'', ``RF'', and ``CART'' for Q-learning using MARS, random forest (which in these situations was equivalent to bagging), and regression trees using the CART procedure to estimate the Q-functions, respectively. In Figures \ref{fig:results-no-int} and \ref{fig:results-int}, each of the 100 mean survival times obtained using the optimal regime derived from the 100 different training sets on the test set are displayed as separate points in box plots for the three modeling techniques. Comparison regimes are shown with only a single line because they do not require training and are therefore invariant across training set. Table \ref{tab:rewards} displays the arithmetic mean survival times under each regime, averaged over all of the 100 test set survival times for each of the regimes estimated using each Q-learning technique on each training set.
 
