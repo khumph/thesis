@@ -99,7 +99,7 @@ main <- function(seed, n_subjects, n_stages, scenario, output_file,
     dat <- Mnext(dat)
     dat <- Wnext(dat)
     dat$beta <- 1 / lambda(dat$M_next, dat$W_next, Z = dat$noise_chng)
-    dat$dead <- replace(dat$dead, dat$beta < 1, T)
+    dat$dead <- dat$beta < 1 | is.na(dat$beta)
     if (i < (n_stages - 1)) {
       dat$reward <- replace(log(i + dat$beta), !dat$dead, 0)
     } else {
@@ -107,8 +107,8 @@ main <- function(seed, n_subjects, n_stages, scenario, output_file,
     }
     out <- rbind(out, dat)
     if (i < (n_stages - 1)) {
-      dat$tumor_mass <- dat$M_next
-      dat$toxicity <- dat$W_next
+      dat$tumor_mass <- replace(dat$M_next, dat$dead, NA_real_)
+      dat$toxicity <- replace(dat$W_next, dat$dead, NA_real_)
     }
   }
 
