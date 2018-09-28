@@ -39,20 +39,23 @@
 \bibliography{docs/thesis.bib}
 
 <<setup, echo = F>>=
-Sys.setenv(TEXINPUTS = ,
-           BIBINPUTS = getwd(),
-           BSTINPUTS = getwd())
-# evaluate fig.cap after a chunk is evaluated
+knitr::opts_knit$set(root.dir = normalizePath('../'))
 knitr::opts_chunk$set(
-  eval.after = 'fig.cap',
   echo = F, warning = F, message = F,
-  fig.path = '../figure/',
-  cache.path = '../cache/',
+  cache = T,
+  root.dir = normalizePath('../'),
+  fig.path = 'figure/',
+  cache.path = 'cache/',
+  eval.after = 'fig.cap',
   fig.align = 'center',
   fig.pos = '!htbp',
   fig.height = 3, fig.width = 5,
-  out.width = '0.75\\textwidth'
+  fig.lp = 'fig:'#,
+  # out.width = '0.75\\textwidth'
 )
+Sys.setenv(TEXINPUTS = getwd(),
+           BIBINPUTS = getwd(),
+           BSTINPUTS = getwd())
 pacman::p_load(tidyverse, Hmisc, stringr, caret, partykit)
 @
 
@@ -599,7 +602,7 @@ pR <- postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
 # round(pR["Rsquared"], 2)
 @
 
-<<ex-cart-tree, fig.cap=caption, fig.scap='Regression tree fit to example data', fig.lp='fig:', fig.width='0.9\\textwidth', fig.height=5, dev.args=list(pointsize=13)>>=
+<<ex-cart-tree, fig.cap=caption, fig.scap='Regression tree fit to example data', fig.width='0.9\\textwidth', fig.height=5, dev.args=list(pointsize=13)>>=
 caption <- 'Regression tree fit to example data. For each split, the variable split upon is shown as a circle representing an internal node (with a numbered box giving the node a number). The values of the splitting variable that define resulting node membership are shown breaking the line connecting nodes (e.g. observations with $D \\geq 0.585$ end up in node 2, while observations with $D < 0.585$ end up in node 5). Box plots show the distribution of responses in each terminal node (nodes 3, 4, 6, and 7, shown at the bottom of the tree).'
 plot(as.party(mod$finalModel))
 @
@@ -607,7 +610,7 @@ plot(as.party(mod$finalModel))
 
 This produces the tree in Figure \ref{fig:ex-cart-tree}. Since the regression function is actually linear, the splits are intuitive: first we split the root node (node 1) at around the midpoint of the distribution of doses ($D = 0.585$), then we split the observations with doses higher than 0.585 (node 2) at about their median dose, 0.759, producing the terminal nodes 3 and 4. Similarly with doses less than 0.585 (node 5), we split at approximately the median dose (0.317), yielding terminal nodes 6 and 7.
 
-<<ex-plot-cart, fig.cap=caption, fig.scap='Predicted regression function for example data using CART', fig.lp='fig:', fig.height=3, fig.width=5>>=
+<<ex-plot-cart, fig.cap=caption, fig.scap='Predicted regression function for example data using CART', fig.height=3, fig.width=5>>=
 caption <- "Predicted regression function for example data using CART. The grey dots are the observations and the dotted line is the true relationship from which they were generated. The solid line connects the predicted values, which are shown with \\(\\times\\)s."
 ggplot(dat, aes(x = D, y = Y)) +
   geom_point(alpha = 0.5) +
@@ -739,7 +742,7 @@ mod <- mod_mars
 pR <- postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
 @
 
-<<ex-plot-mars, fig.cap=cap, fig.scap='Predicted regression function for example data using MARS', fig.lp='fig:'>>=
+<<ex-plot-mars, fig.cap=cap, fig.scap='Predicted regression function for example data using MARS'>>=
 cap <- "Predicted regression function for example data using MARS. As in Figure \\ref{fig:ex-plot-cart}, the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the \\(\\times\\)s represent predicted values for each observation."
 ggplot(dat, aes(x = D, y = Y)) +
   geom_point(alpha = 0.5) +
@@ -849,7 +852,7 @@ mod <- mod_rf
 pR <- postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
 @
 
-<<ex-plot-rf, fig.cap=cap, fig.scap='Predicted regression function for example data using Random Forest', fig.lp='fig:'>>=
+<<ex-plot-rf, fig.cap=cap, fig.scap='Predicted regression function for example data using Random Forest'>>=
 cap <- "Predicted regression function for example data using Random Forest. As in Figures \\ref{fig:ex-plot-cart} and \\ref{fig:ex-plot-mars}, the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the \\(\\times\\)s represent predicted values for each observation."
 ggplot(dat, aes(x = D, y = Y)) +
   geom_point(alpha = 0.5) +
@@ -1081,17 +1084,56 @@ Variable importance was calculated for each model at each stage, as a percentage
 \section{Simulation results} % (fold)
 \label{sec:simulation_results}
 
-\begin{figure}[!htbp]
-  \centering
-  \includegraphics[width=\textwidth]{extras/efigure/results-no-int-1}
-  \caption[Mean months of survival under each regime for scenarios without interaction]{Mean months of survival under each regime for the scenarios without interaction, log scale. The mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \times IQR$ from either hinge (lower or upper quartile) are shown as points.}\label{fig:results-no-int}
-\end{figure}
+<<load-data>>=
+dat <- readRDS('results/data-all.rds')
+@
 
-\begin{figure}[!htbp]
-  \centering
-  \includegraphics[width=\textwidth]{extras/efigure/results-int-1}
-  \caption[Mean months of survival under each regime for scenarios with interaction]{Mean months of survival under each regime for scenarios with interaction, log scale. As in Figure \ref{fig:results-no-int}, mean months of survival for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \times IQR$ from either hinge (lower or upper quartile) are shown as points.}\label{fig:results-int}
-\end{figure}
+<<process-data>>=
+scen_levs <- c("simple", "noise", "noise_pred", "simple_int", "noise_int", "noise_pred_int")
+labs_lng <- c("Basic", "Noise", "Predictive noise", "Interaction", "Interaction + noise", "Interaction + predictive noise")
+labs_lng <- paste(labs_lng, "scenario")
+
+dat <- mutate(
+  samp = (.data$ID - 1) %/% 100,
+  mod = factor(
+    .data$mod,
+    levels = c('best', 'mars', 'rf', 'rpart', seq(0.1, 1, 0.1)),
+    labels = c('Best', 'MARS', 'RF', 'CART', seq(0.1, 1, 0.1))
+  ),
+  scenario = factor(.data$scenario, levels = scen_levs, labels = labs_lng)
+)
+
+dat_test_all_summ <- dat %>%
+  group_by(.data$mod, .data$samp, .data$scenario) %>%
+  summarise(mean_surv_time = mean(exp(.data$tot_reward))) %>%
+  ungroup()
+@
+
+<<defn-plot-surv>>=
+plot_surv <- function(dat) {
+  ggplot(dat) +
+    geom_boxplot(mapping = aes(x = mod, y = mean_surv_time)) +
+    labs(y = "Mean months of survival", x = "Regime") +
+    theme(legend.position = "none") +
+    coord_trans(y = "log") +
+    facet_wrap(~ scenario, nrow = 3) +
+    theme_bw()
+}
+@
+
+<<results-no-int, fig.cap=caption, fig.scap='Mean months of survival under each regime for scenarios without interaction', fig.width='\\textwidth', fig.height=7>>=
+caption <- 'Mean months of survival under each regime for the scenarios without interaction, log scale. The mean months of survival on the test set (initial tumor masses and toxicities for 2000 patients) for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \\ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \\times IQR$ from either hinge (lower or upper quartile) are shown as points.'
+dat_test_all_summ %>%
+  filter(.data$scenario %in% grep('Interaction', labs_lng, value = T, invert = T)) %>%
+  plot_surv()
+@
+
+<<results-int, fig.cap=caption, fig.scap='Mean months of survival under each regime for scenarios with interaction', fig.width='\\textwidth', fig.height=7>>=
+caption <- 'Mean months of survival under each regime for scenarios with interaction, log scale. As in Figure \ref{fig:results-no-int}, mean months of survival for the regimes estimated using Q-learning (MARS, RF--here equivalent to bagging, and CART), each of the 100 treatment regimes estimated from each of the 100 training sets are shown in box plots. The best regime and the constant dose regimes ($1, 0.9, \\ldots$, 0.1) do not vary across training set and therefore have only one mean survival time for the test set. Observations more than $1.5 \\times IQR$ from either hinge (lower or upper quartile) are shown as points.'
+dat_test_all_summ %>%
+  filter(.data$scenario %in% grep('Interaction', labs_lng, value = T)) %>%
+  plot_surv()
+@
 
 
 %latex.default(., file = "", dec = 1, caption = cap, caption.lot = cap_toc,     label = "tab:rewards", where = "!htbp", rowname = NULL, colheads = col_heads,     booktabs = T)%

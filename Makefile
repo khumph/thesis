@@ -86,7 +86,7 @@ $(RESULTS_DIR)/data-all.rds : R/join.R $(DATA_BEST) $(DATA_CONSTANT) $(DATA_TEST
 writeup : docs/writeup-thesis.pdf
 
 docs/writeup-thesis.tex : docs/writeup-thesis.Rnw
-	Rscript -e "pacman::p_load(knitr); owd <- setwd('$(<D)'); knit('$(<F)'); setwd(owd)"
+	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
 
 docs/writeup-thesis.pdf : docs/writeup-thesis.tex
 	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $^
