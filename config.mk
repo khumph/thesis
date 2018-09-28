@@ -6,7 +6,7 @@ CACHE_DIR = cache
 FIG_DIR = figure
 
 SCENARIOS = simple noise noise-pred simple-int noise-int noise-pred-int
-MODE_TYPES = rpart mars rf
+MODEL_TYPES = rpart mars rf
 
 DATA = $(addsuffix .rds, $(addprefix $(DAT_DIR)/data-, $(SCENARIOS)))
 DATA_BASE = $(addsuffix .rds, $(addprefix $(DAT_DIR)/data-base-, $(SCENARIOS)))
