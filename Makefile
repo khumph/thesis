@@ -62,7 +62,7 @@ $(RESULTS_DIR)/data-constant-%.rds : R/sim-constant.R $(DATA_DIR)/data-base-%.rd
 	Rscript $(wordlist 1, 2, $^) --dependencies $(lastword $^) --output $@
 
 
-## test        : Simulate constant dose sequences for baseline data.
+## test        : Simulate dose sequences from models for baseline data.
 .PHONY : test
 test : $(DATA_TEST)
 
@@ -73,7 +73,15 @@ endef
 
 $(foreach mod, $(MODEL_TYPES), $(eval $(call test_template,$(mod))))
 
-## writeup     : Generate writeup
+## join        : Join all test data.
+.PHONY : join
+join : $(RESULTS_DIR)/data-all.rds
+
+$(RESULTS_DIR)/data-all.rds : R/join.R $(DATA_BEST) $(DATA_CONSTANT) $(DATA_TEST) 
+	Rscript $^ --output $@
+
+
+## writeup     : Generate writeup.
 .PHONY : writeup
 writeup : docs/writeup-thesis.pdf
 
