@@ -2,7 +2,7 @@ include config.mk
 
 ## all         : Make everything.
 .PHONY : all
-all : simulate learn base best join writeup
+all : simulate learn writeup
 
 
 ## simulate    : Simulate clinical trail data.
@@ -23,9 +23,9 @@ $(foreach scenario, $(SCENARIOS), $(eval $(call sim_template,$(scenario))))
 learn : $(MODELS)
 
 define learn_template
-$$(RES_DIR)/q-$(1)-%.rds : R/learn-$(1).R $$(DAT_DIR)/data-%.rds R/q-functs.R
+$$(RES_DIR)/q-$(1)-%.rds : R/learn.R $$(DAT_DIR)/data-%.rds
 	mkdir -p $$(RES_DIR)
-	Rscript $$(wordlist 1, 2, $$^) --dependencies $$(lastword $$^) --output $$@
+	Rscript $$(wordlist 1, 2, $$^) --output $$@ --method $(1)
 endef
 
 $(foreach mod, $(MODEL_TYPES), $(eval $(call learn_template,$(mod))))
@@ -73,6 +73,7 @@ endef
 
 $(foreach mod, $(MODEL_TYPES), $(eval $(call test_template,$(mod))))
 
+
 ## join        : Join all test data.
 .PHONY : join
 join : $(RES_DIR)/data-all.rds
@@ -83,9 +84,9 @@ $(RES_DIR)/data-all.rds : R/join.R $(DATA_BEST) $(DATA_CONSTANT) $(DATA_TEST)
 
 ## writeup     : Generate writeup.
 .PHONY : writeup
-writeup : $(DOC_DIR)/writeup.pdf
+writeup : $(DOC_DIR)/writeup.pdf join
 
-$(DOC_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw
+$(DOC_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw 
 	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
 
 $(DOC_DIR)/writeup.pdf : $(DOC_DIR)/writeup.tex
@@ -98,6 +99,7 @@ clean-cache :
 	rm -fR $(CACHE_DIR)
 	rm -fR $(FIG_DIR)
 	rm -fR $(DOC_DIR)/writeup.pdf 
+	rm -fR $(DOC_DIR)/writeup.tex 
 
 ## clean       : Remove auto-generated files.
 .PHONY : clean

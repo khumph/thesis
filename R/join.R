@@ -32,7 +32,7 @@ main <- function(inputs, output) {
   }, X = x, Y = strsplit(dat_names, split = "-"))
   x <- rbindlist(x, fill = T)
 
-  x <- x[ , tot_reward := sum(reward, na.rm = T), by = .(ID, mod, scenario)]
+  x <- x[ , tot_reward := sum(reward, na.rm = T), by = .(ID, mod, samp, scenario)]
 
   saveRDS(x, file = output, compress = F)
 }

@@ -23,38 +23,47 @@ main <- function(baseline_file, q_file, n_stages, output_file, dependencies) {
   dat <- readRDS(baseline_file)
   dat <- as.data.table(dat)
 
-  q <- readRDS(q_file)
+  q_list <- readRDS(q_file)
+  n_samples <- length(q_list)
 
-  out <- data.frame()
-  for (i in 0:(n_stages - 1)) {
+  dat_list <- lapply(seq_len(n_samples), function(s) {
 
-    if (i > 0) {
-      dat <- dat[!(dat$dead), ]
-      dat$tumor_mass <- dat$M_next
-      dat$toxicity <- dat$W_next
+    tic(paste('Sample', s, 'of', n_samples))
+    dat$samp <- rep(s, nrow(dat))
+    out <- data.frame()
+    for (i in 0:(n_stages - 1)) {
+
+      if (i > 0) {
+        dat <- dat[!(dat$dead), ]
+        dat$tumor_mass <- dat$M_next
+        dat$toxicity <- dat$W_next
+      }
+
+      n <- nrow(dat)
+      dat$month <- rep(i, n)
+      doses <- seq(from = 0, to = 1, by = 0.01)
+      dat_expand <- dat[rep(seq_len(n), each = length(doses)), ]
+      dat_expand$dose <- rep(doses, n)
+      dat_expand$pred <- predict(q_list[[s]][[paste0('month', i)]], dat_expand)
+
+      # subset to smallest dose which produces the longest expected survival
+      dat <- dat_expand[dat_expand[, .I[which.max(pred)], by = ID]$V1]
+
+      dat <- Mnext(dat)
+      dat <- Wnext(dat)
+      dat$beta <- 1 / lambda(dat$M_next, dat$W_next, Z = dat$noise_chng)
+      dat$dead <- dat$beta < 1
+      dat$reward <- log(i + dat$beta)
+      if (i < (n_stages - 1)) {
+        dat$reward <- replace(dat$reward, !dat$dead, 0)
+      }
+      out <- rbind(out, dat)
     }
+    toc()
+    return(out)
+  })
 
-    n <- nrow(dat)
-    dat$month <- rep(i, n)
-    doses <- seq(from = 0, to = 1, by = 0.01)
-    dat_expand <- dat[rep(seq_len(n), each = length(doses)), ]
-    dat_expand$dose <- rep(doses, n)
-    dat_expand$pred <- predict(q[[paste0('month', i)]], dat_expand)
-
-    # filter to the first minimum, also the also the min with the
-    # smallest dose, because does are in ascending order:
-    dat <- dat_expand[dat_expand[, .I[which.max(pred)], by = ID]$V1]
-
-    dat <- Mnext(dat)
-    dat <- Wnext(dat)
-    dat$beta <- 1 / lambda(dat$M_next, dat$W_next, Z = dat$noise_chng)
-    dat$dead <- dat$beta < 1
-    dat$reward <- log(i + dat$beta)
-    if (i < (n_stages - 1)) {
-      dat$reward <- replace(dat$reward, !dat$dead, 0)
-    }
-    out <- rbind(out, dat)
-  }
+  out <- rbindlist(dat_list)
 
   saveRDS(out, file = output_file, compress = F)
 }
