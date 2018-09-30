@@ -2,7 +2,7 @@ include config.mk
 
 ## all         : Make everything.
 .PHONY : all
-all : simulate learn writeup
+all :  simulate learn base constant test best join writeup
 
 
 ## simulate    : Simulate clinical trail data.
@@ -12,7 +12,7 @@ simulate : $(DATA)
 define sim_template
 $$(DAT_DIR)/data-$(1).rds : R/simulate.R R/sim-functs.R
 	mkdir -p $$(DAT_DIR)
-	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1)
+	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --n_samples 100
 endef
 
 $(foreach scenario, $(SCENARIOS), $(eval $(call sim_template,$(scenario))))
@@ -38,7 +38,7 @@ base : $(DATA_BASE)
 define sim_test_template
 $$(DAT_DIR)/data-base-$(1).rds : R/simulate.R R/sim-functs.R
 	mkdir -p $$(DAT_DIR)
-	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --seed 20180927 --baseline-only
+	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --seed 20180927 --baseline-only --n_subjects 2000
 endef
 
 $(foreach scenario, $(SCENARIOS), $(eval $(call sim_test_template,$(scenario))))
@@ -82,11 +82,19 @@ $(RES_DIR)/data-all.rds : R/join.R $(DATA_BEST) $(DATA_CONSTANT) $(DATA_TEST)
 	Rscript $^ --output $@
 
 
+## importances  : Get variable importances for each model.
+.PHONY : importances
+importances : $(RES_DIR)/data-importance.rds
+
+$(RES_DIR)/data-importance.rds : R/importances.R $(MODELS)
+	Rscript $^ --output $@
+
+
 ## writeup     : Generate writeup.
 .PHONY : writeup
 writeup : $(DOC_DIR)/writeup.pdf join
 
-$(DOC_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw 
+$(DOC_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw $(RES_DIR)/data-all.rds $(RES_DIR)/data-importance.rds 
 	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
 
 $(DOC_DIR)/writeup.pdf : $(DOC_DIR)/writeup.tex
@@ -100,6 +108,7 @@ clean-cache :
 	rm -fR $(FIG_DIR)
 	rm -fR $(DOC_DIR)/writeup.pdf 
 	rm -fR $(DOC_DIR)/writeup.tex 
+
 
 ## clean       : Remove auto-generated files.
 .PHONY : clean
