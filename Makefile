@@ -11,8 +11,7 @@ simulate : $(DATA)
 
 define sim_template
 $$(DAT_DIR)/data-$(1).rds : R/simulate.R R/sim-functs.R
-	mkdir -p $$(DAT_DIR)
-	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --n_samples 100
+	mkdir -p $$(DAT_DIR)	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1)
 endef
 
 $(foreach scenario, $(SCENARIOS), $(eval $(call sim_template,$(scenario))))
@@ -38,7 +37,7 @@ base : $(DATA_BASE)
 define sim_test_template
 $$(DAT_DIR)/data-base-$(1).rds : R/simulate.R R/sim-functs.R
 	mkdir -p $$(DAT_DIR)
-	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --seed 20180927 --baseline-only --n_subjects 2000
+	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --seed 20180927 --baseline-only
 endef
 
 $(foreach scenario, $(SCENARIOS), $(eval $(call sim_test_template,$(scenario))))
