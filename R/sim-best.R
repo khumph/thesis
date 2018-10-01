@@ -37,7 +37,7 @@ main <- function(baseline_file, n_stages, output_file, dependencies) {
   dat <- dat[, c('ID', 'W0', 'M0', 'cW', 'cM', 'noise_chng')]
 
   # Too many subjects at once will exhaust memory, split into groups
-  dat[ , grp := (dat$ID - 1) %/% 20]
+  dat[ , grp := (dat$ID - 1) %/% 10]
 
   possible_doses <- seq(0, 1, 0.01)
 
