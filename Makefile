@@ -11,7 +11,8 @@ simulate : $(DATA)
 
 define sim_template
 $$(DAT_DIR)/data-$(1).rds : R/simulate.R R/sim-functs.R
-	mkdir -p $$(DAT_DIR)	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1)
+	mkdir -p $$(DAT_DIR)
+	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --n_samples $$(N_SAMPLES)
 endef
 
 $(foreach scenario, $(SCENARIOS), $(eval $(call sim_template,$(scenario))))
@@ -37,7 +38,7 @@ base : $(DATA_BASE)
 define sim_test_template
 $$(DAT_DIR)/data-base-$(1).rds : R/simulate.R R/sim-functs.R
 	mkdir -p $$(DAT_DIR)
-	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --seed 20180927 --baseline-only
+	Rscript $$< --dependencies $$(lastword $$^) --output $$@ --scenario $(1) --seed 20180927 --baseline-only --n_subjects $$(N_TEST_OBS)
 endef
 
 $(foreach scenario, $(SCENARIOS), $(eval $(call sim_test_template,$(scenario))))
@@ -81,7 +82,7 @@ $(RES_DIR)/data-all.rds : R/join.R $(DATA_BEST) $(DATA_CONSTANT) $(DATA_TEST)
 	Rscript $^ --output $@
 
 
-## importances  : Get variable importances for each model.
+## importances : Get variable importances for each model.
 .PHONY : importances
 importances : $(RES_DIR)/data-importance.rds
 
@@ -91,16 +92,16 @@ $(RES_DIR)/data-importance.rds : R/importances.R $(MODELS)
 
 ## writeup     : Generate writeup.
 .PHONY : writeup
-writeup : $(DOC_DIR)/writeup.pdf join
+writeup : $(DOC_DIR)/writeup.pdf
 
-$(DOC_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw $(RES_DIR)/data-all.rds $(RES_DIR)/data-importance.rds 
+$(DOC_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw $(RES_DIR)/data-all.rds $(RES_DIR)/data-importance.rds R/sim-functs.R
 	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
 
 $(DOC_DIR)/writeup.pdf : $(DOC_DIR)/writeup.tex
 	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $^
 
 
-## clean-cache : Remove knitr cache
+## clean-cache : Remove knitr cache and formatted writeup.
 .PHONY : clean-cache
 clean-cache : 
 	rm -fR $(CACHE_DIR)
@@ -109,7 +110,7 @@ clean-cache :
 	rm -fR $(DOC_DIR)/writeup.tex 
 
 
-## clean       : Remove auto-generated files.
+## clean       : Remove all auto-generated files.
 .PHONY : clean
 clean : clean-cache
 	rm -fR $(DAT_DIR)
