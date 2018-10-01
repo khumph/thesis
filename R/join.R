@@ -5,9 +5,9 @@ Usage:
   join.R -h | --help
 
 Arguments:
-  -h --help               Show this screen
-  <inputs>                .rds file with baseline patient condtions
-  --output <file>         Path to output .rds file
+  -h --help        Show this screen
+  <inputs>         .rds data files to join
+  --output <file>  Path to output .rds file
 " -> doc
 
 pacman::p_load(data.table, tictoc)
