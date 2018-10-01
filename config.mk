@@ -19,5 +19,5 @@ MODELS = $(foreach mod, $(MODEL_TYPES), \
 DATA_TEST = $(foreach mod, $(MODEL_TYPES), \
   $(patsubst $(DAT_DIR)/data-base-%.rds, $(RES_DIR)/data-$(mod)-%.rds, $(DATA_BASE)))
 
-N_SAMPLES = 100
-N_TEST_OBS = 2000
+N_SAMPLES = 100 # Number of repeated training samples to take
+N_TEST_OBS = 2000 # Number of test observations to be simulated for each regime
