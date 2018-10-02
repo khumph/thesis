@@ -92,13 +92,38 @@ $(RES_DIR)/data-importance.rds : R/importances.R $(MODELS)
 
 ## writeup     : Generate writeup.
 .PHONY : writeup
-writeup : $(DOC_DIR)/writeup.pdf
+writeup : $(PDF_DIR)/writeup.pdf
 
-$(DOC_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw $(RES_DIR)/data-all.rds $(RES_DIR)/data-importance.rds R/sim-functs.R
+$(PDF_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw $(RES_DIR)/data-all.rds $(RES_DIR)/data-importance.rds R/sim-functs.R
+	mkdir -p $(PDF_DIR)
 	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
 
-$(DOC_DIR)/writeup.pdf : $(DOC_DIR)/writeup.tex
-	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $^
+$(PDF_DIR)/writeup.pdf : $(PDF_DIR)/writeup.tex
+	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $<
+
+
+## pres        : Generate presentation.
+.PHONY : pres
+pres : $(PDF_DIR)/pres.pdf
+
+$(FIG_DIR)/cells.png : 
+	mkdir -p $(FIG_DIR)
+	curl https://imgs.xkcd.com/comics/cells.png > $@
+
+$(FIG_DIR)/rl-venn-silver.png :
+	mkdir -p $(FIG_DIR)
+	curl https://1.bp.blogspot.com/-1K7BtY7lwOk/WpomO1-FLmI/AAAAAAAAXLo/_EczW0T98HgdxcIwSSOchg6JFBQ2RgIswCLcBGAs/s1600/4140_F1-5.PNG > $@
+
+$(FIG_DIR)/rl-process.png :
+	mkdir -p $(FIG_DIR)
+	curl https://www.52coding.com.cn/images/aae.png > $@
+
+$(PDF_DIR)/pres.tex : $(DOC_DIR)/pres.Rnw
+	mkdir -p $(PDF_DIR)
+	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
+
+$(PDF_DIR)/pres.pdf : $(PDF_DIR)/pres.tex
+	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $<
 
 
 ## clean-cache : Remove knitr cache and formatted writeup.
@@ -106,8 +131,7 @@ $(DOC_DIR)/writeup.pdf : $(DOC_DIR)/writeup.tex
 clean-cache : 
 	rm -fR $(CACHE_DIR)
 	rm -fR $(FIG_DIR)
-	rm -fR $(DOC_DIR)/writeup.pdf 
-	rm -fR $(DOC_DIR)/writeup.tex 
+	rm -fR $(PDF_DIR)
 
 
 ## clean       : Remove all auto-generated files.

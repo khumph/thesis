@@ -4,6 +4,7 @@ RES_DIR = results
 DOC_DIR = docs
 CACHE_DIR = cache
 FIG_DIR = figure
+PDF_DIR = docs-typeset
 
 SCENARIOS = simple noise noise-pred simple-int noise-int noise-pred-int
 MODEL_TYPES = rpart mars rf
