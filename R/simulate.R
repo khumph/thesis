@@ -86,8 +86,8 @@ main <- function(seed, n_subjects, n_stages, n_samples, scenario, output_file,
     }
 
     if (noise_pred) {
-      dat$noise_chng <- dat$Z1 + dat$Z2 + dat$Z3 + dat$Z4 + dat$Z5 +
-        dat$Z6 + dat$Z7 + dat$Z8 + dat$Z9 + dat$Z10
+      dat$noise_chng <- 0.05 * (dat$Z1 + dat$Z2 + dat$Z3 + dat$Z4 + dat$Z5 +
+        dat$Z6 + dat$Z7 + dat$Z8 + dat$Z9 + dat$Z10)
     }
     if (!noise_pred) {
       dat$noise_chng <- rep(0, n_subjects)
@@ -101,8 +101,10 @@ main <- function(seed, n_subjects, n_stages, n_samples, scenario, output_file,
     for (i in 0:(n_stages - 1)) {
       dat$month <- rep(i, nrow(dat))
       dat$dose <- runif(nrow(dat), min = 0, max = 1)
-      dat <- Mnext(dat)
-      dat <- Wnext(dat)
+      dat$W_next <- updateW(dat$tumor_mass, dat$toxicity, dat$dose, c = dat$cW)
+      dat$W_next <- replace(dat$W_next, dat$dead, NA_real_)
+      dat$M_next <- updateM(dat$tumor_mass, dat$toxicity, dat$dose, c = dat$cM)
+      dat$M_next <- replace(dat$M_next, dat$dead, NA_real_)
       dat$beta <- 1 / lambda(dat$M_next, dat$W_next, Z = dat$noise_chng)
       dat$dead <- dat$beta < 1 | is.na(dat$beta)
       if (i < (n_stages - 1)) {

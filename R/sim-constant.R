@@ -35,8 +35,10 @@ main <- function(baseline_file, n_stages, output_file, dependencies) {
       dat$toxicity <- dat$W_next
     }
     dat$month <- rep(i, nrow(dat))
-    dat <- Mnext(dat)
-    dat <- Wnext(dat)
+    dat$W_next <- updateW(dat$tumor_mass, dat$toxicity, dat$dose, c = dat$cW)
+    dat$W_next <- replace(dat$W_next, dat$dead, NA_real_)
+    dat$M_next <- updateM(dat$tumor_mass, dat$toxicity, dat$dose, c = dat$cM)
+    dat$M_next <- replace(dat$M_next, dat$dead, NA_real_)
     dat$beta <- 1 / lambda(dat$M_next, dat$W_next, Z = dat$noise_chng)
     dat$dead <- dat$beta < 1
     dat$reward <- log(i + dat$beta)
