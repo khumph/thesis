@@ -37,6 +37,7 @@
 
 
 \begin{frame}[c]{Table of contents}
+  \bigskip
   \setbeamertemplate{section in toc}[sections numbered]
   \tableofcontents
 \end{frame}
@@ -72,10 +73,10 @@
     \item Treatment by covariate interactions
           \begin{itemize}
             \item Problem: Lots of potential subgroups/interactions
-                  \begin{itemize}
-                    \item Need lots of data (and)
-                    \item Method for multiple comparisons
-                  \end{itemize}
+              \begin{itemize}
+                \item Need lots of data (and)
+                \item Method for multiple comparisons
+              \end{itemize}
           \end{itemize}
     \item Lots of novel methods
           \begin{itemize}
@@ -248,7 +249,7 @@
         pt node img/.style={rounded corners, dashed, draw},
         dose node/.style={circle, draw},
         surv node/.style={diamond, draw},
-      r node/.style={star, draw}]
+        r node/.style={star, draw}]
       \node[pt node]    (M0) {\(M_{0}\), \(W_{0}\)};
       \node[dose node]  (D0) [above of = M0] {\(D_{0}\)};
       \path (D0) edge (M0);
@@ -689,6 +690,7 @@
   \begin{equation*}
     X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1)
   \end{equation*}
+  \vspace{-\baselineskip}
   \begin{itemize}[<+->]
     \item[] \(X_{1} < 0.5 \ \& \ X_{2} < 0.5\): same as before
     \item[] \(X_{1} > 0.5 \ \& \ X_{2} < 0.5\): 50\% more sensitive to drug effects:
@@ -756,7 +758,7 @@
           \begin{itemize}[<+(1)->]
             \item 10 constant dose regimes: doses of \(0.1, 0.2, \ldots,\) or 1
             \item Best: sequence (with each \(D_{t} \in \{0, 0.01, 0.02, \ldots, 1\}\)) that maximizes survival given complete knowledge of simulation.
-            \item CART, MARS, RF: doses corresponding to the maximum predicted rewards \\* (for each of the 100 models for each stage)
+            \item CART, MARS, RF: doses corresponding to the maximum predicted rewards (for each of the 100 models for each stage)
           \end{itemize}
     \item Variable importance for each model: change in SSE from removing all splits/terms made with a given variable
   \end{itemize}
