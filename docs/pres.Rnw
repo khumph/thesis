@@ -16,8 +16,8 @@
 \usetikzlibrary{arrows, shapes, positioning}
 \setbeamercolor{background canvas}{bg=white}
 \newcommand\blfootnote[1]{%
-\begingroup
-\renewcommand\thefootnote{}\footnote{#1}%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
   \addtocounter{footnote}{-1}%
   \endgroup
 }
@@ -29,6 +29,29 @@
 \author{Kyle Humphrey}
 \institute{University of Arizona}
 
+<<setup, echo = F>>=
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+knitr::opts_chunk$set(
+  echo = F, warning = F, message = F,
+  cache = T,
+  root.dir = normalizePath('../'),
+  fig.path = 'figure/',
+  cache.path = 'cache/',
+  eval.after = 'fig.cap',
+  fig.align = 'center',
+  fig.pos = '!htbp',
+  fig.height = 3, fig.width = 5,
+  fig.lp = 'fig:'
+)
+Sys.setenv(TEXINPUTS = getwd(),
+           BIBINPUTS = getwd(),
+           BSTINPUTS = getwd())
+@
+
+<<load-packages>>=
+pacman::p_load(tidyverse, Hmisc, caret, rpart, earth)
+source('R/sim-functs.R')
+@
 
 \begin{document}
 
@@ -672,16 +695,48 @@
 \end{frame}
 
 
-\begin{frame}[c]{Why these functions?}
-  \centering
-  \includegraphics[width=0.45\textwidth]{figure/cells}
-  \bigskip
+\begin{frame}[fragile]{Why these functions?}
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{figure/cells.png}
+  \end{figure}
   \blfootnote{\url{https://xkcd.com/1217/}}
 \end{frame}
 
 
 \begin{frame}[c]{Example patient profile}
-  \includegraphics[width=\textwidth]{figure/ind-plot-1}
+<<ind-plot-setup>>=
+dat_long <- readRDS('data/data-simple.rds')
+ex_ID <- 26
+dat <- bind_rows(filter(dat_long, ID == ex_ID),
+                 filter(dat_long, ID == ex_ID, month == 2) %>%
+                   mutate(month = 3, tumor_mass = M_next, toxicity = W_next))
+@
+
+<<ind-plot, fig.width='\\textwidth', fig.height=5>>=
+pD <- ggplot(data = dat) +
+  geom_step(mapping = aes(x = month, y = dose, group = ID),
+            color = "red") + ylim(0, 1) +
+  labs(x = "Month", y = "Dose") +
+  theme_bw() +
+  theme(axis.title.x = element_blank())
+
+pMW <- ggplot(dat) +
+  geom_line(mapping = aes(x = month, y = tumor_mass)) +
+  geom_line(mapping = aes(x = month, y = toxicity),
+            color = "green", linetype = 2) +
+  theme_bw() +
+  labs(y = "M (solid); W (dashed)") +
+  theme(axis.title.x = element_blank())
+
+pbeta <- ggplot(dat) +
+  geom_step(aes(x = month, y = beta, group = ID), color = "blue") +
+  labs(y = expression(beta), x = 'Month') +
+  theme_bw()
+
+cowplot::plot_grid(pD, pMW, pbeta, ncol = 1, align = 'v',
+                   rel_heights = c(1, 1, 1.1))
+@
 \end{frame}
 
 
