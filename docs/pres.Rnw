@@ -490,7 +490,7 @@ source('R/sim-functs.R')
   \begin{itemize}
     \item Generalization of stepwise linear regression methods that incorporates modelling interactions
     \item Model covariates as piecewise linear basis functions:
-          \begin{equation*} \label{eq:bases}
+          \begin{equation*} \label{eq:bases-knot}
             (x - \overbrace{t}^\text{knot})_{+} \text{ and } (\overbrace{t}^\text{knot} - x)_{+}
           \end{equation*} where
           \begin{equation*}
