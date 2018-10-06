@@ -344,9 +344,8 @@ source('R/sim-functs.R')
 
 \begin{frame}[c]{Regression trees (CART): example tree}
   \begin{figure}[!htbp]
-    \begin{center}
-      \includegraphics[width=\textwidth]{figure/ex-cart-tree-1}
-    \end{center}
+    \centering
+    \includegraphics[width=\textwidth]{figure/ex-cart-tree-1}
   \end{figure}
 \end{frame}
 
@@ -413,18 +412,16 @@ source('R/sim-functs.R')
 
 \begin{frame}[c]{Regression trees (CART): example tree}
   \begin{figure}[!htbp]
-    \begin{center}
-      \includegraphics[width=\textwidth]{figure/ex-cart-tree-1}
-    \end{center}
+    \centering
+    \includegraphics[width=\textwidth]{figure/ex-cart-tree-1}
   \end{figure}
 \end{frame}
 
 
 \begin{frame}{Regression trees (CART) example function}
   \begin{figure}[!htbp]
-    \begin{center}
-      \includegraphics[width=0.9\textwidth]{figure/ex-plot-cart-1}
-    \end{center}
+    \centering
+    \includegraphics[width=0.9\textwidth]{figure/ex-plot-cart-1}
   \end{figure}
 \end{frame}
 % subsection cart (end)
@@ -455,7 +452,7 @@ source('R/sim-functs.R')
   \begin{itemize}
     \item Generalization of stepwise linear regression methods that incorporates modelling interactions
     \item Model covariates as piecewise linear basis functions:
-          \begin{equation*} \label{eq:bases}
+          \begin{equation*} \label{eq:bases-hinge}
             \underbrace{(x - t)_{+}}_\text{hinge function} \text{ and } \underbrace{(t - x)_{+}}_\text{hinge function}
           \end{equation*} where
           \begin{equation*}
@@ -472,7 +469,7 @@ source('R/sim-functs.R')
   \begin{itemize}
     \item Generalization of stepwise linear regression methods that incorporates modelling interactions
     \item Model covariates as piecewise linear basis functions:
-          \begin{equation*} \label{eq:bases}
+          \begin{equation*} \label{eq:bases-spline}
             \underbrace{(x - t)_{+}}_\text{linear spline} \text{ and } \underbrace{(t - x)_{+}}_\text{linear spline}
           \end{equation*} where
           \begin{equation*}
@@ -556,9 +553,8 @@ source('R/sim-functs.R')
 
 \begin{frame}[t]{MARS: example}
   \begin{figure}[!htbp]
-    \begin{center}
-      \includegraphics[width=0.9\textwidth]{figure/ex-plot-mars-1}
-    \end{center}
+    \centering
+    \includegraphics[width=0.9\textwidth]{figure/ex-plot-mars-1}
   \end{figure}
   \begin{equation*}
     \label{eq:mars-eqn}
@@ -619,9 +615,8 @@ source('R/sim-functs.R')
 
 \begin{frame}{Random forest (bagging) example}
   \begin{figure}[!htb]
-    \begin{center}
-      \includegraphics[width=0.9\textwidth]{figure/ex-plot-rf-1}
-    \end{center}
+    \centering
+    \includegraphics[width=0.9\textwidth]{figure/ex-plot-rf-1}
   \end{figure}
 \end{frame}
 % subsection bagging_and_random (end)
