@@ -2,7 +2,7 @@ include config.mk
 
 ## all         : Make everything.
 .PHONY : all
-all :  simulate learn base constant test best join writeup
+all :  simulate learn base constant test best join writeup pres
 
 
 ## simulate    : Simulate clinical trail data.
@@ -99,7 +99,7 @@ $(PDF_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw $(RES_DIR)/data-all.rds $(RES_DI
 	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
 
 $(PDF_DIR)/writeup.pdf : $(PDF_DIR)/writeup.tex
-	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $<
+	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=errorstopmode" -use-make $<
 
 
 ## pres        : Generate presentation.
@@ -122,8 +122,8 @@ $(PDF_DIR)/pres.tex : $(DOC_DIR)/pres.Rnw
 	mkdir -p $(PDF_DIR)
 	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
 
-$(PDF_DIR)/pres.pdf : $(PDF_DIR)/pres.tex
-	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=nonstopmode" -use-make $<
+$(PDF_DIR)/pres.pdf : $(PDF_DIR)/pres.tex $(FIG_DIR)/rl-process.png $(FIG_DIR)/rl-venn-silver.png $(FIG_DIR)/cells.png
+	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=errorstopmode" -use-make $<
 
 
 ## clean-cache : Remove knitr cache and formatted writeup.
