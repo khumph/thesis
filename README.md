@@ -1,6 +1,6 @@
 # Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data
 
-This repository contains the code and files to generate the write-ups for my master's thesis "Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data".
+This repository contains the code and files to generate the write-ups for my master's thesis "Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data". The full typeset write-up is available [here](https://www.dropbox.com/s/ewniwziasksblek/writeup.pdf?dl=0) and the typeset presentation is available [here](https://www.dropbox.com/s/hdoa55y4vhj4yw2/pres.pdf?dl=0).
 
 ## Abstract
 
@@ -56,6 +56,7 @@ Running `make all` (or simply `make`) will produce the following:
 2. A directory called "results" with R files for the models, and simulated data obtained by using the candidate treatment regimes.
 3. A directory called "cache" with cached results from the .Rnw file.
 4. A directory called "figure" with figures produced from .Rnw file for inclusion in the write-up.
+5. A directory called "docs-typeset" with the typeset documents and latex files.
 
 To speed up reproducing the analyses, you may want to fit a smaller number of repeated samples to train from and fewer test observations for each regime. This reproduces the main thrust of the results without taking much time and disk space. To change these parameters, alter the final two lines in `config.mk`. For example you could change them to:
 
