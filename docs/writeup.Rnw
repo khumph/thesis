@@ -551,6 +551,7 @@ mod_rpart <- caret::train(
 )
 mod <- mod_rpart
 pR <- caret::postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+splits <- round(mod$finalModel$splits[ , 'index'], 3)
 @
 
 In this example we used stopping criteria of: (1) terminal nodes had to have at least 5 observations, and (2) nodes with fewer than 15 observations were not split. For pruning, we follow the ``one standard error'' rule, where we choose the smallest tree within one standard error of the tree with the minimum cross validation error.
@@ -560,7 +561,7 @@ caption <- 'Regression tree fit to example data. For each split, the variable sp
 plot(partykit::as.party(mod$finalModel))
 @
 
-This produces the tree in Figure \ref{fig:ex-cart-tree}. Since the regression function is actually linear, the splits are intuitive: first we split the root node (node 1) at around the midpoint of the distribution of doses (\(D = \Sexpr{round(mod$finalModel$splits[1, 'index'], 3)}\)), then we split the observations with doses higher than \Sexpr{round(mod$finalModel$splits[1, 'index'], 3)} (node 2) at about their median dose, \Sexpr{round(mod$finalModel$splits[2, 'index'], 3)}, producing the terminal nodes 3 and 4. Similarly with doses less than \Sexpr{round(mod$finalModel$splits[1, 'index'], 3)} (node 5), we split at approximately the median dose (\Sexpr{round(mod$finalModel$splits[3, 'index'], 3)}), yielding terminal nodes 6 and 7.
+This produces the tree in Figure \ref{fig:ex-cart-tree}. Since the regression function is actually linear, the splits are intuitive: first we split the root node (node 1) at around the midpoint of the distribution of doses (\(D = \Sexpr{splits[1]}\)), then we split the observations with doses higher than \Sexpr{splits[1]} (node 2) at about their median dose, \Sexpr{splits[2]}, producing the terminal nodes 3 and 4. Similarly with doses less than \Sexpr{splits[1]} (node 5), we split at approximately the median dose (\Sexpr{splits[3]}), yielding terminal nodes 6 and 7.
 
 <<ex-plot-cart, fig.cap=caption, fig.scap='Predicted regression function for example data using CART', out.width='0.75\\textwidth', fig.height=3, fig.width=5>>=
 caption <- "Predicted regression function for example data using CART. The grey dots are the observations and the dotted line is the true relationship from which they were generated. The solid line connects the predicted values, which are shown with \\(\\times\\)s."
@@ -691,6 +692,10 @@ mod_mars <- caret::train(
 )
 mod <- mod_mars
 pR <- caret::postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+coefs <- round(mod$finalModel$coefficients, 2)
+cuts <- mod$finalModel$cuts
+selected_ind <- mod$finalModel$selected.terms
+cuts <- round(cuts[selected_ind], 2)
 @
 
 <<ex-plot-mars, fig.cap=cap, fig.scap='Predicted regression function for example data using MARS', out.width='0.75\\textwidth', fig.height=3, fig.width=5>>=
@@ -706,9 +711,9 @@ ggplot(dat, aes(x = D, y = Y)) +
 The resulting predicted regression function is shown in Figure \ref{fig:ex-plot-mars} as a solid line. Grey dots again represent observations, the dotted line represents the true relationship from which data were simulated, and predicted values for each observation are represented by \(\times\)s. The fitted MARS equation is
 \begin{equation}
   \label{eq:mars-eqn}
-  \hat{\operatorname{E}}[Y \mid D] \approx -0.24 + 1.24 (0.81 - D)_{+} -1.64 (D - 0.87)_{+}
+  \hat{\operatorname{E}}[Y \mid D] \approx \Sexpr{coefs[1]} + \Sexpr{coefs[2]} (\Sexpr{cuts[2]} - D)_{+} \Sexpr{coefs[3]} (D - \Sexpr{cuts[3]})_{+}
 \end{equation}
-Note that the hinges don't meet because the hinges that entered paired with each remaining hinge were removed in the pruning/backward pass phase. The gap between hinges is shown in our plot as a horizontal line of \(Y = -0.24\) for \(0.81 < D < 0.87\).
+Note that the hinges don't meet because the hinges that entered paired with each remaining hinge were removed in the pruning/backward pass phase. The gap between hinges is shown in our plot as a horizontal line of \(Y = \Sexpr{coefs[1]}\) for \(\Sexpr{cuts[2]} < D < \Sexpr{cuts[3]}\).
 
 Using this model to predict the testing data yields a root mean squared error of \Sexpr{round(pR["RMSE"], 3)} and a coefficient of determination (\(R^2\)) of \Sexpr{round(pR["Rsquared"], 3)}. As these measures indicate, MARS does a much better job of capturing the linear nature of the relationship between \(Y\) and \(D\) than CART does, with many fewer ``splits''. Note also that we can restrict MARS to only consider predictors to enter as linear terms (without splitting into hinge functions), which we would probably do here given that the fitted regression line is nearly linear anyway, and would then be easier to interpret.
 
@@ -817,7 +822,7 @@ Returning to our change in tumor mass example from above, let's fit a regression
 
 The predicted regression function averaged over the 100 trees is shown in Figure \ref{fig:ex-plot-rf}. Again, the observations are given by grey dots, the true function from which data were simulated is shown as a dotted line, the predicted observations are shown as \(\times\)s which are connected by a solid line. Notice how averaging the bagged trees yields a line much closer to the truth than the single tree shown above, though each tree was grown using similar stopping criteria as the CART example.
 
-When using this model to predict the test data we obtain a root mean squared error of 0.045 and an \(R^2\) of 0.984. This compares much more favorably to MARS than a single tree, however it comes at the cost of a lack of clarity in the relationship between \(Y\) and \(D\) in the model.
+When using this model to predict the test data we obtain a root mean squared error of \Sexpr{round(pR['RMSE'], 3)} and an \(R^2\) of \Sexpr{round(pR['Rsquared'], 3)}. This compares much more favorably to MARS than a single tree, however it comes at the cost of a lack of clarity in the relationship between \(Y\) and \(D\) in the model.
 
 % subsection example (end)
 
