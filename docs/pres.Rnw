@@ -29,7 +29,7 @@
 \DeclareMathOperator*{\argmax}{argmax}
 \title{Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data}
 \subtitle{\sl or: how I learned to stop worrying and love creating billion-observation data frames}
-\date{\today}
+\date{April 26, 2017}
 \author{Kyle Humphrey}
 \institute{University of Arizona}
 
