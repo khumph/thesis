@@ -24,7 +24,7 @@ Possible scenarios are:
   noise-pred-int  Same as 'noise-pred' with two variables that interact with treatment
 " -> doc
 
-pacman::p_load(tictoc)
+pacman::p_load(data.table, tictoc)
 opts <- docopt::docopt(doc)
 
 main <- function(seed, n_subjects, n_stages, n_samples, scenario, output_file,
