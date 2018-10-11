@@ -16,6 +16,7 @@ The project was tested on macOS 10.14 Mojave using the following:
 - The R packages [pacman](http://trinker.github.io/pacman_dev/), [data.table](https://github.com/Rdatatable/data.table/wiki), [tidyverse](https://www.tidyverse.org/), [docopt](https://github.com/docopt/docopt.R), [caret](http://topepo.github.io/caret/index.html), rpart, earth, [ranger](https://github.com/imbs-hl/ranger), and [tictoc](http://collectivemedia.github.io/tictoc/).
 - [GNU Make](https://www.gnu.org/software/make/) 3.81 - standard on macOS and Linux
 - [GNU Bash](https://www.gnu.org/software/bash/) 3.2.57(1) - default shell in terminal on macOS and many Linux distributions
+- [TeX Live 2018](https://www.tug.org/texlive/) - comprehensive TeX system
 
 You can ensure you have the required R packages by running the following in an R console:
 
