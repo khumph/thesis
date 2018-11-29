@@ -24,6 +24,7 @@
 *.tex
 *.pdf
 *-blx.bib
+*.org
 extras/
 results/
 data/
