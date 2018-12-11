@@ -73,11 +73,12 @@ main <- function(baseline_file, n_stages, output_file, dependencies) {
           }
           # next dose can't bring people back from dead, so remove dead
           x <- x[!(dead)]
-          x[ , (paste0('reward', i)) := rep(0, nrow(x))]
         }
 
         if (i == (n_stages - 1)) {
           x[ , (paste0('reward', i)) := log(i + x$beta)]
+        } else {
+          x[ , (paste0('reward', i)) := rep(0, nrow(x))]
         }
 
         if (all(x$dead)) {
