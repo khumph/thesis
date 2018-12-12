@@ -1,0 +1,12 @@
+bookdown::gitbook:
+  css: docs/style.css
+  config:
+    edit: https://github.com/rstudio/bookdown-demo/edit/master/%s
+    download: ["pdf", "epub"]
+bookdown::pdf_book:
+  includes:
+    in_header: docs/preamble.tex
+  latex_engine: xelatex
+  citation_package: natbib
+  keep_tex: yes
+bookdown::epub_book: default
