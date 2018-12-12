@@ -27,10 +27,11 @@ knitr::opts_chunk$set(
 Sys.setenv(TEXINPUTS = getwd(),
            BIBINPUTS = getwd(),
            BSTINPUTS = getwd())
+options(knitr.kable.NA = '')
 ```
 
 ```{r load-packages}
-pacman::p_load(tidyverse, Hmisc, caret, rpart, earth)
+pacman::p_load(tidyverse, kableExtra, caret, rpart, earth)
 source('R/sim-functs.R')
 ```
 
