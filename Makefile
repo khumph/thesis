@@ -94,7 +94,8 @@ $(RES_DIR)/data-importance.rds : R/importances.R $(MODELS)
 .PHONY : writeup
 writeup : $(PDF_DIR)/abstract.html
 
-$(PDF_DIR)/abstract.html : $(DOC_DIR)/00-index.Rmd $(RES_DIR)/data-all.rds $(RES_DIR)/data-importance.rds R/sim-functs.R
+$(PDF_DIR)/abstract.html : $(DOC_DIR)/00-index.Rmd $(wildcard $(DOC_DIR)/*.Rmd) \
+  $(RES_DIR)/data-all.rds $(RES_DIR)/data-importance.rds R/sim-functs.R
 	mkdir -p $(PDF_DIR)
 	Rscript -e "pacman::p_load(bookdown); render_book(input = '$<', 'bookdown::gitbook')"
 
