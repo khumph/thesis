@@ -1,5 +1,5 @@
 bookdown::gitbook:
-  css: docs/style.css
+  css: style.css
   config:
     edit: https://github.com/rstudio/bookdown-demo/edit/master/%s
     download: ["pdf", "epub"]
