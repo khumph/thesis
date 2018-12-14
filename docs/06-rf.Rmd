@@ -15,13 +15,14 @@ the variance of the sample mean is lower by a factor of \(n\) than the variance 
 
 Typically, however, we only have one sample to work with, but we can take \(B\) bootstrap samples of our one sample to approximate many different training samples. We could then build a model on each sample, then aggregate the results from each model into a single prediction. In the case of regression problems, we would average the predicted outcome for each test observation from each model.
 
-<!-- \begin{algorithm}[ht] -->
-<!-- \For{\(i\) in 1 to \(B\)}{ -->
-<!--   Take a bootstrap sample of the data \\ -->
-<!--   Fit model to this sample (e.g. grow an unpruned tree) -->
-<!--  } -->
-<!--  \caption{Bagging} -->
-<!-- \end{algorithm} -->
+**Bagging algorithm**
+
+1. For \(i\) in 1 to \(B\):
+
+    1. Take a bootstrap sample of the data
+
+    1. Fit model to this sample (e.g. grow an unpruned tree)
+
 
 Bagging also provides a built-in way to estimate the test error by only averaging predictions for any given tree using the *out-of-bag sample*, the observations that were not in the bootstrap sample used to train that tree (about 1/3 of the observations on average). This out-of-bag sample typically approximates the cross validation estimate of the error rate well, but requires much less computation.
 
@@ -32,21 +33,23 @@ Unfortunately, we can't in practice achieve a \(B\) fold decrease in the varianc
 
 Statistically, we can decrease correlation by introducing randomness. So @rf suggested that we decrease correlation between trees built on bootstrap samples by only considering a random subset \(m_{try} \subset p\) of covariates to split upon for each split instead of considering all \(p\).
 
-<!-- \begin{algorithm}[ht] -->
-<!-- \For{\(i\) in 1 to \(B\)}{ -->
-<!--   take a bootstrap sample of the data \\ -->
-<!--   Grow a tree on this sample: \\ -->
-<!--   \While{stopping criteria not met}{ -->
-<!--   \For{each split}{ -->
-<!--     randomly select \(m_{try}\) of \(p\) original covariates \\ -->
-<!--     split on a covariate in \(m_{try}\) causing largest decrease in SSE -->
-<!--    } -->
-<!--   } -->
+**Random forest algorithm**
 
-<!--   (do not prune) -->
-<!--  } -->
-<!--  \caption{Random forest} -->
-<!-- \end{algorithm} -->
+1. For \(i\) in 1 to \(B\):
+
+    1. Take a bootstrap sample of the data
+    
+    1. Grow a tree on this sample:
+
+        1. While stopping criteria not met:
+            
+            1. For each split: 
+    
+                1. Randomly select \(m_{try}\) of \(p\) original covariates 
+                
+                1. Split on a covariate in \(m_{try}\) causing largest decrease in SSE
+
+    1. (Do not prune)
 
 This generally leads to better performance than bagging alone and often approaches the performance of more complicated techniques. How should be choose \(B\)? There is little danger of overfitting by growing more trees in random forest, so \(B\) is typically set at a large enough number for the error rate to level off, @apm recommend starting at 1000. Recommendations for \(m_{try}\) are often set at a default of \(\sqrt{p}\) or \(p/3\), the latter specifically recommended for regression problems, though in practice \(m_{try}\) should be chosen using resampling techniques. In the case of bagging, there is typically little gained after \(B = 10\) or so. @apm recommend setting \(B = 50\).
 
