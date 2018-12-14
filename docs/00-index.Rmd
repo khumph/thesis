@@ -1,0 +1,42 @@
+--- 
+title: "Using reinforcement learning to personalize dosing strategies in a simulated cancer trial with high dimensional data"
+author: "Kyle Humphrey"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+bibliography: docs/thesis.bib
+link-citations: yes
+github-repo: khumph/thesis
+---
+
+```{r setup, echo=F}
+# knitr::opts_knit$set(root.dir = normalizePath('../'))
+knitr::opts_chunk$set(
+  echo = F, warning = F, message = F,
+  cache = T,
+  # root.dir = normalizePath('../'),
+  fig.path = 'figure/',
+  cache.path = 'cache/',
+  eval.after = 'fig.cap',
+  fig.align = 'center',
+  fig.pos = '!htbp',
+  fig.height = 3, fig.width = 5,
+  fig.lp = 'fig:'
+)
+Sys.setenv(TEXINPUTS = getwd(),
+           BIBINPUTS = getwd(),
+           BSTINPUTS = getwd())
+options(knitr.kable.NA = '')
+```
+
+```{r load-packages}
+pacman::p_load(tidyverse, kableExtra, caret, rpart, earth)
+source('R/sim-functs.R')
+```
+
+# Abstract
+
+In a simulation of an advanced stage generic cancer trial, I use Q-learning, a reinforcement learning algorithm, to develop dynamic treatment regimes for a continuous treatment, the dose of a single drug. Selected dynamic treatment regimes are tailored to time-varying patient characteristics and to patient subgroups with differential treatment effects. This approach allows estimation of optimal dynamic treatment regimes without a model of the disease process or a priori hypotheses about subgroup membership. Using observed patient characteristics and outcomes from the simulated trial, I estimate Q-functions based on 1) a single regression tree grown by the Classification And Regression Trees (CART) method, 2) random forests, and 3) a slightly modified version of Multivariate Adaptive Regression Splines (MARS). I then compare the survival times of an independent group of simulated patients under treatment regimes estimated using Q-learning with each of the three methods, 10 constant dose regimes, and the best possible treatment regime chosen using a brute force search over all possible treatment regimes with complete knowledge of disease processes and their effects on survival. I also make these comparisons in scenarios with and without spurious high dimensional covariates and with and without patient subgroups with differential treatment effects. Treatment regimes estimated using Q-learning with MARS and random forests greatly increased survival times when compared to the constant dose regimes, but were still considerably lower than the best possible dose regime. Q-learning with a single regression tree did not outperform the constant dose regimes. These results hold across high dimensional and subgroup scenarios. While the MARS method employed produces much more interpretable models than random forests, and therefore has more promise for patient subgroup identification, I show that it is also more sensitive to variations in training data.
+
+

@@ -1,0 +1,22 @@
+# Reinforcement learning
+
+## Basic elements and basic process
+
+Reinforcement learning is a branch of machine learning distinct from the two main branches more familiar to statisticians, supervised and unsupervised learning [@Sutton2016]^[Techniques from both supervised and unsupervised learning can, however, be useful in reinforcement learning problems, as we will see for supervised learning methods.]. Reinforcement learning in general is about how to make good sequences of decisions. It has the following elements:
+
+A learning *agent*, who has goals related to its *environment*, loosely defined as everything outside the agent's direct control. Features of the environment are represented to the agent through *states*. Given a state representation, an agent can take an *action* to affect the environment in order to achieve some goal. A goal is defined to the agent in such a way that maximizing a scalar quantity called the *reward* would achieve the goal. Given a state representation, an agent follows a *policy*, roughly a guide to which actions to take (or which ones to favor) given a state signal. An optimal policy therefore, is a policy that achieves the largest reward over the long run.
+
+The basic process of reinforcement learning involves a learning agent being presented with states, trying a sequence of actions, recording the consequences (rewards) of those actions in each state, estimating the relationship between the actions and their consequences, and choosing a next action that leads to the best consequences (the action that maximizes the reward, so far as the agent can tell). This is where the ``reinforcement'' in reinforcement learning comes from: actions with favorable consequences (large rewards) tend to be repeated.
+
+
+## Relationship to supervised and unsupervised learning
+
+Supervised learning involves a learning agent being given a list of  correct example actions to take in given situations, with the goal being that the agent then extrapolates the correct example behavior to new situations. Unsupervised learning involves finding hidden structure in collections of example actions and situations where the correct action is unknown. In reinforcement learning problems, agents do not (need to) receive direct instruction regarding which action they should take, instead they can learn which actions are best by trying them out. Further, the goal in reinforcement learning problems is to maximize a reward signal, not find hidden structure (though finding hidden structure may be useful to this end).
+
+Also unlike other machine learning problems, reinforcement learning problems are closed-loop: the actions of the agent affect the opportunities open to the agent later on, hence consequences of actions in reinforcement learning problems can manifest not only in the next opportunity, but in all subsequent opportunities.
+
+
+## Connection to personalized medicine
+
+We can think of a personalized treatment as a decision rule, or a *treatment regime*^[Sometimes also called an individualized treatment rule] that provides the optimal action (the best treatment to give) given a patients' state (the patient's characteristics--in this context, patients are the important aspect of the environment, about whom we have goals and thus in terms of whom rewards are defined). Since for many diseases, patients often receive different stages of treatments over time, it is useful to generalize a single stage treatment regime into a *dynamic treatment regime* (DTR) or in the terminology of reinforcement learning, a *treatment policy*. A dynamic treatment regime generalizes of the ideas of personalized medicine by dictating treatments at each step of a sequence of possible treatment assignments based on the changing (dynamic) states of each individual patient. In order to determine which dynamic treatment regime is best (optimal) we will employ Q-learning, the most popular method for estimating optimal dynamic treatment regimes.
+

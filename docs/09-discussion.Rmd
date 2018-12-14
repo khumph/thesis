@@ -1,0 +1,26 @@
+# Discussion
+
+<!-- point out that these types of trials are fundamentally exploratory -->
+<!-- you can look for subgroups while also investigating main effect differences between groups -->
+
+<!-- Main results -->
+Q-learning using random forest (which in these scenarios was equivalent to bagging) and Multivariate Adaptive Regression Splines modified to only interact variables with treatment can increase survival times compared to constant dose regimes by large margins in this simulation. However, Q-learning using single regression trees grown with the CART procedure often performed worse than many constant dose regimes.
+
+<!-- Relation to other literature/previous research -->
+This agrees with the results of @crt, but also shows that the more interpretable MARS models can produce comparable results to more complex "black box" models. Further, it shows the results in context with the best possible sequence, and gives inklings of the variability in performance due to differences in training data.
+
+<!-- biological rationale/possible explanation/mechanisms -->
+The lack of performance from single regression trees is likely due to the splitting criterion being based on predictive performance and not on a measure of the degree of interaction with the treatment variable. With \(SSE\) as the splitting criterion, one can choose to grow a deep, bushy tree that is relatively unbiased but also has high variance (overfits the data), or one can prune to a less variable but more biased tree. In our scenarios, the treatment variable, dose, plays much less of a role in the absolute survival time than tumor mass or toxicity (as shown in the variable importance measures) so it tends to only be split upon further down the tree. To model the effect of dose well, therefore, a large tree is required. However, large trees tend to overfit and hence also don't consistently model the effect of dose well. Attempting to correct this by pruning results in most (or all) of the effects due to dose being pruned off because the cost-complexity criterion use for pruning is also not based on capturing the differential effects of treatment. An analogous explanation applies for the interacting variables.
+
+<!-- strengths and limitations: address limitations but then try to minimize impact -->
+Restricting MARS to only interact covariates with the treatment gave comparable performance to random forest on average, but the survival times produced were more variable, and for some training data were quite low. This most likely due to the restriction on interactions with treatment, which are harder to consistently detect using \(SSE\) as the metric for variable addition and removal. This instability could be likely be improved through bagging, though bagging would negate much of the interpretably gained from using MARS.
+
+Using these methods, subgroup identification is difficult. With MARS, although the true interacting variables often have high importance measures, for any given set of training data so may spurious variables. Random forest works well despite low importances for dose and interacting variables, which while a little larger on average than noise variables, would be hard to distinguish in practice.
+
+Due to constraints in computing resources, I could not obtain more precise estimates of the sensitivity of the results to different training sets by simulating more training set replicates. Further, censoring of observations was ignored. If similar methods will be applied to real data with survival outcomes, censoring will need to be incorporated.
+
+<!--  Implications/take home message -->
+The above being said, I showed that statistical learning methods that were designed to maximize predictive performance can be used to personalize treatment regimes with a continuous treatment, increasing mean length of survival in simulated cancer patients.
+
+<!-- Directions for future research -->
+While this approach is more effective than constant doses in this setting, performance can almost certainly be improved by modifying the techniques used to fit Q-functions to use magnitude of interaction as the basis for model building and evaluating performance. This could also greatly increase the interpretability of the Q-functions, and would make subgroup identification much easier.

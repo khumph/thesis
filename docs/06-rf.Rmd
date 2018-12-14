@@ -1,0 +1,98 @@
+# Random forest
+
+
+## Bagging
+
+As mentioned above, single trees tend to have quite high variance (small changes in the data can produce very different trees), however when grown sufficiently deep or bushy, they can have relatively low bias. Bootstrap aggregating, or *bagging* for short, is a general technique that is useful whenever a modeling technique has these properties (high variance, low bias).
+
+Consider a collection of independent and identically distributed random variables, \(X_{1}, X_{2}, ..., X_{n}\), each with variance \(\sigma^2\) and sample mean \(\bar{X}\). It's easy to show that
+
+\begin{equation}
+  \operatorname{Var}[\bar{X}] = \frac{\sigma^2}{n},
+\end{equation}
+
+the variance of the sample mean is lower by a factor of \(n\) than the variance of any single observation. If we could build trees on many different samples then average the results, we could exploit this property to drastically reduce the variance and therefore increase performance.
+
+Typically, however, we only have one sample to work with, but we can take \(B\) bootstrap samples of our one sample to approximate many different training samples. We could then build a model on each sample, then aggregate the results from each model into a single prediction. In the case of regression problems, we would average the predicted outcome for each test observation from each model.
+
+**Bagging algorithm**
+
+1. For \(i\) in 1 to \(B\):
+
+    1. Take a bootstrap sample of the data
+
+    1. Fit model to this sample (e.g. grow an unpruned tree)
+
+
+Bagging also provides a built-in way to estimate the test error by only averaging predictions for any given tree using the *out-of-bag sample*, the observations that were not in the bootstrap sample used to train that tree (about 1/3 of the observations on average). This out-of-bag sample typically approximates the cross validation estimate of the error rate well, but requires much less computation.
+
+Unfortunately, we can't in practice achieve a \(B\) fold decrease in the variance from a single tree because our trees are not independent. Suppose there was a single very strong predictor. For any tree grown from a bootstrap sample, the first few splits would then tend to be made on this strong predictor. This in turn strongly influences the remaining shape of the tree, leading to correlated trees across bootstrap samples.
+
+
+## Random forest
+
+Statistically, we can decrease correlation by introducing randomness. So @rf suggested that we decrease correlation between trees built on bootstrap samples by only considering a random subset \(m_{try} \subset p\) of covariates to split upon for each split instead of considering all \(p\).
+
+**Random forest algorithm**
+
+1. For \(i\) in 1 to \(B\):
+
+    1. Take a bootstrap sample of the data
+    
+    1. Grow a tree on this sample:
+
+        1. While stopping criteria not met:
+            
+            1. For each split: 
+    
+                1. Randomly select \(m_{try}\) of \(p\) original covariates 
+                
+                1. Split on a covariate in \(m_{try}\) causing largest decrease in SSE
+
+    1. (Do not prune)
+
+This generally leads to better performance than bagging alone and often approaches the performance of more complicated techniques. How should be choose \(B\)? There is little danger of overfitting by growing more trees in random forest, so \(B\) is typically set at a large enough number for the error rate to level off, @apm recommend starting at 1000. Recommendations for \(m_{try}\) are often set at a default of \(\sqrt{p}\) or \(p/3\), the latter specifically recommended for regression problems, though in practice \(m_{try}\) should be chosen using resampling techniques. In the case of bagging, there is typically little gained after \(B = 10\) or so. @apm recommend setting \(B = 50\).
+
+
+## Variable importance
+
+@rf originally proposed randomly permuting one variable at a time in the out-of-bag sample for each tree, then calculating the reduction of predictive performance compared to the non-permuted out-of-bag sample. These differences for each tree would then be averaged across the whole forest and used to rank variables importance (higher reduction, more important). We could also extend the variable importance measure for a single tree to the whole forest by averaging the decrease in SSE for each split upon a given variable over the forest (higher decrease, more important).
+
+
+## Advantages and disadvantages
+
+Random forests and bagging give significantly more accurate predictions over a single tree, but are also significantly harder to interpret. As with MARS and single trees, where correlated predictors show up is unpredictable and this can dilute variable importance. For example if two perfectly correlated variables were considered, the variable importance for each would be half of what it would be, if it alone had been considered.
+
+
+## Illustrative example
+
+```{r ex-mod-rf}
+set.seed(20170128)
+mod_rf <- caret::train(
+  Y ~ D,
+  data = dat,
+  method = 'ranger',
+  tuneGrid = expand.grid(mtry = 1, min.node.size = 5, splitrule = "variance"),
+  trControl = caret::trainControl(method = "none"),
+  num.trees = 100
+)
+
+mod <- mod_rf
+pR <- caret::postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+```
+
+```{r ex-plot-rf, fig.cap=cap, fig.scap='Predicted regression function for example data using Random Forest'}
+cap <- "Predicted regression function for example data using Random Forest. As in Figures \\@ref(fig:ex-plot-cart) and \\@ref(fig:ex-plot-mars), the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the \\(\\times\\)s represent predicted values for each observation."
+ggplot(dat, aes(x = D, y = Y)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = -1.2, intercept = 0.75, linetype = 3) +
+  geom_point(aes(x = D, y = predict(mod)), shape = 4) +
+  geom_step(aes(x = D, y = predict(mod)), linetype = 1) +
+  theme_bw()
+```
+
+Returning to our change in tumor mass example from above, let's fit a regression equation using random forest. Actually, in this case since there is only one predictor, random forest is equivalent to bagging and therefore fewer trees will suffice. Here we grow 100 trees each that stop splitting when splitting results in nodes with fewer than 5 observations.
+
+The predicted regression function averaged over the 100 trees is shown in Figure \@ref(fig:ex-plot-rf). Again, the observations are given by grey dots, the true function from which data were simulated is shown as a dotted line, the predicted observations are shown as \(\times\)s which are connected by a solid line. Notice how averaging the bagged trees yields a line much closer to the truth than the single tree shown above, though each tree was grown using similar stopping criteria as the CART example.
+
+When using this model to predict the test data we obtain a root mean squared error of `r round(pR['RMSE'], 3)` and an \(R^2\) of `r round(pR['Rsquared'], 3)`. This compares much more favorably to MARS than a single tree, however it comes at the cost of a lack of clarity in the relationship between \(Y\) and \(D\) in the model.
