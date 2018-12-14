@@ -92,14 +92,12 @@ $(RES_DIR)/data-importance.rds : R/importances.R $(MODELS)
 
 ## writeup     : Generate writeup.
 .PHONY : writeup
-writeup : $(PDF_DIR)/writeup.pdf
+writeup : $(PDF_DIR)/abstract.html
 
-$(PDF_DIR)/writeup.tex : $(DOC_DIR)/writeup.Rnw $(RES_DIR)/data-all.rds $(RES_DIR)/data-importance.rds R/sim-functs.R
+$(PDF_DIR)/abstract.html : $(DOC_DIR)/00-index.Rmd $(wildcard $(DOC_DIR)/*.Rmd) \
+  $(RES_DIR)/data-all.rds $(RES_DIR)/data-importance.rds R/sim-functs.R
 	mkdir -p $(PDF_DIR)
-	Rscript -e "pacman::p_load(knitr); knit(input = '$<', output = '$@')"
-
-$(PDF_DIR)/writeup.pdf : $(PDF_DIR)/writeup.tex
-	latexmk -pdf -jobname=$(basename $@) -pdflatex="pdflatex -interaction=errorstopmode" -use-make $<
+	Rscript -e "pacman::p_load(bookdown); render_book(input = '$<', 'bookdown::gitbook')"
 
 
 ## pres        : Generate presentation.

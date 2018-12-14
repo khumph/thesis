@@ -1,0 +1,132 @@
+# Multivariate adaptive regression splines (MARS) {#mars}
+
+MARS [@mars] can be viewed as a modification of the CART procedure to improve performance in the regression setting, or as a generalization of stepwise linear regression methods that incorporates automatic modeling of interactions. MARS accomplishes this latter feature through modeling covariates as piecewise linear basis functions and their products. These piecewise linear basis functions are of the form
+
+\begin{equation}
+  (x - t)_{+} \text{ and } (t - x)_{+}
+  (\#eq:bases)
+\end{equation} where
+
+\begin{equation}
+  (Z)_{+} = \max(Z, 0) = \begin{cases}
+  Z, & \text{if } Z > 0 \\
+  0, & \text{otherwise}
+  \end{cases}
+\end{equation}
+
+The set in equation \@ref(eq:bases) is sometimes called a *reflected pair* because the values they take on are symmetric (reflected) across \(t\). Each function in the pair is called a *hinge* function, and can alternatively be denoted \(h(x - t)\) and \(h(t - x)\) respectively. These hinge functions are joined at \(t\), a \(knot\).
+
+## Forward pass
+
+As in forward selection methods, in MARS, we begin constructing our model with only a constant:
+
+\begin{equation}
+  f(X) = \beta_{0}
+\end{equation}
+
+Then, we consider adding a pair of piecewise linear functions made by splitting some covariate \(X_{j}\) at a knot placed at one of the observed values of \(X_{j}\), \(x_{ij}\):
+
+\begin{equation}
+  \beta_{1} (X_{j} - t)_{+} + \beta_{2}(t - X_{j})_{+}, \ i = 1, 2, ..., n; \ j = 1, 2, ..., p.
+\end{equation}
+
+To determine which predictor to add and which knot to split upon, each of the \(j\) predictors, split at each observed value \(x_{ij}\) is evaluated in turn by adding each pair to the model and calculating the training error, e.g. the SSE. The covariate and split point that cause the greatest reduction in error are added to the model.
+
+Henceforth, we consider adding a pair piecewise linear functions with general form
+
+\begin{equation}
+  \beta_{M + 1} h_{\ell}(X) \cdot (X_{j} - t)_{+} + \beta_{M + 2} h_{\ell}(X) \cdot (t - X_{j})_{+}, \ h_{\ell}(X) \in \mathcal{M}, \ t \in \{x_{ij}\}.
+\end{equation}
+
+Where \(\mathcal{M}\) is the set of hinge functions (or products of hinge functions) already in the model. Note that this equation also holds for the first step, in which case \(h_{\ell}(X) = h_{0}(X) = 1\). As before, we add the pair that causes the greatest reduction in training error. To simplify the set of models considered, we may provide a limit on the degree, or order of interactions we are interested in considering. For example with degree = 1, we only consider an additive model (all \(h_{\ell}(X) = h_{0}(X) = 1\)), with degree = 2, we consider a maximum of two-way interactions, and so on.
+Pairs are added until a user-defined limit on the number of terms in the model is reached, or the reduction in training error is smaller than some predefined threshold.
+
+The resulting MARS regression function is of the form
+
+\begin{equation}
+  f(X) = \beta_{0} + \sum_{m = 1}^{M} \beta_{m} h_{m}(X),
+\end{equation}
+
+where \(M\) is the number of terms in the model, and \(h_{m}(X)\) is a hinge function like one of those in equation \@ref(eq:bases) or a product of such functions.
+
+
+## Backward pass
+
+Usually, the function produced by the forward pass is too large and overfits the data, we use a pruning (backward deletion) procedure analogous to backward selection linear regression methods. For each term \(h_{m}(X)\) in the model, we estimate how much the error would increase by removing it, then remove the term for which removal increases the error the least. Once we've removed one term, we repeat this procedure and delete another term. At each stage of this procedure we obtain \(\hat{f}_{\lambda}(X)\), the best model of size \(\lambda\) (best model with \(\lambda\) terms). Note that we do not proceed backwards along the path through which the covariates were added (indeed we add pairs of hinge functions on at a time, but remove them one by one).
+
+To determine the optimal number of terms, \(\lambda\), we can use a resampling technique (e.g. cross validation) but for computationally efficiency, we often use generalized cross validation (GCV).
+
+
+## Generalized cross validation
+
+Generalized cross validation is a computational shortcut for linear regression models, which produces an error that approximates the leave-one-out cross-validated error. For MARS, the generalized cross-validation criterion is defined as
+
+\begin{equation}
+  GCV(\lambda) =
+    \frac{
+      \sum_{i = 1}^{N}(y_{i} - \hat{f}_{\lambda}(x_{i}))^2
+    }{
+      (1 - M(\lambda)/N)^2
+    }
+\end{equation}
+
+where \(M(\lambda)\) is the effective number of parameters in the model, accounting for both the actual parameters and parameters used in selecting knot positions. Simulations and mathematical results tell us that \(M(\lambda)\) should be set to \(r + 3K\), the number of terms plus three times the number of knots, but can be set to \(r + 2K\) when the degree = 1; when the model is restricted to be additive [@esl].
+
+
+## Relationship to CART
+
+As mentioned above, MARS can also be viewed as a modification of CART to improve performance in the regression setting. If we modified the MARS procedure to consider reflected pairs of step functions of the form \(I(x - t > 0)\) and \(I(t - x > 0)\) instead of the piecewise linear basis functions and then replaced the term already in the model involved in a new interaction term by the new interaction term (making the original term unavailable for further interactions), then the forward pass in MARS is equivalent to the CART tree-growing algorithm. In this case, the multiplication of a step function by a pair of reflected step functions is equivalent to splitting a node.
+
+
+## Variable importance
+
+Similar to CART, we can measure the importance of each variable by summing the reduction in the GCV statistic (or SSE or other metric) whenever a term with the variable is added (or equivalently the amount it increases as all terms with containing a given variable are removed).
+
+
+## Advantages and disadvantages of MARS
+
+MARS has many of the same advantages as CART, in that it requires very little pre-processing of data, it performs variable selection and models interactions as a part of the model building process, and the models produced are quite interpretable. This last point holds even for models with interactions since products of hinge functions are only nonzero when all hinge functions involved in the product are nonzero, allowing the term to operate only over a relatively small subspace of the covariates involved.
+
+However, the hinge functions of MARS may not be flexible enough to model smooth functions as accurately as some other methods (this can be addressed by bagging, discussed below). Also, higher order interactions will only enter the model if their lower order interactions improve predictive performance, and this need not be true in practice. As with trees, correlated predictors, which don't significantly impact performance, but can complicate interpretation. Suppose there were two perfectly correlated predictors to consider. Then the choice between the two at any step is essentially random. This could hinder interpretation because the same piece of information may show up in different parts of the model under different names.
+
+
+## Illustrative example
+
+Returning to our change in tumor mass example from above, let's fit a regression equation using MARS. Here, no further terms were added if there were already 21 terms in the model or adding additional terms improved \(R^2\) by less than 0.001. Terms were pruned using generalized cross validation as discussed above.
+
+```{r ex-mars-mod}
+set.seed(20170128)
+mod_mars <- caret::train(
+  Y ~ D,
+  data = dat,
+  method = 'gcvEarth',
+  trControl = caret::trainControl(method = "none"),
+  tuneGrid = expand.grid(degree = 2)
+)
+mod <- mod_mars
+pR <- caret::postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+coefs <- round(mod$finalModel$coefficients, 2)
+cuts <- mod$finalModel$cuts
+selected_ind <- mod$finalModel$selected.terms
+cuts <- round(cuts[selected_ind], 2)
+```
+
+```{r ex-plot-mars, fig.cap=cap, fig.scap='Predicted regression function for example data using MARS', fig.dim=c(5, 3)}
+cap <- "Predicted regression function for example data using MARS. As in Figure \\@ref(fig:ex-plot-cart), the grey dots represent observations, the dotted line represents the true function from which observations were simulated, the solid line represents the predicted regression function, and the \\(\\times\\)s represent predicted values for each observation."
+ggplot(dat, aes(x = D, y = Y)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = -1.2, intercept = 0.75, linetype = 3) +
+  geom_point(aes(x = D, y = predict(mod)), shape = 4) +
+  geom_line(aes(x = D, y = predict(mod)), linetype = 1) +
+  theme_bw()
+```
+
+The resulting predicted regression function is shown in Figure \@ref(fig:ex-plot-mars) as a solid line. Grey dots again represent observations, the dotted line represents the true relationship from which data were simulated, and predicted values for each observation are represented by \(\times\)s. The fitted MARS equation is
+
+\begin{equation}
+  \hat{\operatorname{E}}[Y \mid D] \approx `r coefs[1]` + `r coefs[2]` (`r cuts[2]` - D)_{+} `r coefs[3]` (D - `r cuts[3]`)_{+}
+\end{equation}
+
+Note that the hinges don't meet because the hinges that entered paired with each remaining hinge were removed in the pruning/backward pass phase. The gap between hinges is shown in our plot as a horizontal line of \(Y = `r coefs[1]`\) for \(`r cuts[2]` < D < `r cuts[3]`\).
+
+Using this model to predict the testing data yields a root mean squared error of `r round(pR["RMSE"], 3)` and a coefficient of determination (\(R^2\)) of `r round(pR["Rsquared"], 3)`. As these measures indicate, MARS does a much better job of capturing the linear nature of the relationship between \(Y\) and \(D\) than CART does, with many fewer "splits". Note also that we can restrict MARS to only consider predictors to enter as linear terms (without splitting into hinge functions), which we would probably do here given that the fitted regression line is nearly linear anyway, and would then be easier to interpret.

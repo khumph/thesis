@@ -1,0 +1,199 @@
+# Regression trees using CART {#cart}
+
+A decision tree is a graphical representation of nested `if-then` statements, with each "decision" being based on whether the `if` statement is true or false.
+A regression tree is a kind of decision tree where each `if-then` statement splits the data (or subset of the data created by a previous split) according to the value of a single covariate at a time.
+Since an `if` statement creates two possible outcomes (`TRUE` or `FALSE`), each split is binary and results in two *daughter nodes*, two subsets of the data created according to the value of a particular covariate.
+Once the desired number of splits is performed, each *terminal node* or *leaf*, a node from which no further splits are made, is assigned an outcome (typically the mean outcome for each observation in that node).
+Unlike trees in nature, decision trees grow from the root node downward, as shown in the illustrative example below.
+Since in reinforcement learning, rewards are defined to be continuous, we focus on regression trees constructed using the CART procedure of @CART.
+
+
+## Tree growing
+
+Our overarching goal in tree construction is to create nodes as homogeneous in the outcome as possible.
+This is because we will predict a single outcome for all observations in the terminal nodes, meaning nodes heterogeneous in the outcome will yield poor predictions.
+To achieve this we must determine:
+
+1. What covariate to use to define a split and what value of the covariate to split on
+1. When to stop splitting
+1. How to assign an outcome to each terminal node
+
+We begin with all of the data (the *root node*) and evaluate the sum of squared errors that result from splitting based upon each unique value of each covariate:
+
+\begin{equation}
+  SSE = \sum_{i \in \text{node}_{L}} (y_{i} - \bar{y}_{L})^2 + \sum_{i \in \text{node}_{R}} (y_{i} - \bar{y}_{R})^2
+\end{equation}
+
+Where \(\bar{y}_{L}\) is the average outcome in the left node, \(\text{node}_{L}\) and \(\bar{y}_{R}\) is the average outcome in the right node, \(\text{node}_{R}\).
+We choose the split that minimizes the sum of squares error (\(SSE\)).
+This process is then repeated in both of the left and right nodes that result from the split.
+This feature of recursive splitting, or partitioning, of the data is why this method is also known as *recursive partitioning*.
+Typically we continue splitting in this manner until the number of observations in a node falls below a threshold (e.g.
+20 observations), and assign each terminal node the average outcome of training observations in that node.
+
+**Regression tree growing algorithm**: 
+
+1. While stopping criteria not met:
+
+    1. For each terminal node:
+
+        1. For each \(X_{j} \in X\):
+
+            1. For each possible split of \(X_{j}\):
+
+                compute change in SSE resulting from split
+
+        1. If reduction in SSE from split largest: 
+
+            split node
+
+    1. Add newly created nodes to set of terminal nodes
+
+
+## Tree pruning
+
+The large tree resulting from the tree growing phase, \(T_{0}\), typically overfits the data.
+To combat this, we prune back \(T_{0}\) using a technique called cost complexity pruning.
+
+The goal in cost-complexity pruning is to find, for each value of a complexity parameter \(\alpha \geq 0\), the subtree \(T \subset T_{0}\) created by collapsing any of \(T_{0}\)'s internal (non-terminal) nodes, which minimizes the cost complexity criterion:
+
+\begin{equation}
+    C_{\alpha}(T) = \sum_{m = 1}^{\left|T\right|} \sum_{x_{i} \in \text{node}_{m}} (y_{i} - \bar{y}_{m})^2 + \alpha \left|T\right|
+\end{equation}
+
+where \(y_{i}\) is the outcome value for an observation in node \(m\), \(\bar{y}_{m}\) is the average outcome in node \(m\), and \(\left|T\right|\) is the number of terminal nodes in subtree \(T\).
+One can show that there is a unique subtree \(T_{\alpha}\) that minimizes \(C_{\alpha}(T)\) for each given \(\alpha\) [@esl].
+
+In order to find \(T_{\alpha}\) for each \(\alpha\), we use weakest link pruning.
+As the name implies, in weakest link pruning, we test out collapsing each internal node, choosing to actually collapse the the weakest link: the node that, if collapsed, produces the smallest increase in \(\sum_{m = 1}^{\left|T\right|} \sum_{x_{i} \in \text{node}_{m}} (y_{i} - \bar{y}_{m})^2\), the sum of squares of the whole tree.
+We continue in this fashion until we've returned to the root node.
+This sequence contains each \(T_{\alpha}\).
+
+With the \(T_{\alpha}\)s in hand, we choose the \(\alpha\) (and hence \(T_{\alpha}\)) that minimizes the sum of square errors produced using cross validation.
+Alternatively, we can use choose the largest \(\alpha\) (smallest \(T_{\alpha}\)) which is within one standard error of the minimum cross validated error.
+
+**Regression tree pruning algorithm**
+
+1. For each \(\alpha > 0\):
+
+    1. While \(T \supset \) root node:
+
+        1. compute change in SSE from collapsing each internal node in turn
+
+        1. collapse node that produces the smallest increase in SSE (weakest link), save resulting tree
+
+    1. For each saved tree:
+
+        1. compute cross validation error
+
+    1. Choose the saved tree with the smallest cross validation error (\(T_{\hat{\alpha}}\))
+
+1. Pick the \(T_{\hat{\alpha}}\) with the smallest cross validation error as final tree. Or pick the smallest \(T_{\hat{\alpha}}\) within one standard error of the \(T_{\hat{\alpha}}\) with the smallest cross validation error.
+
+
+## Variable importance
+
+Variable importance in trees can be measured by summing the overall reduction in the optimization criteria for each prediction [@CART].
+In regression trees, the optimization criteria is typically SSE, so we could sum the reductions in SSE from each splits made based on a particular covariate, repeating the process for every covariate.
+
+
+## Advantages and disadvantages
+
+The main advantage of regression trees is their easy interpretation, even by non-experts, largely due to the convenient graphical tree representation.
+CART also intrinsically conducts feature selection as part of the model building process and easy handles many types of covariates without the need for pre-processing, creating dummy variables, or even specification of the form of the relationship between the covariates and the outcome.
+There are also methods to handle missing data specific to trees, see @esl for details.
+
+Trees however, tend to have lower predictive performance compared to other methods particularly in the regression setting.
+Part of the reason is that trees tend to be sensitive to changes in data, which is to say they have high variance (though ensemble methods like random forest, discussed below, exploit this property to achieve better performance).
+In the regression setting in particular, trees are hindered by a lack of smoothness and difficulty in capturing additive structures.
+Multivariate adaptive regression splines (MARS), which we will discuss next, can be viewed as a modification of the CART technique to overcome these issues.
+
+
+## Illustrative example
+
+```{r ex-sim-data}
+set.seed(20170410)
+n_subjects = 50
+dat <- data.frame(
+    ID = seq_len(n_subjects),
+    M = runif(n_subjects, min = 1, max = 2),
+    W = 1,
+    D = runif(n_subjects, min = 0, max = 1)
+)
+
+dat$M_next <- updateM(dat$M, dat$W, dat$D, c = 1) +
+  rnorm(n = n_subjects, mean = 0, sd = 0.05)
+dat$Y <- dat$M_next - dat$M
+
+dat_test <- data.frame(
+  ID = seq_len(n_subjects),
+  M = runif(n_subjects, min = 1, max = 2),
+  W = 1,
+  D = runif(n_subjects, min = 0, max = 1)
+)
+
+dat_test$M_next <- updateM(dat_test$M, dat_test$W, dat_test$D, c = 1)
+dat_test$Y <- dat_test$M_next - dat_test$M
+```
+
+
+Let's examine CART, MARS, and random forest (below) using a simple sub-problem from the simulation described in detail below.
+Suppose we want to predict the change in the mass of the \(i\)th cancer patients' tumor from its initial mass to the mass after one month of treatment, \(Y_{i} \equiv M_{i1} - M_{i0}\), given the dose of a drug, \(D_{i}\), which they were (randomly) assigned.
+The true relationship is given by
+
+\begin{equation}
+  Y_{i} = 0.75 - 1.2 D_{i} + \epsilon_{i}, \quad i = 1, ..., 50
+\end{equation}
+
+Where \(\epsilon_{i} \sim N(0, 0.05)\).
+50 patients were simulated with random starting tumor masses sampled from a uniform distribution from 1 to 2, \(M_{0} \overset{iid}{\sim} \text{Unif}(1, 2)\), and doses were sampled from a uniform distribution between 0 (none) and 1 (the maximum tolerable dose), \(D \overset{iid}{\sim} \text{Unif}(0, 1)\).
+50 additional patients were simulated in the same fashion as test data.
+
+```{r ex-cart-mod}
+set.seed(20170128)
+mod_rpart <- caret::train(
+  Y ~ D,
+  data = dat,
+  method = 'rpart1SE',
+  minbucket = 5
+)
+mod <- mod_rpart
+pR <- caret::postResample(pred = predict(mod, dat_test), obs = dat_test$Y)
+splits <- round(mod$finalModel$splits[ , 'index'], 3)
+```
+
+In this example we used stopping criteria of: (1) terminal nodes had to have at least 5 observations, and (2) nodes with fewer than 15 observations were not split.
+For pruning, we follow the ``one standard error'' rule, where we choose the smallest tree within one standard error of the tree with the minimum cross validation error.
+
+```{r ex-cart-tree, fig.cap=caption, fig.scap='Regression tree fit to example data', fig.dim=c(6.6, 4.5)}
+caption <- 'Regression tree fit to example data.
+For each split, the variable split upon is shown as a circle representing an internal node (with a numbered box giving the node a number).
+The values of the splitting variable that define resulting node membership are shown breaking the line connecting nodes.
+For example, observations with \\(D \\geq 0.585\\) end up in node 2, while observations with \\(D < 0.585\\) end up in node 5.
+Box plots show the distribution of responses in each terminal node (nodes 3, 4, 6, and 7, shown at the bottom of the tree).'
+plot(partykit::as.party(mod$finalModel))
+```
+
+This produces the tree in Figure \@ref(fig:ex-cart-tree).
+Since the regression function is actually linear, the splits are intuitive: first we split the root node (node 1) at around the midpoint of the distribution of doses (\(D = `r splits[1]`\)), then we split the observations with doses higher than `r splits[1]` (node 2) at about their median dose, `r splits[2]`, producing the terminal nodes 3 and 4.
+Similarly with doses less than `r splits[1]` (node 5), we split at approximately the median dose (`r splits[3]`), yielding terminal nodes 6 and 7.
+
+```{r ex-plot-cart, fig.cap=caption, fig.scap='Predicted regression function for example data using CART'}
+caption <- "Predicted regression function for example data using CART.
+The grey dots are the observations and the dotted line is the true relationship from which they were generated.
+The solid line connects the predicted values, which are shown with \\(\\times\\)s."
+ggplot(dat, aes(x = D, y = Y)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = -1.2, intercept = 0.75, linetype = 3) +
+  geom_point(aes(x = D, y = predict(mod)), shape = 4) +
+  geom_step(aes(x = D, y = predict(mod)), linetype = 1) +
+  theme_bw()
+```
+
+The resulting predicted regression function is shown as a solid line in Figure \@ref(fig:ex-plot-cart), with \(\times\)s showing the predicted value for each observation in the training data.
+The grey dots are the actual observations and the dotted line represents the true function from the observations were simulated.
+Note the piecewise constant form of the function, where all observations in a terminal node receive the same predicted value.
+
+Using this model to predict the change in tumor masses, \(Y\), for the test data results in an root mean squared error of about `r round(pR["RMSE"], 3)` and a coefficient of determination (\(R^2\)) of about `r round(pR["Rsquared"], 2)`.
+In practice, we would be well advised to relax our stopping criteria to allow smaller terminal nodes in this setting.
+In general, one only loses computing time by setting stopping criteria that allow very complicated trees in the growing phase, since branches that aren't predictive will be pruned (we did not here to keep the tree simple for the purposes of illustration).

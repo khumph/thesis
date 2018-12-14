@@ -1,0 +1,7 @@
+book_filename: "writeup"
+rmd_subdir: "docs"
+output_dir: "docs-typeset"
+language:
+  ui:
+    chapter_name: ""
+delete_merged_file: true

@@ -1,0 +1,181 @@
+# Simulation 
+
+Largely inspired by @crt and @nsclc, I estimated optimal dynamic treatment regimes for a cancer clinical trial for an advanced generic cancer. This trial had three stages of treatment, each stage being one month long. A dose of a single drug was given at the beginning of each stage, potentially a different dose for each stage. My primary goal was to find dynamic treatment regimes that would maximize survival time. To achieve this, I first simulated a trial to serve as training data where at the beginning of each of the three months (\(t = 0, 1, 2\)), patients' tumor masses and qualities of life were measured, and each patient was assigned a random dose of the drug.
+
+
+## Patient model 
+
+
+### Transition functions 
+
+Patient toxicity measured at month \(t\), \(W_{t}\), which I define as the negative of wellness or quality of life^[For simplicity, I take wellness and quality of life to be equivalent and exactly the opposite of toxicity], was modeled as a function of tumor mass and dosage of treatment:
+
+\begin{equation}
+W^{*}_{t} = 0.1 M_{t-1} + 1.2 (D_{t-1} - 0.5) + W_{t - 1}
+\end{equation}
+\begin{equation}
+W_{t} = \begin{cases}
+  W^{*}_{t} &\text{if } W^{*}_{t} > 0 \\
+  0 &\text{if } W^{*}_{t} \leq 0
+\end{cases}
+\end{equation}
+
+This model represents the belief that higher tumor masses at month \(t-1\), \(M_{t-1}\), increase the measured toxicity at month \(t\), \(W_{t}\) (by decreasing patient wellness). For a given \(M_{t-1}\), doses at month \(t-1\), \(D_{t -1}\), above 0.5 increase \(W_{t}\), while \(D_{t -1}\) below 0.5 decrease \(W_{t}\) due to fewer toxic effects from treatment. Further, \(W_{t}\) is bounded by 0, which corresponds to no toxic effects.
+
+Tumor mass at month \(t\), \(M_{t}\), was modeled as a function of toxicity measured the previous month, \(W_{t-1}\), and dose assigned the previous month \(D_{t-1}\):
+
+\begin{equation}
+M^{*}_{t} = [0.15 W_{t-1} - 1.2 (D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+\end{equation}
+\begin{equation}
+M_{t} = \begin{cases}
+  M^{*}_{t} &\text{if } M^{*}_{t} > 0 \\
+  0 &\text{if } M^{*}_{t} \leq 0
+\end{cases}
+\end{equation}
+
+lower overall health (higher \(W_{t-1}\)) leads to greater tumor growth, while for a given \(W_{t-1}\), \(D_{t-1}\) above 0.5 decreases \(M_{t}\) and \(D_{t-1}\) below 0.5 allows \(M_{t}\) to increase, with \(M_{t}\) bounded by 0 since mass is strictly positive.
+
+
+### Survival model 
+
+Survival times (in months) at month \(t\) were generated from an exponential distribution. The rate parameter for this distribution was modeled as a function of the tumor mass and toxicity which would result at time \(t+1\):
+
+\begin{equation}
+  \lambda_{t}(M_{t+1}, W_{t+1}) = \exp(-5.5 + W_{t+1} + 1.2 M_{t+1} + 0.75 W_{t+1} M_{t+1}).
+\end{equation}
+
+This indicates that we take tumor mass to be more important in survival than toxicity. The interaction between tumor mass and toxicity reflects the belief that higher levels of both tumor mass and toxicity lead to a greater reduction in survival than either alone.
+
+
+## Basic scenario 
+
+For the simulated trial that would serve as training data, I began by simulating random doses of treatment for 1000 patients for each of the three months of treatment. The doses were randomly chosen from a uniform distribution over (0, 1) at the beginning of each month:
+
+\begin{equation}
+  D_{t} \overset{iid}{\sim} \text{Unif}(0, 1), \quad t = 0, 1, 2
+\end{equation}
+
+here \(D_{t} = 0\) represents no treatment, and \(D_{t} = 1\) represents the maximum tolerable dose.
+
+Each patient's initial tumor mass, \(M_{0}\), and negative of quality of life (toxicity), \(W_{0}\), were generated independently from uniform distributions between 0 and 2:
+
+\begin{equation}
+  W_{0} \overset{iid}{\sim} \text{Unif}(0, 2), \qquad
+  M_{0} \overset{iid}{\sim} \text{Unif}(0, 2)
+\end{equation}
+
+At each month \(t\), the next month's tumor mass, \(M_{t + 1}\), and toxicity, \(W_{t + 1}\), were computed in response to dose at month \(t\), \(D_{t}\), for each patient as described above. Similarly, the rate parameter for the survival distribution, \(\lambda_{t}(M_{t + 1}, W_{t + 1})\), was updated for each patient from these next month's tumor masses and toxicities. Survival times, \(S_{t}\) were then randomly sampled from the exponential distribution with the just computed rate parameter:
+
+\begin{align}
+  S_{t} \sim ~ &\text{Exp}(\lambda_{t}(M_{t + 1}, W_{t + 1})) \\
+  = ~ &\text{Exp}(\exp(-5.5 + W_{t+1} + 1.2 M_{t+1} + 0.75 W_{t+1} M_{t+1}))
+\end{align}
+
+If \(S_{it} \leq 1\) for patient \(i\) (i.e. the patient would not survive another month), the reward received was computed as the total log survival time: log of the total number of months the patient had survived (including the fraction of a month before their death, \(S_{it}\)). If patient \(i\) survived up to the final month of treatment \(t = 2\), the rewards were computed as \(\log(S_{i2} + 2)\), the log of the simulated survival time after the final treatment plus the the number of months already elapsed.
+
+\begin{equation}
+  R_{t + 1} = \begin{cases}
+    \log(S_{t} + \sum_{j = 0}^{t} j) & \text{if } S_{t} \leq 1 \text{ or } t = 2 \\
+    0 & \text{otherwise}
+  \end{cases}
+\end{equation}
+
+Note that I use the log of the survival time as a continuous reward (and hence outcome) and do not model it as a censored time-to-event outcome.
+
+
+## Interaction scenario 
+
+The interaction scenario was identical to the basic scenario just described with the addition of two baseline covariates, \(X_{1}\) and \(X_{2}\) which were simulated from uniform distributions over (0, 1):
+
+\begin{equation}
+  X_{1}, X_{2} \overset{iid}{\sim} \text{Unif}(0, 1)
+\end{equation}
+
+Using the values of these covariates, four approximately equally sized subgroups were constructed:
+
+- \(X_{1} < 0.5 \ \& \ X_{2} < 0.5\): patients simulated identically to those in the basic scenario.
+- \(X_{1} > 0.5 \ \& \ X_{2} < 0.5\): these patients are 50\% more sensitive to the effects of the drug:
+    \begin{equation}
+     W^{*}_{t} = W'_{t} = 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1}
+    \end{equation}
+- \(X_{1} < 0.5 \ \& \ X_{2} > 0.5\): the treatment is 50\% more effective for these patients:
+    \begin{equation}
+      M^{*}_{t} =  M'_{t} = [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+    \end{equation}
+- \(X_{1} > 0.5 \ \& \ X_{2} > 0.5\): the drug is 50\% more effective for these patients, but they are also 50\% more sensitive to its effects:
+    \begin{align}
+      W^{*}_{t} = W'_{t} &= 0.1 M_{t-1} + 1.2 (1.5 D_{t-1} - 0.5) + W_{t - 1} \\
+      M^{*}_{t} = M'_{t} &= [0.15 W_{t-1} - 1.2 (1.5 D_{t-1} - 0.5) + M_{t - 1}] I(M_{t-1} > 0)
+    \end{align}
+
+
+## High-dimensional noise scenarios 
+
+In the noise scenarios, 100 additional variables: \(Z = (Z_{1}, ..., Z_{10})\) and \(V = (V_{1}, ..., V_{90})\) were also simulated with distributions as follows:
+
+\begin{align}
+  Z_{1}, ..., Z_{5} &\overset{iid}{\sim} N(1, 1) \\
+  Z_{6}, ..., Z_{10} &\overset{iid}{\sim} N(-1, 1) \\
+  V_{1}, ..., V_{90} &\overset{iid}{\sim} N(0, 1)
+\end{align}
+
+That is, \(Z_{1}, ..., Z_{5}\) were sampled independently from a normal distribution with mean 1 and standard deviation 1, \(Z_{6}, ..., Z_{10}\) were sampled independently from a normal distribution with mean -1 and standard deviation 1, and \(V_{1}, ..., V_{90}\) were sampled independently from a standard normal distribution. These covariates were used in two separate scenarios described below.
+
+### Noise scenario 
+
+In the noise scenario, the \(Z\) and \(V\) variables above were made available to the models, but had no effect on \(W_{t}, M_{t}\), or \(S_{t}\).
+
+
+### Predictive noise scenario 
+
+In the predictive noise scenario, the \(Z\) and \(V\) variables above were made available to the models and the \(Z\) variables had a small influence on the rate parameter in the survival distribution:
+
+\begin{equation}
+  \lambda'_{t}(M_{t+1}, W_{t+1}) = \exp\del{-5.5 + W_{t+1} + 1.2 M_{t+1} + 0.75 W_{t+1} M_{t+1} + 0.05 \sum_{i = 1}^{10} Z_{i}}
+\end{equation}
+
+but did not change the optimal dose, as this modification only shifts the expected survival up or down.
+
+
+### Both interaction and noise scenarios 
+
+The interaction and noise scenarios were also combined together, to create the same subgroups as defined above both in the presence of pure noise, and in the presence of predictive noise, as described above.
+
+## Tuning parameters \& details of model fit 
+
+- *CART*: Nodes with 15 or fewer observations were not split, nor were splits made if they produced nodes with fewer than 5 observations, or did not increase the overall \(R^2\) by at least \(10^{-5}\).
+  In the pruning step, the \(T_{\alpha}\) with the smallest 10 fold cross validation error was chosen as the final tree. This was achieved via the `rpart` package [@rpart] in \textsf{R} [@R].
+- *MARS*: Only interactions with the treatment variable, \(D_{t}\), were allowed, and these were restricted to second degree interactions. The forward pass was stopped if more than 200 terms were created, or further terms would decrease the \(R^2\) by less than 0.001. The number of terms in the model, \(\lambda\), was chosen using generalized cross validation. Modeling was performed with the `earth` package [@earth] in \textsf{R} called through the `caret` package [@caret].
+- *RF*: Initially 500 trees were grown, with \(D_{t}\) forced to be considered at each split and the out-of-bag samples used to choose \(m_{try}\) from an even grid of five values from 2 to \(p\). However, in each scenario, \(m_{try} = p\) was at or very near the minimum out-of-bag error, so \(m_{try} = p\) (bagging) was performed with with 250 trees. Trees were grown until further splits would result in terminal nodes with less than five observations. Modeling and resampling was performed using the `caret` package in \textsf{R} to call the `ranger` package [@ranger].
+
+<!-- % \begin{description} -->
+<!-- %   \item [Basic setup:] the number of parameters to consider at each split, \(m_{try}\), was fixed at 1 (\(\approx \sqrt{p}\)) plus `dose`. -->
+<!-- %   \item [Interaction only:] \(m_{try}\) fixed at 1 (\(\approx \sqrt{p}\)) plus `dose`. -->
+<!-- %   \item [All noise scenarios:] \(m_{try}\) was fixed at 10 (\(\approx \sqrt{p}\)), plus the treatment variable `dose` -->
+<!-- % \end{description} -->
+
+
+## Training procedure
+
+With the the survival times resulting from each simulated trial for each scenario listed above, Q-learning was applied using each of CART, MARS, and random forest to estimate the Q-functions at each stage. State signals (\(M\), \(W\), \(Z\), \(V\)) were assumed to be Markov, so only the covariates from a particular stage were used in fitting the corresponding Q-function. The fitted models for each stage under each scenario were saved for estimating optimal treatments for patients in the validation set.  Maximum rewards in each stage of Q-learning were estimated by generating predicted rewards from the set of doses \(D_{t} = 0, 0.01, 0.02, ..., 1\) and choosing the largest.
+
+To quantify the influence the training data have on the resulting estimated optimal dynamic treatment regimes, I repeated the processes described in the preceding paragraph for 100 unique training sets each with 1000 patients.
+
+
+## Validation 
+
+Initial tumor masses (\(M_{0}\)) and toxicities (\(W_{0}\)) for 2000 new patients, were simulated identically to those in each scenario for the training data. In order to make treatment regimes more comparable, I then made copies of these 2000 individuals, one set of 2000 for each of the following regimes:
+
+- *10 constant dose regimes*: the same doses of \(0.1, 0.2, ...,\) or 1 given at each stage
+- *Best*: the dose that maximizes the expected survival at each month, given complete knowledge of the transition functions and their influence on survival. Doses were chosen using an exhaustive tree search: considering all possible sequences of three doses and choosing the sequence that produced the largest expected survival time, with each dose chosen from the set \(\{0, 0.01, 0.02, ..., 1\}\). Sequences also could not have any intermediate survival times leading to death (being less than one month).
+- *CART, MARS, RF*: Out of doses from the set \(\{0, 0.01, 0.02, ..., 1\}\), the dose corresponding to the maximum predicted rewards for each of the 100 CART, MARS, and random forest models for each stage.
+
+The transition and survival functions were identical to the training data, with one exception: to further increase the comparability between regimes, the expected survival time was used as the actual survival time (and the determination of whether a participant had died), rather than the survival time using random draws from an exponential distribution.
+
+To compare the regimes, I calculated the arithmetic mean survival time for the 2000 test patients under each treatment regime. I chose the arithmetic mean because it is more sensitive to very large and very small values, which in this setting should play a larger role. This is because a regime that produces very short survival times for one subgroup of patients but has a median or geometric mean close to another regime that does not is worse relative to our goals. I then calculated the mean and standard deviation of the 100 resulting mean survival times for each modeling technique.
+
+
+### Variable importance 
+
+Variable importance was calculated for each model at each stage, as a percentage of the most important variable. For the CART models, variable importance was calculated as the total reduction in SSE resulting from each split on a particular variable. For the MARS models, the importance of each variable was calculated as the increase in SSE which would result from removing each term with a particular variable in it. Variable importance in each tree in the random forest models was calculated in the same way as a single CART tree, then these importances were averaged across all trees in the forest.
